@@ -14,8 +14,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" })
 
 export const metadata: Metadata = {
-  title: "ITHISAL MOBILES - Premium Electronics Store",
-  description: "Your trusted source for new and used gadgets, mobile phones, PCs, earbuds, and premium electronics.",
+  title: "SABS - ONLINE STORE",
+  description: "Your trusted source for GADGETS AND COSMETICS.",
     generator: 'Shah'
 }
 
