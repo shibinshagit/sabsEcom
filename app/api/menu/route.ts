@@ -48,12 +48,12 @@ export async function GET() {
        2. SEED MINIMAL DATA ON FIRST RUN
     ────────────────────────────────────────────────────────────────*/
     // Ensure “Today’s Special” exists
-    const [{ id: todaysId }] = await sql`
-      INSERT INTO categories (name, description, is_special, sort_order)
-      VALUES ('Today''s Special', 'Chef''s picks for today', TRUE, 0)
-      ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-      RETURNING id;
-    `
+    // const [{ id: todaysId }] = await sql`
+    //   INSERT INTO categories (name, description, is_special, sort_order)
+    //   VALUES ('Today''s Special', 'Chef''s picks for today', TRUE, 0)
+    //   ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+    //   RETURNING id;
+    // `
 
     // Add a sample item if menu_items is empty
     await sql`

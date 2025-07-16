@@ -33,7 +33,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: Settings = {
-  restaurant_name: "SABSSOUQ",
+  restaurant_name: "SABS",
   restaurant_logo: "",
   currency_code: "USD",
   currency_symbol: "$",

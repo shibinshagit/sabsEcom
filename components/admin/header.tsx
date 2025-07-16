@@ -17,7 +17,7 @@ export default function AdminHeader() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            Command Center
+            
           </h1>
         </div>
 
@@ -47,12 +47,12 @@ export default function AdminHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-              <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-700">
+              {/* <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-700">
                 Profile Settings
               </DropdownMenuItem>
               <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-700">
                 Account Settings
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem className="text-red-400 hover:text-red-300 hover:bg-gray-700">
                 <LogOut className="w-4 h-4 mr-2" />

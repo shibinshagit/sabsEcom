@@ -115,7 +115,7 @@ export default function OrdersManagement() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-white">Orders Management</h1>
+        <h1 className="text-3xl font-bold text-white">Orders</h1>
         <div className="animate-pulse space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="h-16 bg-gray-800 rounded"></div>
@@ -128,7 +128,7 @@ export default function OrdersManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-white">Orders Management</h1>
+        <h1 className="text-3xl font-bold text-white">Orders</h1>
         <div className="flex items-center space-x-4">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-48 bg-gray-700 border-gray-600 text-white">

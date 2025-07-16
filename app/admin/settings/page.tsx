@@ -180,13 +180,13 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-white">Settings</h1>
+    <div className="max-w-2xl mx-auto bg-transparent p-2 sm:p-4 md:p-6 rounded-none sm:rounded-lg shadow-lg overflow-y-auto max-h-[95vh]">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">Settings</h1>
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+          className="w-full sm:w-auto h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 font-bold"
         >
           <Save className="w-4 h-4 mr-2" />
           {saving ? "Saving..." : "Save Changes"}
@@ -194,24 +194,44 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="bg-gray-800 border-gray-700">
-          <TabsTrigger value="general" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-            <Store className="w-4 h-4 mr-2" />
-            General
-          </TabsTrigger>
-          <TabsTrigger value="contact" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-            <MapPin className="w-4 h-4 mr-2" />
-            Contact
-          </TabsTrigger>
-          <TabsTrigger value="payment" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-            <CreditCard className="w-4 h-4 mr-2" />
-            Payment
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-            <SettingsIcon className="w-4 h-4 mr-2" />
-            Appearance
-          </TabsTrigger>
-        </TabsList>
+      <div className="sticky top-0 z-20 bg-gray-900/95 shadow-lg px-4 py-2">
+  <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+    <TabsList className="flex gap-3 min-w-max">
+      <TabsTrigger
+        value="general"
+        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+      >
+        <Store className="w-4 h-4" />
+        General
+      </TabsTrigger>
+
+      <TabsTrigger
+        value="contact"
+        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+      >
+        <MapPin className="w-4 h-4" />
+        Contact
+      </TabsTrigger>
+
+      <TabsTrigger
+        value="payment"
+        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+      >
+        <CreditCard className="w-4 h-4" />
+        Payment
+      </TabsTrigger>
+
+      <TabsTrigger
+        value="appearance"
+        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+      >
+        <SettingsIcon className="w-4 h-4" />
+        Appearance
+      </TabsTrigger>
+    </TabsList>
+  </div>
+</div>
+
 
         <TabsContent value="general">
           <Card className="bg-gray-800/50 border-gray-700">
@@ -225,7 +245,7 @@ export default function SettingsPage() {
                   id="restaurant_name"
                   value={getSetting("restaurant_name")}
                   onChange={(e) => updateSetting("restaurant_name", e.target.value)}
-                  className="bg-gray-700 border-gray-600 text-white"
+                  className="bg-gray-700 border-gray-600 text-white h-12"
                 />
               </div>
 
@@ -241,7 +261,7 @@ export default function SettingsPage() {
                         id={day}
                         value={hours}
                         onChange={(e) => setOpeningHours({ ...openingHours, [day]: e.target.value })}
-                        className="bg-gray-700 border-gray-600 text-white"
+                        className="bg-gray-700 border-gray-600 text-white h-12"
                         placeholder="5:00 PM - 10:00 PM"
                       />
                     </div>
@@ -265,7 +285,7 @@ export default function SettingsPage() {
                     id="phone"
                     value={getSetting("phone")}
                     onChange={(e) => updateSetting("phone", e.target.value)}
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className="bg-gray-700 border-gray-600 text-white h-12"
                   />
                 </div>
                 <div>
@@ -275,7 +295,7 @@ export default function SettingsPage() {
                     type="email"
                     value={getSetting("email")}
                     onChange={(e) => updateSetting("email", e.target.value)}
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className="bg-gray-700 border-gray-600 text-white h-12"
                   />
                 </div>
               </div>
@@ -286,7 +306,7 @@ export default function SettingsPage() {
                   id="website"
                   value={getSetting("website")}
                   onChange={(e) => updateSetting("website", e.target.value)}
-                  className="bg-gray-700 border-gray-600 text-white"
+                  className="bg-gray-700 border-gray-600 text-white h-12"
                 />
               </div>
 
@@ -299,7 +319,7 @@ export default function SettingsPage() {
                       id="address_line1"
                       value={getSetting("address_line1")}
                       onChange={(e) => updateSetting("address_line1", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                     />
                   </div>
                   <div>
@@ -308,7 +328,7 @@ export default function SettingsPage() {
                       id="address_line2"
                       value={getSetting("address_line2")}
                       onChange={(e) => updateSetting("address_line2", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                     />
                   </div>
                   <div>
@@ -317,7 +337,7 @@ export default function SettingsPage() {
                       id="city"
                       value={getSetting("city")}
                       onChange={(e) => updateSetting("city", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                     />
                   </div>
                   <div>
@@ -326,7 +346,7 @@ export default function SettingsPage() {
                       id="state"
                       value={getSetting("state")}
                       onChange={(e) => updateSetting("state", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                     />
                   </div>
                   <div>
@@ -335,7 +355,7 @@ export default function SettingsPage() {
                       id="postal_code"
                       value={getSetting("postal_code")}
                       onChange={(e) => updateSetting("postal_code", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                     />
                   </div>
                   <div>
@@ -344,7 +364,7 @@ export default function SettingsPage() {
                       id="country"
                       value={getSetting("country")}
                       onChange={(e) => updateSetting("country", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                     />
                   </div>
                 </div>
@@ -359,7 +379,7 @@ export default function SettingsPage() {
                       id="social_facebook"
                       value={getSetting("social_facebook")}
                       onChange={(e) => updateSetting("social_facebook", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                       placeholder="https://facebook.com/yourpage"
                     />
                   </div>
@@ -369,7 +389,7 @@ export default function SettingsPage() {
                       id="social_instagram"
                       value={getSetting("social_instagram")}
                       onChange={(e) => updateSetting("social_instagram", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                       placeholder="https://instagram.com/yourprofile"
                     />
                   </div>
@@ -379,7 +399,7 @@ export default function SettingsPage() {
                       id="social_twitter"
                       value={getSetting("social_twitter")}
                       onChange={(e) => updateSetting("social_twitter", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white h-12"
                       placeholder="https://twitter.com/yourprofile"
                     />
                   </div>
@@ -402,7 +422,7 @@ export default function SettingsPage() {
                     id="currency_code"
                     value={getSetting("currency_code")}
                     onChange={(e) => updateSetting("currency_code", e.target.value.toUpperCase())}
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className="bg-gray-700 border-gray-600 text-white h-12"
                     placeholder="USD"
                   />
                   <p className="text-gray-400 text-sm mt-1">ISO currency code (USD, EUR, GBP, etc.)</p>
@@ -413,7 +433,7 @@ export default function SettingsPage() {
                     id="currency_symbol"
                     value={getSetting("currency_symbol")}
                     onChange={(e) => updateSetting("currency_symbol", e.target.value)}
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className="bg-gray-700 border-gray-600 text-white h-12"
                     placeholder="$"
                   />
                   <p className="text-gray-400 text-sm mt-1">Symbol to display with prices</p>

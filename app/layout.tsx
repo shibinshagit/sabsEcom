@@ -9,6 +9,7 @@ import { AuthProvider } from "@/lib/contexts/auth-context"
 import BottomTabs from "@/components/ui/bottom-tabs"
 import { ShopProvider, useShop } from "@/lib/contexts/shop-context"
 import ShopToggle from "@/components/ui/shop-toggle"
+import UserNavVisibility from "@/components/ui/user-nav-visibility"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" })
@@ -28,11 +29,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <SettingsProvider>
             <StoreProvider>
               <ShopProvider>
-                <ShopToggle />
+                <UserNavVisibility />
                 <div className="pb-16 lg:pb-0">
                   {children}
                 </div>
-                <BottomTabs />
               </ShopProvider>
             </StoreProvider>
           </SettingsProvider>

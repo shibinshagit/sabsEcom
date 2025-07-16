@@ -244,7 +244,7 @@ export default function ProductManagement() {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white">Menu Management</h1>
+          <h1 className="text-3xl font-bold text-white">Products Management</h1>
         </div>
         <div className="animate-pulse space-y-4">
           {[...Array(5)].map((_, i) => (
@@ -259,7 +259,7 @@ export default function ProductManagement() {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white">Menu Management</h1>
+          <h1 className="text-3xl font-bold text-white">Products Management</h1>
         </div>
         <Card className="bg-red-900/20 border-red-500/50">
           <CardContent className="p-6">
@@ -282,7 +282,7 @@ export default function ProductManagement() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-white">Menu Management</h1>
+        <h1 className="text-3xl font-bold text-white">Products Management</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button
@@ -368,7 +368,7 @@ export default function ProductManagement() {
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                     className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="Apple, Samsung, Sony"
+                    placeholder="Sabs, Faiza, goree"
                   />
                 </div>
 
@@ -379,7 +379,7 @@ export default function ProductManagement() {
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                     className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="iPhone 15 Pro, Galaxy S24"
+                    placeholder=""
                   />
                 </div>
               </div>
@@ -396,13 +396,13 @@ export default function ProductManagement() {
                     </SelectTrigger>
                     <SelectContent className="bg-gray-700 border-gray-600">
                       <SelectItem value="new" className="text-white">New</SelectItem>
-                      <SelectItem value="used" className="text-white">Used</SelectItem>
-                      <SelectItem value="refurbished" className="text-white">Refurbished</SelectItem>
+                      {/* <SelectItem value="used" className="text-white">Used</SelectItem>
+                      <SelectItem value="refurbished" className="text-white">Refurbished</SelectItem> */}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div>
+                {/* <div>
                   <Label htmlFor="storage_capacity">Storage Capacity</Label>
                   <Input
                     id="storage_capacity"
@@ -411,7 +411,7 @@ export default function ProductManagement() {
                     className="bg-gray-700 border-gray-600 text-white"
                     placeholder="256GB, 512GB, 1TB"
                   />
-                </div>
+                </div> */}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -426,7 +426,7 @@ export default function ProductManagement() {
                   />
                 </div>
 
-                <div>
+                {/* <div>
                   <Label htmlFor="sku">SKU</Label>
                   <Input
                     id="sku"
@@ -435,12 +435,12 @@ export default function ProductManagement() {
                     className="bg-gray-700 border-gray-600 text-white"
                     placeholder="IPH15P-256-NT"
                   />
-                </div>
+                </div> */}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="warranty_months">Warranty (months)</Label>
+                  <Label htmlFor="warranty_months">Expiry (months)</Label>
                   <Input
                     id="warranty_months"
                     type="number"
@@ -469,7 +469,7 @@ export default function ProductManagement() {
                   value={formData.features}
                   onChange={(e) => setFormData({ ...formData, features: e.target.value })}
                   className="bg-gray-700 border-gray-600 text-white"
-                  placeholder="5G, 48MP camera, USB-C"
+                  placeholder=""
                   rows={2}
                 />
               </div>
@@ -481,7 +481,7 @@ export default function ProductManagement() {
                   value={formData.specifications_text}
                   onChange={(e) => setFormData({ ...formData, specifications_text: e.target.value })}
                   className="bg-gray-700 border-gray-600 text-white"
-                  placeholder="6.1-inch display, 256GB storage, 5G capable"
+                  placeholder=""
                   rows={3}
                 />
               </div>
@@ -585,10 +585,10 @@ export default function ProductManagement() {
         </CardContent>
       </Card>
 
-      {/* Menu Items Table */}
+      {/* Products Items Table */}
       <Card className="bg-gray-800/50 border-gray-700">
         <CardHeader>
-          <CardTitle className="text-white">Menu Items ({filteredItems.length})</CardTitle>
+          <CardTitle className="text-white">Products Items ({filteredItems.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

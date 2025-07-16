@@ -55,16 +55,16 @@ export async function GET() {
        2. SEED GADGET CATEGORIES AND SAMPLE PRODUCTS
     ────────────────────────────────────────────────────────────────*/
     // Insert gadget categories
-    await sql`
-      INSERT INTO categories (name, description, sort_order) VALUES
-      ('New Arrivals', 'Latest products and new releases', 0),
-      ('Mobile Phones', 'Smartphones and mobile devices', 1),
-      ('Laptops & PCs', 'Desktop computers and laptops', 2),
-      ('Audio Devices', 'Earbuds, headphones, and speakers', 3),
-      ('Accessories', 'Phone cases, chargers, and accessories', 4),
-      ('Tablets', 'Tablets and iPads', 5)
-      ON CONFLICT (name) DO NOTHING;
-    `
+    // await sql`
+    //   INSERT INTO categories (name, description, sort_order) VALUES
+    //   ('New Arrivals', 'Latest products and new releases', 0),
+    //   ('Mobile Phones', 'Smartphones and mobile devices', 1),
+    //   ('Laptops & PCs', 'Desktop computers and laptops', 2),
+    //   ('Audio Devices', 'Earbuds, headphones, and speakers', 3),
+    //   ('Accessories', 'Phone cases, chargers, and accessories', 4),
+    //   ('Tablets', 'Tablets and iPads', 5)
+    //   ON CONFLICT (name) DO NOTHING;
+    // `
 
     // Get category IDs
     const categories = await sql`SELECT id, name FROM categories WHERE name IN ('New Arrivals', 'Mobile Phones', 'Laptops & PCs', 'Audio Devices')`

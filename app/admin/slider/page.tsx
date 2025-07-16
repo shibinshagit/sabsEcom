@@ -55,7 +55,6 @@ export default function SliderManagement() {
     setError(null)
     try {
       const response = await fetch("/api/admin/slider")
-console.log('sha res',response)
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || `HTTP ${response.status}`)

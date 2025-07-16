@@ -152,7 +152,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
+        {/* <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-300">Today's Reservations</CardTitle>
             <Calendar className="h-4 w-4 text-orange-400" />
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
             <div className="text-2xl font-bold text-white">{stats.todayReservations || 0}</div>
             <p className="text-xs text-orange-400 mt-1">Scheduled for today</p>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Upcoming Reservations */}
-        <Card className="bg-gray-800/50 border-gray-700">
+        {/* <Card className="bg-gray-800/50 border-gray-700">
           <CardHeader>
             <CardTitle className="text-white flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-orange-400" />
@@ -229,7 +229,7 @@ export default function AdminDashboard() {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   )

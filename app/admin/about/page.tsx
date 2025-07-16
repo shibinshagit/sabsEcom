@@ -159,7 +159,7 @@ export default function AboutManagement() {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white">About Section Management</h1>
+          <h1 className="text-3xl font-bold text-white">About</h1>
         </div>
         <div className="grid gap-6">
           {[...Array(3)].map((_, i) => (
@@ -178,7 +178,7 @@ export default function AboutManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-white">About Section Management</h1>
+        <h1 className="text-3xl font-bold text-white">About</h1>
         <Button
           onClick={() => setShowAddForm(true)}
           className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
