@@ -32,28 +32,38 @@ const tabs = [
 export default function AdminBottomTabs() {
   const pathname = usePathname()
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-gray-900/80 via-gray-700/70 to-white/30 backdrop-blur-xl border-t border-gray-300/30 flex justify-between px-2 py-2 lg:hidden overflow-x-auto shadow-2xl rounded-t-xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[linear-gradient(135deg,_#0a0a0a_0%,_#1a1a2e_50%,_#16213e_100%)] backdrop-blur-xl border-t border-blue-300/20 flex justify-between px-2 py-2 lg:hidden overflow-x-auto shadow-2xl rounded-t-xl">
+
       {tabs.map(({ href, label, icon: Icon }) => {
         const active = pathname === href
         return (
-          <Link
+            <Link
             key={href}
             href={href}
             className={`flex flex-col items-center flex-1 min-w-[70px] px-0 py-0 mx-1 transition-all duration-200
-              ${active
-                ? ""
-                : "hover:text-gray-900"}
+              ${active ? "" : "hover:text-gray-900"}
             `}
           >
-            <div className={`flex items-center justify-center w-14 h-14 rounded-2xl shadow-lg border-2 transition-all duration-200
-              ${active
-                ? "bg-gradient-to-br from-gray-200 via-gray-300 to-gray-100 border-gray-400 shadow-platinum"
-                : "bg-gradient-to-br from-gray-800/80 via-gray-700/80 to-gray-900/80 border-gray-700/60"}
-            `} style={{ boxShadow: active ? '0 2px 16px 0 #bfc1c6cc' : undefined }}>
-              <Icon className={`w-7 h-7 ${active ? "text-gray-700" : "text-gray-300"}`} />
+            <div
+              className={`flex items-center justify-center w-14 h-14 rounded-2xl shadow-lg border-2 transition-all duration-200
+                ${active
+                  ? "bg-[linear-gradient(135deg,_#0a0a0a_0%,_#1a1a2e_50%,_#16213e_100%)] border-blue-400 shadow-blue-900"
+                  : "bg-gradient-to-br from-gray-800/80 via-gray-700/80 to-gray-900/80 border-gray-700/60"}
+              `}
+              style={{
+                boxShadow: active ? "0 2px 16px 0 #1a1a2eaa" : undefined
+              }}
+            >
+              <Icon className={`w-7 h-7 ${active ? "text-blue-100" : "text-gray-300"}`} />
             </div>
-            <span className="text-xs leading-tight font-medium whitespace-nowrap mt-1 text-center text-gray-100" style={{color: active ? '#6b7280' : undefined}}>{label}</span>
+            <span
+              className="text-xs leading-tight font-medium whitespace-nowrap mt-1 text-center"
+              style={{ color: active ? "#cbd5e1" : undefined }}
+            >
+              {label}
+            </span>
           </Link>
+          
         )
       })}
     </nav>
