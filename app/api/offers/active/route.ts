@@ -15,7 +15,6 @@ export async function GET() {
       );
     `;
 
-    // Get current date in YYYY-MM-DD format
     const currentDate = new Date().toISOString().split('T')[0];
 
     // Fetch only active offers

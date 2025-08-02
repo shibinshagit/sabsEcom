@@ -49,7 +49,6 @@ const OfferPage = () => {
   };
 
   const handleSubmit = async () => {
-    // Validation
     if (!title.trim() || !startDate || !endDate) {
       alert("Please fill in all required fields");
       return;
