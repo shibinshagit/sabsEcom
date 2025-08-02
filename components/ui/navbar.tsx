@@ -29,6 +29,7 @@ const navigation = [
   { name: "Reviews", href: "/#testimonials", scroll: true },
   { name: "About", href: "/#about", scroll: true },
   { name: "Contact", href: "/#contact", scroll: true },
+  { name: "Logout", href: "/#logout", scroll: true },
 ]
 
 export default function Navbar() {
@@ -44,21 +45,21 @@ export default function Navbar() {
   // Shop theming
   const shopTheme = shop === "A"
     ? {
-        bg: isScrolled
-          ? "bg-gradient-to-r from-yellow-200/90 via-orange-200/90 to-amber-300/90 shadow-gold"
-          : "bg-gradient-to-r from-yellow-100/90 via-orange-100/90 to-amber-200/90",
-        accent: "text-yellow-600",
-        after: "Beauty",
-        afterClass: "bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500 bg-clip-text text-transparent animate-shop-swap",
-      }
+      bg: isScrolled
+        ? "bg-gradient-to-r from-yellow-200/90 via-orange-200/90 to-amber-300/90 shadow-gold"
+        : "bg-gradient-to-r from-yellow-100/90 via-orange-100/90 to-amber-200/90",
+      accent: "text-yellow-600",
+      after: "Beauty",
+      afterClass: "bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500 bg-clip-text text-transparent animate-shop-swap",
+    }
     : {
-        bg: isScrolled
-          ? "bg-gradient-to-r from-gray-900/95 via-gray-800/95 to-gray-700/95 shadow-platinum"
-          : "bg-gradient-to-r from-gray-900/90 via-gray-800/90 to-gray-700/90",
-        accent: "text-gray-300",
-        after: "Accessories",
-        afterClass: "bg-gradient-to-r from-gray-200 via-gray-400 to-gray-100 bg-clip-text text-transparent animate-shop-swap",
-      }
+      bg: isScrolled
+        ? "bg-gradient-to-r from-gray-900/95 via-gray-800/95 to-gray-700/95 shadow-platinum"
+        : "bg-gradient-to-r from-gray-900/90 via-gray-800/90 to-gray-700/90",
+      accent: "text-gray-300",
+      after: "Accessories",
+      afterClass: "bg-gradient-to-r from-gray-200 via-gray-400 to-gray-100 bg-clip-text text-transparent animate-shop-swap",
+    }
 
   // Get current page name for banner targeting
   const currentPage = pathname === "/" ? "home" : pathname.split("/")[1] || "home"
@@ -104,13 +105,40 @@ export default function Navbar() {
     await logout()
   }
 
-  const handleNavClick = (item: (typeof navigation)[0], e: React.MouseEvent) => {
+  // const handleNavClick = (item: (typeof navigation)[0], e: React.MouseEvent) => {
+  //   if (item.scroll && pathname === "/") {
+  //     e.preventDefault()
+  //     const targetId = item.href.split("#")[1]
+  //     const element = document.getElementById(targetId)
+  //     if (element) {
+  //       const navbarHeight = 80 // Approximate navbar height
+  //       const bannerHeight = Number.parseInt(
+  //         getComputedStyle(document.documentElement).getPropertyValue("--banner-height") || "0",
+  //       )
+  //       const offset = navbarHeight + bannerHeight
+  //       const elementPosition = element.offsetTop - offset
+
+  //       window.scrollTo({
+  //         top: elementPosition,
+  //         behavior: "smooth",
+  //       })
+  //     }
+  //     setIsOpen(false)
+  //   }
+  // }
+  const handleNavClick = async (item: (typeof navigation)[0], e: React.MouseEvent) => {
+    if (item.name === "Logout") {
+      e.preventDefault()
+      await handleLogout()
+      return
+    }
+
     if (item.scroll && pathname === "/") {
       e.preventDefault()
       const targetId = item.href.split("#")[1]
       const element = document.getElementById(targetId)
       if (element) {
-        const navbarHeight = 80 // Approximate navbar height
+        const navbarHeight = 80 
         const bannerHeight = Number.parseInt(
           getComputedStyle(document.documentElement).getPropertyValue("--banner-height") || "0",
         )
@@ -173,11 +201,10 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleNavClick(item, e)}
-                  className={`text-sm font-medium transition-colors hover:text-amber-400 ${
-                    pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
+                  className={`text-sm font-medium transition-colors hover:text-amber-400 ${pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
                       ? "text-amber-400"
                       : "text-white"
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -252,11 +279,10 @@ export default function Navbar() {
                     key={item.name}
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
-                    className={`block px-3 py-2 text-base font-medium transition-colors hover:text-amber-400 ${
-                      pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
+                    className={`block px-3 py-2 text-base font-medium transition-colors hover:text-amber-400 ${pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
                         ? "text-amber-400"
                         : "text-white"
-                    }`}
+                      }`}
                   >
                     {item.name}
                   </Link>
