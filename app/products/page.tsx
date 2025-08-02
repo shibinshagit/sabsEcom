@@ -16,8 +16,24 @@ import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import Footer from "@/components/ui/footer"
 import { useSearchParams } from "next/navigation"
+import { useAuth } from '@/lib/contexts/auth-context'
+import SpinWheel from '@/components/ui/offer-spinner'
 
 export default function ProductsPage() {
+  // spinner show func
+  const { user, isAuthenticated } = useAuth()
+  const [showSpinner, setShowSpinner] = useState(false)
+
+  useEffect(() => {
+    // Show only for unauthenticated users, once per session
+    const seen = localStorage.getItem("seenOfferSpinner")
+
+    if (!isAuthenticated && !seen) {
+      setShowSpinner(true)
+      localStorage.setItem("seenOfferSpinner", "true")
+    }
+  }, [isAuthenticated])
+
   const dispatch = useDispatch<AppDispatch>()
   const { items, categories, selectedCategory, loading } = useSelector((state: RootState) => state.products)
   const { formatPrice } = useSettings()
@@ -31,21 +47,21 @@ export default function ProductsPage() {
   // Theme colors
   const theme = shop === "A"
     ? {
-        accent: "bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black border-yellow-400",
-        badge: "bg-yellow-400 text-black",
-        price: "text-yellow-600",
-        shadow: "shadow-gold",
-        btn: "bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-black border-yellow-400",
-        star: "fill-yellow-400 text-yellow-400",
-      }
+      accent: "bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black border-yellow-400",
+      badge: "bg-yellow-400 text-black",
+      price: "text-yellow-600",
+      shadow: "shadow-gold",
+      btn: "bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-black border-yellow-400",
+      star: "fill-yellow-400 text-yellow-400",
+    }
     : {
-        accent: "bg-gradient-to-r from-gray-200 via-gray-300 to-white text-gray-900 border-gray-400",
-        badge: "bg-gradient-to-r from-gray-300 via-gray-400 to-white text-gray-900 border-gray-400",
-        price: "text-gray-500",
-        shadow: "shadow-platinum",
-        btn: "bg-gradient-to-r from-gray-200 via-gray-300 to-white hover:from-gray-300 hover:to-gray-400 text-gray-900 border-gray-300",
-        star: "fill-gray-400 text-gray-400",
-      }
+      accent: "bg-gradient-to-r from-gray-200 via-gray-300 to-white text-gray-900 border-gray-400",
+      badge: "bg-gradient-to-r from-gray-300 via-gray-400 to-white text-gray-900 border-gray-400",
+      price: "text-gray-500",
+      shadow: "shadow-platinum",
+      btn: "bg-gradient-to-r from-gray-200 via-gray-300 to-white hover:from-gray-300 hover:to-gray-400 text-gray-900 border-gray-300",
+      star: "fill-gray-400 text-gray-400",
+    }
 
   useEffect(() => {
     dispatch(fetchProducts())
@@ -69,8 +85,24 @@ export default function ProductsPage() {
   })
 
   return (
+
     <div className="min-h-screen bg-gray-50">
       <Navbar />
+
+      {/* offer spinner */}
+      {showSpinner && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="relative max-w-4xl w-full bg-white rounded-lg shadow-lg overflow-hidden">
+            <button
+              className="absolute top-4 right-4 text-black text-xl bg-red-500 hover:bg-red-600 px-3 py-1 rounded-full z-10"
+              onClick={() => setShowSpinner(false)}
+            >
+              ✕
+            </button>
+            <SpinWheel />
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="relative h-64 bg-black flex items-center justify-center">
@@ -159,7 +191,7 @@ export default function ProductsPage() {
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 {/* Premium border overlay */}
-                <div className={`absolute inset-0 pointer-events-none rounded-2xl border-2 ${shop === "A" ? "border-yellow-300/60" : "border-gray-300/60"} z-10`} style={{boxShadow: shop === "A" ? '0 0 0 2px #ffe06655' : '0 0 0 2px #bfc1c655'}} />
+                <div className={`absolute inset-0 pointer-events-none rounded-2xl border-2 ${shop === "A" ? "border-yellow-300/60" : "border-gray-300/60"} z-10`} style={{ boxShadow: shop === "A" ? '0 0 0 2px #ffe06655' : '0 0 0 2px #bfc1c655' }} />
                 <div className="relative overflow-hidden rounded-t-2xl">
                   <Image
                     src={
