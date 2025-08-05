@@ -6,7 +6,7 @@ import { sql } from "@/lib/database";
 // GET - Fetch the latest offer
 export async function GET() {
   try {
-    // Ensure table exists with basic structure
+    
     await sql`
       CREATE TABLE IF NOT EXISTS offers (
         id SERIAL PRIMARY KEY,
@@ -18,7 +18,6 @@ export async function GET() {
       );
     `;
 
-    // Try to add updated_at column safely
     try {
       await sql`
         DO $$ 
@@ -35,7 +34,6 @@ export async function GET() {
       console.log("Could not add updated_at column:", error.message);
     }
 
-    // Check if updated_at column exists
     const columnCheck = await sql`
       SELECT column_name FROM information_schema.columns 
       WHERE table_name = 'offers' AND column_name = 'updated_at';
@@ -65,7 +63,6 @@ export async function POST(request: Request) {
   try {
     const { title, startDate, endDate, offers } = await request.json();
 
-    // Validation
     if (!title || !startDate || !endDate || !offers || offers.length === 0) {
       return NextResponse.json(
         { error: "Missing required fields" }, 
@@ -75,7 +72,6 @@ export async function POST(request: Request) {
 
     console.log("Creating offer with data:", { title, startDate, endDate, offers });
 
-    // Ensure table exists with basic structure
     await sql`
       CREATE TABLE IF NOT EXISTS offers (
         id SERIAL PRIMARY KEY,
@@ -104,10 +100,6 @@ export async function POST(request: Request) {
       console.log("Could not add updated_at column:", error.message);
     }
 
-    // DON'T delete existing offers - we want to create new ones
-    // await sql`DELETE FROM offers;`;
-
-    // Check if updated_at column exists
     const columnCheck = await sql`
       SELECT column_name FROM information_schema.columns 
       WHERE table_name = 'offers' AND column_name = 'updated_at';

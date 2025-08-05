@@ -8,7 +8,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const id = parseInt(params.id);
     const { title, startDate, endDate, offers } = await request.json();
 
-    // Validation
     if (!title || !startDate || !endDate || !offers || offers.length === 0) {
       return NextResponse.json(
         { error: "Missing required fields" }, 
@@ -25,7 +24,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     console.log("Updating offer with ID:", id, { title, startDate, endDate, offers });
 
-    // Check if updated_at column exists
     const columnCheck = await sql`
       SELECT column_name FROM information_schema.columns 
       WHERE table_name = 'offers' AND column_name = 'updated_at';

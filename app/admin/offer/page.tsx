@@ -1,71 +1,73 @@
 
-"use client";
-
-import React, { useState, useEffect } from "react";
+"use client"
+import { useState, useEffect } from "react"
+import { X, Plus, Trash2, Calendar, Tag, Percent, AlertCircle } from "lucide-react"
 
 const OfferPage = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [offers, setOffers] = useState([{ percentage: "" }]);
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  // Displayed saved data - now an array of offers
-  const [savedOffers, setSavedOffers] = useState<{
-    id: number;
-    title: string;
-    startDate: string;
-    endDate: string;
-    offers: { percentage: string }[];
-  }[]>([]);
-
-  const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
+  const [showModal, setShowModal] = useState(false)
+  const [offers, setOffers] = useState([{ percentage: "" }])
+  const [title, setTitle] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true) 
+  const [error, setError] = useState<string | null>(null) 
+  
+  
+  const [savedOffers, setSavedOffers] = useState<
+    {
+      id: number
+      title: string
+      startDate: string
+      endDate: string
+      offers: { percentage: string }[]
+    }[]
+  >([])
+  const [editingOfferId, setEditingOfferId] = useState<number | null>(null)
 
   const handleAddOffer = () => {
     if (offers.length < 6) {
-      setOffers([...offers, { percentage: "" }]);
+      setOffers([...offers, { percentage: "" }])
     }
-  };
+  }
 
   const handleRemoveOffer = (index: number) => {
     if (offers.length > 1) {
-      const newOffers = offers.filter((_, i) => i !== index);
-      setOffers(newOffers);
+      const newOffers = offers.filter((_, i) => i !== index)
+      setOffers(newOffers)
     }
-  };
+  }
 
   const handleOfferChange = (index: number, value: string) => {
-    const newOffers = [...offers];
-    newOffers[index].percentage = value;
-    setOffers(newOffers);
-  };
+    const newOffers = [...offers]
+    newOffers[index].percentage = value
+    setOffers(newOffers)
+  }
 
   const resetForm = () => {
-    setTitle("");
-    setStartDate("");
-    setEndDate("");
-    setOffers([{ percentage: "" }]);
-  };
+    setTitle("")
+    setStartDate("")
+    setEndDate("")
+    setOffers([{ percentage: "" }])
+  }
 
   const handleSubmit = async () => {
     if (!title.trim() || !startDate || !endDate) {
-      alert("Please fill in all required fields");
-      return;
+      alert("Please fill in all required fields")
+      return
     }
 
-    const validOffers = offers.filter(offer => offer.percentage && offer.percentage.trim() !== "");
+    const validOffers = offers.filter((offer) => offer.percentage && offer.percentage.trim() !== "")
     if (validOffers.length === 0) {
-      alert("Please add at least one offer percentage");
-      return;
+      alert("Please add at least one offer percentage")
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
-      const isEditing = editingOfferId !== null;
-      const url = isEditing ? `/api/admin/offer/${editingOfferId}` : "/api/admin/offer";
-      const method = isEditing ? "PUT" : "POST";
-
+      const isEditing = editingOfferId !== null
+      const url = isEditing ? `/api/admin/offer/${editingOfferId}` : "/api/admin/offer"
+      const method = isEditing ? "PUT" : "POST"
       const response = await fetch(url, {
         method,
         headers: {
@@ -77,103 +79,150 @@ const OfferPage = () => {
           endDate,
           offers: validOffers,
         }),
-      });
+      })
 
       if (!response.ok) {
-        throw new Error("Failed to save offer");
+        throw new Error("Failed to save offer")
       }
 
-      const data = await response.json();
+      const data = await response.json()
       const newOffer = {
         id: data.id,
         title: data.title,
         startDate: data.start_date,
         endDate: data.end_date,
-        offers: typeof data.offers === 'string' ? JSON.parse(data.offers) : data.offers,
-      };
+        offers: typeof data.offers === "string" ? JSON.parse(data.offers) : data.offers,
+      }
 
       if (isEditing) {
-        // Update existing offer in the list
-        setSavedOffers(prev => prev.map(offer => 
-          offer.id === editingOfferId ? newOffer : offer
-        ));
-        alert("Offer updated successfully!");
+        setSavedOffers((prev) => prev.map((offer) => (offer.id === editingOfferId ? newOffer : offer)))
+        alert("Offer updated successfully!")
       } else {
-        // Add new offer to the list
-        setSavedOffers(prev => [newOffer, ...prev]);
-        alert("Offer created successfully!");
+        setSavedOffers((prev) => [newOffer, ...prev])
+        alert("Offer created successfully!")
       }
-      
-      setShowModal(false);
-      resetForm();
-      setEditingOfferId(null);
-    } catch (error) {
-      console.error("Error submitting offer:", error);
-      alert("Failed to submit offer. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleEdit = (offer: typeof savedOffers[0]) => {
-    setTitle(offer.title);
-    setStartDate(offer.startDate);
-    setEndDate(offer.endDate);
-    setOffers(offer.offers.length > 0 ? offer.offers : [{ percentage: "" }]);
-    setEditingOfferId(offer.id);
-    setShowModal(true);
-  };
+      setShowModal(false)
+      resetForm()
+      setEditingOfferId(null)
+    } catch (error) {
+      console.error("Error submitting offer:", error)
+      alert("Failed to submit offer. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEdit = (offer: (typeof savedOffers)[0]) => {
+    setTitle(offer.title)
+    setStartDate(offer.startDate)
+    setEndDate(offer.endDate)
+    setOffers(offer.offers.length > 0 ? offer.offers : [{ percentage: "" }])
+    setEditingOfferId(offer.id)
+    setShowModal(true)
+  }
 
   const handleAddNew = () => {
-    resetForm();
-    setEditingOfferId(null);
-    setShowModal(true);
-  };
+    resetForm()
+    setEditingOfferId(null)
+    setShowModal(true)
+  }
 
   const handleDelete = async (offerId: number) => {
     if (confirm("Are you sure you want to delete this offer?")) {
       try {
         const response = await fetch(`/api/admin/offer/${offerId}`, {
           method: "DELETE",
-        });
+        })
 
         if (!response.ok) {
-          throw new Error("Failed to delete offer");
+          throw new Error("Failed to delete offer")
         }
 
-        setSavedOffers(prev => prev.filter(offer => offer.id !== offerId));
-        alert("Offer deleted successfully!");
+        setSavedOffers((prev) => prev.filter((offer) => offer.id !== offerId))
+        alert("Offer deleted successfully!")
       } catch (error) {
-        console.error("Error deleting offer:", error);
-        alert("Failed to delete offer. Please try again.");
+        console.error("Error deleting offer:", error)
+        alert("Failed to delete offer. Please try again.")
       }
     }
-  };
+  }
+
+  const fetchOffers = async () => {
+    setInitialLoading(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/admin/offer")
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${res.status}`)
+      }
+
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        const parsedOffers = data.map((offer) => ({
+          id: offer.id,
+          title: offer.title,
+          startDate: offer.start_date,
+          endDate: offer.end_date,
+          offers: typeof offer.offers === "string" ? JSON.parse(offer.offers) : offer.offers || [],
+        }))
+        setSavedOffers(parsedOffers)
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error occurred"
+      setError(`Failed to fetch offers: ${message}`)
+      console.error("Error loading offers:", error)
+    } finally {
+      setInitialLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchOffers = async () => {
-      try {
-        const res = await fetch("/api/admin/offer");
-        if (!res.ok) throw new Error("Failed to fetch offers");
-        
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          const parsedOffers = data.map(offer => ({
-            id: offer.id,
-            title: offer.title,
-            startDate: offer.start_date,
-            endDate: offer.end_date,
-            offers: typeof offer.offers === 'string' ? JSON.parse(offer.offers) : offer.offers || [],
-          }));
-          setSavedOffers(parsedOffers);
-        }
-      } catch (error) {
-        console.error("Error loading offers:", error);
-      }
-    };
+    fetchOffers()
+  }, [])
 
-    fetchOffers();
-  }, []);
+  // Show loading state
+  if (initialLoading) {
+    return (
+      <div className="p-6 min-h-screen bg-gray-900">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-white text-2xl font-bold">Offer Management</h1>
+        </div>
+        <div className="animate-pulse space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-800 rounded-lg"></div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6 min-h-screen bg-gray-900">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-white text-2xl font-bold">Offer Management</h1>
+        </div>
+        <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="w-6 h-6 text-red-400" />
+            <div>
+              <h3 className="text-red-400 font-semibold">Error Loading Offers</h3>
+              <p className="text-red-300 text-sm mt-1">{error}</p>
+              <button 
+                onClick={fetchOffers} 
+                className="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors text-sm"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 min-h-screen bg-gray-900">
@@ -196,7 +245,7 @@ const OfferPage = () => {
                 <div>
                   <h2 className="text-xl font-semibold mb-2">{offer.title}</h2>
                   <p className="text-gray-300">
-                    <strong>Start:</strong> {new Date(offer.startDate).toLocaleDateString()} 
+                    <strong>Start:</strong> {new Date(offer.startDate).toLocaleDateString()}
                     <span className="mx-2">|</span>
                     <strong>End:</strong> {new Date(offer.endDate).toLocaleDateString()}
                   </p>
@@ -216,7 +265,7 @@ const OfferPage = () => {
                   </button>
                 </div>
               </div>
-              
+
               <div className="mt-4">
                 <h3 className="text-lg font-medium mb-2">Available Discounts:</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -231,118 +280,187 @@ const OfferPage = () => {
           ))}
         </div>
       ) : (
+        // Only show "No offers" when not loading and no error
         <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg text-center mb-6">
           <p className="text-gray-300 mb-4">No offers created yet.</p>
-          <button
-            onClick={handleAddNew}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded transition-colors"
-          >
-            Create Your First Offer
-          </button>
         </div>
       )}
 
-      {/* Modal */}
+      {/* Beautiful Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 z-50 overflow-y-auto">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-lg mx-4 my-10">
-            <h2 className="text-xl font-bold mb-4">
-              {editingOfferId ? "Edit Offer" : "Add New Offer"}
-            </h2>
-
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Offer Title *"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  resetForm()
+                  setEditingOfferId(null)
+                }}
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+                disabled={loading}
+              >
+                <X size={20} />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/20 rounded-full">
+                  <Tag size={24} />
+                </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Start Date *</label>
+                  <h2 className="text-2xl font-bold">{editingOfferId ? "Edit Offer" : "Create New Offer"}</h2>
+                  <p className="text-blue-100 mt-1">
+                    {editingOfferId ? "Update your existing offer details" : "Set up a new promotional offer"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Content */}
+            <div className="p-8 space-y-6">
+              {/* Title Input */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Tag size={16} className="text-blue-600" />
+                  Offer Title *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter a catchy offer title..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                  required
+                />
+              </div>
+
+              {/* Date Inputs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <Calendar size={16} className="text-green-600" />
+                    Start Date *
+                  </label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 text-gray-800"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">End Date *</label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <Calendar size={16} className="text-red-600" />
+                    End Date *
+                  </label>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all duration-200 text-gray-800"
                     required
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Discount Percentages *</label>
-                {offers.map((offer, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="number"
-                      placeholder={`Discount ${index + 1} (%)`}
-                      value={offer.percentage}
-                      onChange={(e) => handleOfferChange(index, e.target.value)}
-                      className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="1"
-                      max="100"
-                    />
-                    {offers.length > 1 && (
-                      <button
-                        onClick={() => handleRemoveOffer(index)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded transition-colors"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                ))}
+              {/* Discount Percentages */}
+              <div className="space-y-4">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Percent size={16} className="text-purple-600" />
+                  Discount Percentages *
+                </label>
+                <div className="space-y-3">
+                  {offers.map((offer, index) => (
+                    <div key={index} className="flex gap-3 items-center group">
+                      <div className="flex-1 relative">
+                        <input
+                          type="number"
+                          placeholder={`Discount ${index + 1} (%)`}
+                          value={offer.percentage}
+                          onChange={(e) => handleOfferChange(index, e.target.value)}
+                          className="w-full border-2 border-gray-200 px-4 py-3 pr-12 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                          min="1"
+                          max="100"
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">%</div>
+                      </div>
+                      {offers.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveOffer(index)}
+                          className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 group-hover:scale-105"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
                 {offers.length < 6 && (
                   <button
                     onClick={handleAddOffer}
-                    className="text-blue-600 hover:text-blue-800 underline text-sm"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-xl transition-all duration-200 font-medium"
                   >
-                    + Add Another Discount
+                    <Plus size={16} />
+                    Add Another Discount
                   </button>
                 )}
               </div>
+
+              {/* Preview Section */}
+              {offers.some((offer) => offer.percentage) && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Preview:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {offers
+                      .filter((offer) => offer.percentage)
+                      .map((offer, index) => (
+                        <span
+                          key={index}
+                          className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm"
+                        >
+                          {offer.percentage}% OFF
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            {/* Footer */}
+            <div className="flex justify-end gap-4 p-6 bg-gray-50 rounded-b-2xl border-t border-gray-100">
               <button
                 onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                  setEditingOfferId(null);
+                  setShowModal(false)
+                  resetForm()
+                  setEditingOfferId(null)
                 }}
-                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded transition-colors"
+                className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
                 disabled={loading}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors disabled:opacity-50"
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 disabled={loading}
               >
-                {loading ? "Saving..." : editingOfferId ? "Update Offer" : "Create Offer"}
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>{editingOfferId ? "Update Offer" : "Create Offer"}</>
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default OfferPage;
+export default OfferPage
