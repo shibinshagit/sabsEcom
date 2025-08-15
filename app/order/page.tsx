@@ -398,8 +398,8 @@ export default function OrderPage() {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        title="Login to Place Order"
-        description="Please login to place your order and track its status."
+        title="Login"
+        description="Please login to continue with us."
       />
     </div>
   )

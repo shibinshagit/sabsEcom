@@ -1,8 +1,8 @@
-
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 import { cookies } from "next/headers";
 import { SignJWT } from "jose";
+import bcrypt from "bcryptjs";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production");
 
@@ -46,9 +46,18 @@ export async function POST(request: Request) {
   try {
     await ensureAuthSchema();
 
-    const { email, otp, name } = await request.json();
-    if (!email || !otp) {
-      return NextResponse.json({ error: "Email and OTP are required" }, { status: 400 });
+    const { email, otp, name, password } = await request.json();
+    
+    if (!email || !otp || !name || !password) {
+      return NextResponse.json({ 
+        error: "Email, OTP, name, and password are required" 
+      }, { status: 400 });
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json({ 
+        error: "Password must be at least 6 characters long" 
+      }, { status: 400 });
     }
 
     // Verify OTP
@@ -63,20 +72,33 @@ export async function POST(request: Request) {
     `;
 
     if (!otpRecord) {
-      return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
+      return NextResponse.json({ 
+        error: "Invalid or expired OTP" 
+      }, { status: 400 });
+    }
+
+    // Check if user already exists
+    const [existingUser] = await sql`
+      SELECT id FROM users WHERE email = ${email}
+    `;
+
+    if (existingUser) {
+      return NextResponse.json({ 
+        error: "User with this email already exists" 
+      }, { status: 400 });
     }
 
     // Mark OTP as used
     await sql`UPDATE user_otps SET is_used = TRUE WHERE id = ${otpRecord.id}`;
 
-    // Create or update user (for OTP-only login, no password)
+    // Hash password
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Create user
     const [user] = await sql`
-      INSERT INTO users (email, name, is_verified)
-      VALUES (${email}, ${name || null}, TRUE)
-      ON CONFLICT (email) DO UPDATE SET
-        is_verified = TRUE,
-        name = COALESCE(EXCLUDED.name, users.name),
-        updated_at = CURRENT_TIMESTAMP
+      INSERT INTO users (email, name, password_hash, is_verified)
+      VALUES (${email}, ${name}, ${passwordHash}, TRUE)
       RETURNING id, email, name, is_verified, created_at
     `;
 
@@ -111,7 +133,9 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error verifying OTP:", error);
-    return NextResponse.json({ error: "Failed to verify OTP" }, { status: 500 });
+    console.error("Error registering user:", error);
+    return NextResponse.json({ 
+      error: "Failed to register user" 
+    }, { status: 500 });
   }
 }

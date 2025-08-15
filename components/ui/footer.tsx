@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -12,34 +13,32 @@ export default function Footer() {
   const { shop } = useShop()
   const [currentYear] = useState(new Date().getFullYear())
 
-  // Enhanced theming
+  // SABS ONLINE Enhanced theming - Same colors as navbar/hero
   const theme =
     shop === "A"
       ? {
-          // Cosmetics Theme
-          bg: "bg-gradient-to-br from-gray-900 via-pink-900 to-rose-900",
-          text: "text-pink-100",
-          accent: "text-pink-400",
-          hover: "hover:text-pink-300",
-          logo: "bg-gradient-to-r from-pink-400 to-rose-500",
-          border: "border-pink-800",
+          // Cosmetics Theme - Same as SABS ONLINE navbar
+          bg: "bg-gradient-to-br from-pink-400 via-orange-400 to-pink-500",
+          text: "text-white",
+          accent: "text-pink-100",
+          hover: "hover:text-pink-200",
+          logo: "bg-gradient-to-r from-pink-500 to-orange-600",
+          border: "border-pink-300/30",
           icon: Heart,
-          socialHover: "hover:text-pink-400 hover:scale-110",
-          description:
-            "Step into a world of elegance and self-care, where quality, experience, and empowerment come together to redefine your beauty journey.",
+          socialHover: "hover:text-pink-200 hover:scale-110",
+          description: "Step into a world of elegance and self-care, where quality, experience, and empowerment come together to redefine your beauty journey.",
         }
       : {
-          // Gadgets Theme
-          bg: "bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800",
-          text: "text-cyan-100",
-          accent: "text-cyan-400",
-          hover: "hover:text-cyan-300",
-          logo: "bg-gradient-to-r from-cyan-400 to-blue-500",
-          border: "border-cyan-800",
+          // Gadgets Theme - Same as SABS ONLINE navbar
+          bg: "bg-gradient-to-br from-yellow-400 via-orange-400 to-yellow-500",
+          text: "text-white",
+          accent: "text-yellow-100",
+          hover: "hover:text-yellow-200",
+          logo: "bg-gradient-to-r from-orange-500 to-yellow-600",
+          border: "border-orange-300/30",
           icon: Cpu,
-          socialHover: "hover:text-cyan-400 hover:scale-110",
-          description:
-            "Discover cutting-edge technology and innovation, where advanced engineering, superior quality, and user experience converge to revolutionize your digital lifestyle.",
+          socialHover: "hover:text-yellow-200 hover:scale-110",
+          description: "Discover cutting-edge technology and innovation, where advanced engineering, superior quality, and user experience converge to revolutionize your digital lifestyle.",
         }
 
   const IconComponent = theme.icon
@@ -53,8 +52,8 @@ export default function Footer() {
             key={i}
             className={`absolute w-2 h-2 ${
               shop === "A"
-                ? "bg-gradient-to-r from-pink-400/20 to-rose-400/20"
-                : "bg-gradient-to-r from-cyan-400/20 to-blue-400/20"
+                ? "bg-gradient-to-r from-pink-300/20 to-orange-300/20"
+                : "bg-gradient-to-r from-yellow-300/20 to-orange-300/20"
             } rounded-full animate-float opacity-30`}
             style={{
               left: `${Math.random() * 100}%`,
@@ -75,7 +74,7 @@ export default function Footer() {
                 <div className="relative w-12 h-12">
                   <Image
                     src={settings.restaurant_logo || "/placeholder.svg"}
-                    alt={settings.restaurant_name}
+                    alt="SABS ONLINE"
                     fill
                     className="object-contain"
                   />
@@ -87,7 +86,7 @@ export default function Footer() {
               )}
               <div>
                 <h3 className={`${shop === "A" ? "font-serif" : "font-mono"} text-3xl font-bold ${theme.text}`}>
-                  {settings.restaurant_name}
+                  SABS ONLINE
                 </h3>
                 <p className={`${theme.accent} text-lg ${shop === "A" ? "font-script" : "font-mono"}`}>
                   {shop === "A" ? "Beauty" : "Tech"}
@@ -168,7 +167,7 @@ export default function Footer() {
         </div>
 
         {/* Opening Hours - Full Width */}
-        <div className="mt-16 pt-12 border-t border-opacity-20 ${theme.border}">
+        <div className={`mt-16 pt-12 border-t ${theme.border} border-opacity-20`}>
           <div className="text-center">
             <h4 className={`font-bold text-2xl ${theme.accent} mb-8 flex items-center justify-center`}>
               <Clock className="w-6 h-6 mr-3" />
@@ -195,7 +194,7 @@ export default function Footer() {
         <div className={`border-t ${theme.border} border-opacity-20 mt-16 pt-12`}>
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className={`${theme.text} text-lg flex items-center`}>
-              <IconComponent className="w-5 h-5 mr-2" />© {currentYear} {settings.restaurant_name}. All rights reserved.
+              <IconComponent className="w-5 h-5 mr-2" />© {currentYear} SABS ONLINE. All rights reserved.
             </p>
             <div className="flex space-x-8 mt-6 md:mt-0">
               <Link href="/privacy" className={`${theme.text} ${theme.hover} text-lg transition-colors`}>
