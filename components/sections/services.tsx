@@ -1,46 +1,118 @@
-import React from "react"
-import { Truck, RotateCcw, Shield, Star } from "lucide-react"
+
+"use client"
+
+import { Truck, RotateCcw, Shield, Zap, Cpu, Heart, Sparkles } from "lucide-react"
+import { useShop } from "@/lib/contexts/shop-context"
 
 const Services = () => {
+  const { shop } = useShop()
+
+  const services =
+    shop === "A"
+      ? [
+          {
+            icon: Truck,
+            title: "Free shipping",
+            subtitle: "Beauty delivered",
+            bgColor: "bg-pink-50",
+            borderColor: "border-pink-200",
+            iconColor: "text-pink-600",
+            titleColor: "text-pink-700",
+            subtitleColor: "text-pink-600",
+          },
+          {
+            icon: RotateCcw,
+            title: "Easy returns",
+            subtitle: "30 days policy",
+            bgColor: "bg-purple-50",
+            borderColor: "border-purple-200",
+            iconColor: "text-purple-600",
+            titleColor: "text-purple-700",
+            subtitleColor: "text-purple-600",
+          },
+          {
+            icon: Heart,
+            title: "Beauty guarantee",
+            subtitle: "100% authentic",
+            bgColor: "bg-rose-50",
+            borderColor: "border-rose-200",
+            iconColor: "text-rose-600",
+            titleColor: "text-rose-700",
+            subtitleColor: "text-rose-600",
+          },
+          {
+            icon: Sparkles,
+            title: "Premium quality",
+            subtitle: "Luxury brands",
+            bgColor: "bg-orange-50",
+            borderColor: "border-orange-200",
+            iconColor: "text-orange-600",
+            titleColor: "text-orange-700",
+            subtitleColor: "text-orange-600",
+          },
+        ]
+      : [
+          {
+            icon: Truck,
+            title: "Fast delivery",
+            subtitle: "Tech in 24hrs",
+            bgColor: "bg-blue-50",
+            borderColor: "border-blue-200",
+            iconColor: "text-blue-600",
+            titleColor: "text-blue-700",
+            subtitleColor: "text-blue-600",
+          },
+          {
+            icon: Shield,
+            title: "Tech warranty",
+            subtitle: "2 year coverage",
+            bgColor: "bg-indigo-50",
+            borderColor: "border-indigo-200",
+            iconColor: "text-indigo-600",
+            titleColor: "text-indigo-700",
+            subtitleColor: "text-indigo-600",
+          },
+          {
+            icon: Cpu,
+            title: "Latest tech",
+            subtitle: "Cutting edge",
+            bgColor: "bg-purple-50",
+            borderColor: "border-purple-200",
+            iconColor: "text-purple-600",
+            titleColor: "text-purple-700",
+            subtitleColor: "text-purple-600",
+          },
+          {
+            icon: Zap,
+            title: "Fast support",
+            subtitle: "24/7 tech help",
+            bgColor: "bg-cyan-50",
+            borderColor: "border-cyan-200",
+            iconColor: "text-cyan-600",
+            titleColor: "text-cyan-700",
+            subtitleColor: "text-cyan-600",
+          },
+        ]
+
   return (
     <div className="px-4 lg:px-6 mt-4 lg:mt-6">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-          {/* Free shipping */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 lg:p-4 flex items-center gap-2">
-            <Truck className="w-4 h-4 lg:w-5 lg:h-5 text-green-600" />
-            <div>
-              <p className="text-green-700 font-medium text-xs lg:text-sm">Free shipping</p>
-              <p className="text-green-600 text-xs">Unlimited orders</p>
-            </div>
-          </div>
-
-          {/* Free returns */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 lg:p-4 flex items-center gap-2">
-            <RotateCcw className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" />
-            <div>
-              <p className="text-blue-700 font-medium text-xs lg:text-sm">Free returns</p>
-              <p className="text-blue-600 text-xs">Up to 90 days*</p>
-            </div>
-          </div>
-
-          {/* Secure payment */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 lg:p-4 flex items-center gap-2">
-            <Shield className="w-4 h-4 lg:w-5 lg:h-5 text-purple-600" />
-            <div>
-              <p className="text-purple-700 font-medium text-xs lg:text-sm">Secure payment</p>
-              <p className="text-purple-600 text-xs">100% protected</p>
-            </div>
-          </div>
-
-          {/* Top quality */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 lg:p-4 flex items-center gap-2">
-            <Star className="w-4 h-4 lg:w-5 lg:h-5 text-orange-600" />
-            <div>
-              <p className="text-orange-700 font-medium text-xs lg:text-sm">Top quality</p>
-              <p className="text-orange-600 text-xs">Premium products</p>
-            </div>
-          </div>
+          {services.map((service, index) => {
+            const IconComponent = service.icon
+            return (
+              <div
+                key={index}
+                className={`${service.bgColor} border ${service.borderColor} rounded-lg p-3 lg:p-4 flex items-center gap-2 transition-all duration-500 hover:scale-105`}
+              >
+                <IconComponent className={`w-4 h-4 lg:w-5 lg:h-5 ${service.iconColor}`} />
+                <div>
+                  <p className={`${service.titleColor} font-medium text-xs lg:text-sm`}>{service.title}</p>
+                  <p className={`${service.subtitleColor} text-xs`}>{service.subtitle}</p>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

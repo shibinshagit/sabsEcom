@@ -1,6 +1,8 @@
 
+
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
+import { ensureOfferTypeSupport } from "@/lib/migrations/ensure-offer-type";
 
 // PUT - Update an existing offer
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
@@ -22,38 +24,70 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       );
     }
 
+    // Validate offer structure
+    const invalidOffers = offers.filter((offer: any) => 
+      !offer.value || 
+      !offer.type || 
+      !['percentage', 'cash'].includes(offer.type)
+    );
+
+    if (invalidOffers.length > 0) {
+      return NextResponse.json(
+        { error: "Invalid offer structure. Each offer must have a value and type (percentage or cash)" }, 
+        { status: 400 }
+      );
+    }
+
+    // Validate percentage values (1-100)
+    const percentageOffers = offers.filter((offer: any) => offer.type === 'percentage');
+    const invalidPercentages = percentageOffers.filter((offer: any) => {
+      const value = parseFloat(offer.value);
+      return isNaN(value) || value < 1 || value > 100;
+    });
+
+    if (invalidPercentages.length > 0) {
+      return NextResponse.json(
+        { error: "Percentage offers must be between 1 and 100" }, 
+        { status: 400 }
+      );
+    }
+
+    // Validate cash values (positive numbers)
+    const cashOffers = offers.filter((offer: any) => offer.type === 'cash');
+    const invalidCashValues = cashOffers.filter((offer: any) => {
+      const value = parseFloat(offer.value);
+      return isNaN(value) || value <= 0;
+    });
+
+    if (invalidCashValues.length > 0) {
+      return NextResponse.json(
+        { error: "Cash offers must be positive values" }, 
+        { status: 400 }
+      );
+    }
+
     console.log("Updating offer with ID:", id, { title, startDate, endDate, offers });
 
-    const columnCheck = await sql`
-      SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'offers' AND column_name = 'updated_at';
+    // Ensure the database schema is up to date
+    await ensureOfferTypeSupport();
+
+    // Determine the primary offer type for this offer set
+    const hasPercentage = offers.some((offer: any) => offer.type === 'percentage');
+    const hasCash = offers.some((offer: any) => offer.type === 'cash');
+    const primaryOfferType = hasPercentage && hasCash ? 'mixed' : 
+                            hasPercentage ? 'percentage' : 'cash';
+
+    const [updated] = await sql`
+      UPDATE offers
+      SET title = ${title},
+          start_date = ${startDate},
+          end_date = ${endDate},
+          offers = ${JSON.stringify(offers)},
+          offer_type = ${primaryOfferType},
+          updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *;
     `;
-
-    const hasUpdatedAt = columnCheck.length > 0;
-
-    let updated;
-    if (hasUpdatedAt) {
-      [updated] = await sql`
-        UPDATE offers
-        SET title = ${title},
-            start_date = ${startDate},
-            end_date = ${endDate},
-            offers = ${JSON.stringify(offers)},
-            updated_at = NOW()
-        WHERE id = ${id}
-        RETURNING *;
-      `;
-    } else {
-      [updated] = await sql`
-        UPDATE offers
-        SET title = ${title},
-            start_date = ${startDate},
-            end_date = ${endDate},
-            offers = ${JSON.stringify(offers)}
-        WHERE id = ${id}
-        RETURNING *;
-      `;
-    }
 
     if (!updated) {
       return NextResponse.json(
@@ -66,7 +100,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return NextResponse.json(updated);
   } catch (error) {
     console.error("Error updating offer:", error);
-    return NextResponse.json({ error: "Failed to update offer", details: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to update offer", 
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 });
   }
 }
 
@@ -81,6 +118,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
         { status: 400 }
       );
     }
+
+    // Ensure the database schema is up to date
+    await ensureOfferTypeSupport();
 
     const offers = await sql`
       SELECT * FROM offers WHERE id = ${id};
@@ -112,6 +152,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       );
     }
 
+    // Ensure the database schema is up to date
+    await ensureOfferTypeSupport();
+
     const [deleted] = await sql`
       DELETE FROM offers WHERE id = ${id} RETURNING *;
     `;
@@ -123,6 +166,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       );
     }
 
+    console.log("Offer deleted successfully:", deleted);
     return NextResponse.json({ message: "Offer deleted successfully" });
   } catch (error) {
     console.error("Error deleting offer:", error);

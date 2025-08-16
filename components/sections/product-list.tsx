@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -27,7 +28,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const [showFilters, setShowFilters] = useState(false)
   const [categoryTransition, setCategoryTransition] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  
+
   const dispatch = useDispatch<AppDispatch>()
   const { items, categories, selectedCategory, loading } = useSelector((state: RootState) => state.products)
   const { formatPrice } = useSettings()
@@ -91,7 +92,9 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className={`transition-all duration-300 ${categoryTransition ? "opacity-50 scale-95" : "opacity-100 scale-100"}`}>
+      <div
+        className={`transition-all duration-300 ${categoryTransition ? "opacity-50 scale-95" : "opacity-100 scale-100"}`}
+      >
         {/* Desktop Controls */}
         <div className="hidden lg:block px-6 mt-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -188,16 +191,16 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         )}
 
         {/* Main Products Grid */}
-        
+
         <div className="px-4 lg:px-6 mt-6 pb-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-green-500" />
-                  <span className="font-bold text-lg lg:text-xl">All Products in SHOP {shop}</span>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
+              <div className="flex items-center gap-2">
+                <Tag className="w-5 h-5 text-green-500" />
+                <span className="font-bold text-lg lg:text-xl">All Products in SHOP {shop}</span>
               </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </div>
             {loading ? (
               <div
                 className={`grid gap-3 lg:gap-6 ${
@@ -382,7 +385,9 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                           </div>
                           <Badge className="bg-green-100 text-green-600 text-xs">NEW</Badge>
                         </div>
-                        <h3 className="text-sm lg:text-base font-medium text-gray-900 line-clamp-2 mb-2">{item.name}</h3>
+                        <h3 className="text-sm lg:text-base font-medium text-gray-900 line-clamp-2 mb-2">
+                          {item.name}
+                        </h3>
                         {viewMode === "list" && (
                           <p className="text-sm text-gray-600 line-clamp-3 mb-3">{item.description}</p>
                         )}

@@ -1,12 +1,14 @@
+
 "use client"
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Copy, Gift, X, Loader2 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import LoginModal from "@/components/auth/login-modal"
 
 interface OfferDiscount {
-  percentage: string
+  value: string
+  type: string // 'percentage' or 'cash'
 }
 
 interface DbOffer {
@@ -15,12 +17,14 @@ interface DbOffer {
   start_date: string
   end_date: string
   offers: OfferDiscount[]
+  offer_type?: string // 'percentage', 'cash', or 'mixed'
 }
 
 interface WheelOffer {
   id: number
   title: string
   discount: string
+  type: string
   color: string
 }
 
@@ -37,9 +41,31 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
   const [error, setError] = useState<string>("")
   const [currentDbOffer, setCurrentDbOffer] = useState<DbOffer | null>(null)
   const [canStop, setCanStop] = useState(false)
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const wheelRef = useRef<HTMLDivElement>(null)
   const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const router = useRouter()
+
+  // Helper function to format offer display text
+  const formatOfferTitle = (value: string, type: string): string => {
+    if (value === "0") return "Again"
+
+    if (type === "cash") {
+      return `${value} AED`
+    } else {
+      return `${value}%`
+    }
+  }
+
+  // Helper function to format offer for result display
+  const formatOfferResult = (value: string, type: string): string => {
+    if (value === "0") return "Try Again"
+
+    if (type === "cash") {
+      return `${value} AED OFF`
+    } else {
+      return `${value}% OFF`
+    }
+  }
 
   // Fetch active offers from database
   useEffect(() => {
@@ -56,31 +82,33 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
         // Get the first active offer (most recent)
         const activeOffer = dbOffers[0]
         if (activeOffer) {
-          // Parse offers if they're stored as string
           let offerDiscounts: OfferDiscount[]
+
+          // Handle both old format (percentage only) and new format (with type)
           if (typeof activeOffer.offers === "string") {
-            offerDiscounts = JSON.parse(activeOffer.offers)
+            const parsedOffers = JSON.parse(activeOffer.offers)
+            // Convert old format to new format if needed
+            offerDiscounts = parsedOffers.map((offer: any) => ({
+              value: offer.percentage || offer.value,
+              type: offer.type || "percentage",
+            }))
           } else {
-            offerDiscounts = activeOffer.offers
+            // Handle direct array format
+            offerDiscounts = activeOffer.offers.map((offer: any) => ({
+              value: offer.percentage || offer.value,
+              type: offer.type || "percentage",
+            }))
           }
 
-          // Convert to wheel format with specific colors matching the design
-          const wheelOffers: WheelOffer[] = [
-            {
-              id: 1,
-              title: `$${offerDiscounts[0]?.percentage || "200"}`,
-              discount: offerDiscounts[0]?.percentage || "200",
-              color: "#FF6B35",
-            },
-            { id: 2, title: "1 more chance", discount: "0", color: "#F5E6D3" },
-            {
-              id: 3,
-              title: `$${offerDiscounts[1]?.percentage || "20"}`,
-              discount: offerDiscounts[1]?.percentage || "20",
-              color: "#FFE4B5",
-            },
-            { id: 4, title: `0.5$`, discount: "0.5", color: "#F5E6D3" },
-          ]
+          // Convert to wheel format with dynamic colors
+          const colors = ["#FF6B35", "#FFE4B5", "#F5E6D3", "#FFD700", "#FF4500", "#98FB98"]
+          const wheelOffers: WheelOffer[] = offerDiscounts.map((discount, index) => ({
+            id: index + 1,
+            title: formatOfferTitle(discount.value, discount.type),
+            discount: discount.value,
+            type: discount.type,
+            color: colors[index % colors.length],
+          }))
 
           setWheelOffers(wheelOffers)
           setCurrentDbOffer(activeOffer)
@@ -89,14 +117,7 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
         }
       } catch (err) {
         console.error("Error fetching offers:", err)
-        // Set default offers if API fails
-        const defaultOffers: WheelOffer[] = [
-          { id: 1, title: "$200", discount: "200", color: "#FF6B35" },
-          { id: 2, title: "1 more chance", discount: "0", color: "#F5E6D3" },
-          { id: 3, title: "$20", discount: "20", color: "#FFE4B5" },
-          { id: 4, title: "0.5$", discount: "0.5", color: "#F5E6D3" },
-        ]
-        setWheelOffers(defaultOffers)
+        setError("Failed to load offers. Please try again later.")
       } finally {
         setLoading(false)
       }
@@ -106,7 +127,7 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
   }, [])
 
   const generateOfferCode = (offer: WheelOffer): string => {
-    const prefix = "SPIN"
+    const prefix = offer.type === "cash" ? "CASH" : "SPIN"
     const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase()
     return `${prefix}${offer.discount}${randomSuffix}`
   }
@@ -140,15 +161,16 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
       wheelRef.current.style.transform = `rotate(${rotation}deg)`
     }
 
-    // Allow stopping after 1 second
     setTimeout(() => {
       setCanStop(true)
     }, 1000)
 
     spinTimeoutRef.current = setTimeout(() => {
       setResult(winningOffer)
-      const code = generateOfferCode(winningOffer)
-      setOfferCode(code)
+      if (winningOffer.discount !== "0") {
+        const code = generateOfferCode(winningOffer)
+        setOfferCode(code)
+      }
       setIsSpinning(false)
       setCanStop(false)
     }, 4000)
@@ -161,12 +183,13 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
       clearTimeout(spinTimeoutRef.current)
     }
 
-    // Pick a random winning offer
     const winningOffer = wheelOffers[Math.floor(Math.random() * wheelOffers.length)]
 
     setResult(winningOffer)
-    const code = generateOfferCode(winningOffer)
-    setOfferCode(code)
+    if (winningOffer.discount !== "0") {
+      const code = generateOfferCode(winningOffer)
+      setOfferCode(code)
+    }
     setIsSpinning(false)
     setCanStop(false)
   }
@@ -176,19 +199,23 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
       const offerData = {
         code: offerCode,
         discount: result.discount,
+        type: result.type,
         title: result.title,
         offerTitle: currentDbOffer.title,
         offerId: currentDbOffer.id,
         timestamp: Date.now(),
         expiresAt: currentDbOffer.end_date,
       }
+      // Save to localStorage for use in order page
       localStorage.setItem("pendingOffer", JSON.stringify(offerData))
+      
+      // Show success message
+      alert(`Coupon code ${offerCode} saved! You can use it during checkout.`)
     }
 
-    router.push("/auth/login")
+    setIsLoginModalOpen(true)
   }
 
-  // Generate wheel background
   const generateWheelBackground = () => {
     if (wheelOffers.length === 0) return ""
 
@@ -239,7 +266,6 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center relative shadow-2xl">
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -247,36 +273,37 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-800 mb-1">New user gift</h1>
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Spin to get $200</h2>
-          <p className="text-sm text-gray-600">Coupon bundle</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">{currentDbOffer?.title || "Spin to Win"}</h2>
+          <p className="text-sm text-gray-600">
+            {currentDbOffer?.offer_type === "mixed"
+              ? "Mixed Discounts"
+              : currentDbOffer?.offer_type === "cash"
+                ? "Cash Discounts (AED)"
+                : "Percentage Discounts"}
+          </p>
         </div>
 
-        {/* Wheel Container */}
         <div className="relative mb-6 flex justify-center">
-          {/* Pointer */}
-          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
-            <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[16px] border-l-transparent border-r-transparent border-b-orange-400 drop-shadow-lg"></div>
-            <div className="w-4 h-4 bg-orange-400 rounded-full -mt-1 mx-auto border-2 border-white shadow-lg"></div>
+          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
+            <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[20px] border-l-transparent border-r-transparent border-b-orange-400 drop-shadow-lg"></div>
+            <div className="w-5 h-5 bg-orange-400 rounded-full -mt-2 mx-auto border-2 border-white shadow-lg"></div>
           </div>
 
-          {/* Main wheel */}
-          <div className="relative w-64 h-64 rounded-full border-4 border-orange-400 shadow-2xl overflow-hidden bg-white">
+          <div className="relative w-56 h-56 rounded-full border-4 border-orange-400 shadow-2xl overflow-hidden bg-white">
             <div
               ref={wheelRef}
-              className="w-full h-full rounded-full transition-transform ease-out"
+              className="w-full h-full rounded-full transition-transform ease-out duration-4000"
               style={{
                 background: generateWheelBackground(),
                 transitionDuration: isSpinning ? "4000ms" : "0ms",
               }}
             >
-              {/* Wheel segments with text */}
               {wheelOffers.map((offer, index) => {
                 const segmentAngle = 360 / wheelOffers.length
                 const angle = segmentAngle * index + segmentAngle / 2
-                const isLightColor = offer.color === "#F5E6D3" || offer.color === "#FFE4B5"
+                const isLightColor = offer.color === "#F5E6D3" || offer.color === "#FFE4B5" || offer.color === "#98FB98"
 
                 return (
                   <div
@@ -288,12 +315,12 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
                     }}
                   >
                     <div
-                      className={`absolute font-bold text-sm transform -translate-y-16 ${
+                      className={`absolute font-bold text-sm transform -translate-y-20 ${
                         isLightColor ? "text-gray-800" : "text-white"
                       }`}
                       style={{
-                        textShadow: isLightColor ? "none" : "1px 1px 2px rgba(0,0,0,0.5)",
-                        transform: "translateY(-70px) rotate(0deg)",
+                        textShadow: isLightColor ? "none" : "1px 1px 2px rgba(0,0,0,0.7)",
+                        transform: `translateY(-65px) rotate(${angle}deg)`,
                       }}
                     >
                       {offer.title}
@@ -303,18 +330,16 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
               })}
             </div>
 
-            {/* Center spin button */}
             <Button
               onClick={spinWheel}
               disabled={isSpinning}
-              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gray-900 hover:bg-gray-800 text-white font-bold text-sm shadow-lg border-4 border-white disabled:opacity-70"
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gray-900 hover:bg-gray-800 text-white font-bold text-base shadow-lg border-4 border-white disabled:opacity-70"
             >
-              {isSpinning ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : "Spin"}
+              {isSpinning ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : "Spin"}
             </Button>
           </div>
         </div>
 
-        {/* Stop Button */}
         {isSpinning && (
           <Button
             onClick={stopWheel}
@@ -325,7 +350,6 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
           </Button>
         )}
 
-        {/* Result Display */}
         {result && (
           <div className="mt-6 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-xl">
             <div className="flex items-center justify-center gap-2 mb-3">
@@ -333,33 +357,51 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
               <h3 className="text-lg font-bold text-orange-600">Congratulations!</h3>
             </div>
             <div className="mb-3">
-              <div className="text-2xl font-bold text-gray-900 mb-1">You won {result.title}!</div>
-              <p className="text-gray-600 text-sm">Your discount is ready to use</p>
+              <div className="text-2xl font-bold text-gray-900 mb-1">
+                You won {formatOfferResult(result.discount, result.type)}!
+              </div>
+              
             </div>
 
-            <div className="bg-white p-3 rounded-lg mb-4 border border-orange-200">
-              <p className="text-xs text-gray-500 mb-1">Your coupon code:</p>
-              <div className="flex items-center gap-2 bg-gray-50 p-2 rounded border">
-                <code className="flex-1 text-orange-600 font-mono font-bold text-sm">{offerCode}</code>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(offerCode)}
-                  className="border-orange-300 text-orange-600 hover:bg-orange-50 h-6 w-6 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
-              {currentDbOffer && (
-                <p className="text-red-500 text-xs mt-2">
-                  Expires: {new Date(currentDbOffer.end_date).toLocaleDateString()}
+            {result.discount !== "0" && offerCode && (
+              <div className="bg-white p-3 rounded-lg mb-4 border border-orange-200">
+                <p className="text-xs text-gray-500 mb-1">
+                  Your {result.type === "cash" ? "cash discount" : "discount"} code:
                 </p>
-              )}
-            </div>
+                <div className="flex items-center gap-2 bg-gray-50 p-2 rounded border">
+                  <code
+                    className={`flex-1 font-mono font-bold text-sm ${
+                      result.type === "cash" ? "text-green-600" : "text-orange-600"
+                    }`}
+                  >
+                    {offerCode}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(offerCode)}
+                    className={`h-6 w-6 p-0 ${
+                      result.type === "cash"
+                        ? "border-green-300 text-green-600 hover:bg-green-50"
+                        : "border-orange-300 text-orange-600 hover:bg-orange-50"
+                    }`}
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+                {currentDbOffer && (
+                  <p className="text-red-500 text-xs mt-2">
+                    Expires: {new Date(currentDbOffer.end_date).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )}
 
             <Button
               onClick={handleRedeem}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-full"
+              className={`w-full font-semibold py-3 rounded-full ${
+                result.type === "cash" ? "bg-green-500 hover:bg-green-600" : "bg-orange-500 hover:bg-orange-600"
+              } text-white`}
             >
               <Gift className="w-4 h-4 mr-2" />
               Login to Claim Reward
@@ -367,12 +409,9 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
           </div>
         )}
 
-        {/* Disclaimer */}
-        <p className="text-xs text-gray-500 mt-4 leading-relaxed">
-          The wheel is for illustrative purpose only, everyone will get the best result.{" "}
-          <span className="text-orange-600 underline cursor-pointer">See Official Rules</span>
-        </p>
       </div>
+
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </div>
   )
 }

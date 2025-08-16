@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "@/lib/store"
 import {
@@ -21,9 +22,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Minus, Plus, Trash2, ShoppingCart, MessageSquare } from "lucide-react"
+import { Minus, Plus, Trash2, ShoppingCart, MessageSquare, CheckCircle, XCircle } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+
+interface CouponData {
+  code: string
+  discount: string
+  type: string // 'cash' or 'percentage'
+  title: string
+  offerTitle: string
+  offerId: number
+  timestamp: number
+  expiresAt: string
+}
 
 export default function OrderPage() {
   const dispatch = useDispatch<AppDispatch>()
@@ -33,6 +45,133 @@ export default function OrderPage() {
   const { isAuthenticated, user } = useAuth()
   const [specialInstructions, setSpecialInstructions] = useState("")
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [couponCode, setCouponCode] = useState("")
+  const [isCouponFieldOpen, setIsCouponFieldOpen] = useState(false)
+  
+  // New coupon functionality states
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null)
+  const [couponError, setCouponError] = useState("")
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
+  const [discountAmount, setDiscountAmount] = useState(0)
+
+  // Load saved coupon data on component mount
+  useEffect(() => {
+    const savedCoupon = localStorage.getItem("appliedCoupon")
+    if (savedCoupon) {
+      try {
+        const couponData: CouponData = JSON.parse(savedCoupon)
+        // Check if coupon is still valid
+        if (new Date(couponData.expiresAt) > new Date()) {
+          setAppliedCoupon(couponData)
+          setCouponCode(couponData.code)
+          calculateDiscount(couponData, total)
+        } else {
+          // Remove expired coupon
+          localStorage.removeItem("appliedCoupon")
+        }
+      } catch (error) {
+        console.error("Error loading saved coupon:", error)
+        localStorage.removeItem("appliedCoupon")
+      }
+    }
+  }, [])
+
+  // Recalculate discount when total changes
+  useEffect(() => {
+    if (appliedCoupon) {
+      calculateDiscount(appliedCoupon, total)
+    }
+  }, [total, appliedCoupon])
+
+  const calculateDiscount = (coupon: CouponData, subtotal: number) => {
+    let discount = 0
+    if (coupon.type === "cash") {
+      discount = Math.min(parseFloat(coupon.discount), subtotal) // Don't exceed subtotal
+    } else if (coupon.type === "percentage") {
+      discount = (subtotal * parseFloat(coupon.discount)) / 100
+    }
+    setDiscountAmount(discount)
+  }
+
+  const validateCouponCode = (code: string): CouponData | null => {
+    // Check localStorage for saved offers from spin wheel
+    const pendingOffer = localStorage.getItem("pendingOffer")
+    const usedCoupons = JSON.parse(localStorage.getItem("usedCoupons") || "[]")
+    
+    if (pendingOffer) {
+      try {
+        const offerData: CouponData = JSON.parse(pendingOffer)
+        
+        // Check if code matches
+        if (offerData.code !== code) {
+          return null
+        }
+        
+        // Check if already used
+        if (usedCoupons.includes(code)) {
+          return null
+        }
+        
+        // Check expiration
+        if (new Date(offerData.expiresAt) <= new Date()) {
+          return null
+        }
+        
+        return offerData
+      } catch (error) {
+        console.error("Error validating coupon:", error)
+      }
+    }
+    
+    return null
+  }
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Please enter a coupon code")
+      return
+    }
+
+    setIsApplyingCoupon(true)
+    setCouponError("")
+
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const validCoupon = validateCouponCode(couponCode.trim())
+      
+      if (!validCoupon) {
+        setCouponError("Invalid or expired coupon code")
+        setIsApplyingCoupon(false)
+        return
+      }
+
+      // Apply the coupon
+      setAppliedCoupon(validCoupon)
+      calculateDiscount(validCoupon, total)
+      
+      // Save to localStorage for persistence
+      localStorage.setItem("appliedCoupon", JSON.stringify(validCoupon))
+      
+      // Success message
+      setCouponError("")
+      
+    } catch (error) {
+      console.error("Error applying coupon:", error)
+      setCouponError("Failed to apply coupon. Please try again.")
+    } finally {
+      setIsApplyingCoupon(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setDiscountAmount(0)
+    setCouponCode("")
+    setCouponError("")
+    localStorage.removeItem("appliedCoupon")
+  }
 
   const handleQuantityChange = (id: number, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -50,6 +189,8 @@ export default function OrderPage() {
 
     if (cart.length === 0) return
 
+    const finalTotal = total + deliveryFee - discountAmount
+
     const orderData = {
       customerName: user?.name || customerInfo.name,
       customerEmail: user?.email || customerInfo.email,
@@ -57,7 +198,10 @@ export default function OrderPage() {
       orderType,
       tableNumber: customerInfo.tableNumber,
       deliveryAddress: customerInfo.deliveryAddress,
-      totalAmount: total,
+      totalAmount: finalTotal,
+      originalAmount: total + deliveryFee,
+      discountAmount: discountAmount,
+      couponCode: appliedCoupon?.code,
       specialInstructions,
       userId: user?.id,
       items: cart.map((item) => ({
@@ -71,6 +215,16 @@ export default function OrderPage() {
 
     try {
       const result = await dispatch(submitOrder(orderData)).unwrap()
+      
+      // Mark coupon as used
+      if (appliedCoupon) {
+        const usedCoupons = JSON.parse(localStorage.getItem("usedCoupons") || "[]")
+        usedCoupons.push(appliedCoupon.code)
+        localStorage.setItem("usedCoupons", JSON.stringify(usedCoupons))
+        localStorage.removeItem("pendingOffer")
+        localStorage.removeItem("appliedCoupon")
+      }
+      
       alert(`Order placed successfully! Order ID: ${result.orderId}`)
       router.push("/dashboard/orders")
     } catch (error) {
@@ -107,13 +261,15 @@ export default function OrderPage() {
       message += `${index + 1}. ${item.menuItem.name} x${item.quantity} - ${formatPrice(item.menuItem.price * item.quantity)}\n`
     })
 
-    const deliveryFee = orderType === "delivery" ? 3.99 : 0
-    const finalTotal = total + deliveryFee
+    const finalTotal = total + deliveryFee - discountAmount
 
     message += `\n💰 *Order Summary:*\n`
     message += `Subtotal: ${formatPrice(total)}\n`
     if (deliveryFee > 0) {
       message += `Delivery Fee: ${formatPrice(deliveryFee)}\n`
+    }
+    if (discountAmount > 0) {
+      message += `Discount (${appliedCoupon?.code}): -${formatPrice(discountAmount)}\n`
     }
     message += `*Total: ${formatPrice(finalTotal)}*\n`
 
@@ -131,7 +287,8 @@ export default function OrderPage() {
   }
 
   const deliveryFee = orderType === "delivery" ? 3.99 : 0
-  const finalTotal = total + deliveryFee
+  const subtotalWithDelivery = total + deliveryFee
+  const finalTotal = subtotalWithDelivery - discountAmount
 
   if (cart.length === 0) {
     return (
@@ -141,7 +298,7 @@ export default function OrderPage() {
           <div className="text-center">
             <ShoppingCart className="w-24 h-24 text-gray-300 mx-auto mb-6" />
             <h1 className="text-3xl font-bold text-gray-800 mb-4">Your cart is empty</h1>
-            <p className="text-gray-600 mb-8">Add some  items from our products to get started!</p>
+            <p className="text-gray-600 mb-8">Add some items from our products to get started!</p>
             <Button onClick={() => router.push("/menu")} className="bg-amber-500 hover:bg-amber-600 text-black">
               BUY NOW!
             </Button>
@@ -353,9 +510,97 @@ export default function OrderPage() {
                       <span>{formatPrice(deliveryFee)}</span>
                     </div>
                   )}
+                  
+                  {/* Show discount if applied */}
+                  {appliedCoupon && discountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>
+                        Discount ({appliedCoupon.code})
+                        <span className="text-xs text-gray-500 block">
+                          {appliedCoupon.type === 'cash' ? `${appliedCoupon.discount} AED off` : `${appliedCoupon.discount}% off`}
+                        </span>
+                      </span>
+                      <span>-{formatPrice(discountAmount)}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Total</span>
-                    <span>{formatPrice(finalTotal)}</span>
+                    <div className="text-right">
+                      {appliedCoupon && discountAmount > 0 && (
+                        <div className="text-sm text-gray-500 line-through">
+                          {formatPrice(subtotalWithDelivery)}
+                        </div>
+                      )}
+                      <div>{formatPrice(finalTotal)}</div>
+                    </div>
+                  </div>
+
+                  {/* Coupon Section */}
+                  <div className="mt-4">
+                    {!appliedCoupon ? (
+                      <>
+                        <Button
+                          onClick={() => setIsCouponFieldOpen(!isCouponFieldOpen)}
+                          variant="outline"
+                          className="w-full text-amber-600 border-amber-500 hover:bg-amber-50"
+                        >
+                          {isCouponFieldOpen ? "Only For New Users" : "Redeem Offer"}
+                        </Button>
+                        {isCouponFieldOpen && (
+                          <div className="mt-2 space-y-2">
+                            <Label htmlFor="coupon">Enter New User Offer Coupon Here</Label>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                id="coupon"
+                                value={couponCode}
+                                onChange={(e) => {
+                                  setCouponCode(e.target.value)
+                                  setCouponError("")
+                                }}
+                                placeholder="Enter coupon code"
+                                className={couponError ? "border-red-500" : ""}
+                              />
+                              <Button
+                                onClick={handleApplyCoupon}
+                                disabled={!couponCode.trim() || isApplyingCoupon}
+                                className="bg-amber-500 hover:bg-amber-600 text-black whitespace-nowrap"
+                              >
+                                {isApplyingCoupon ? "Applying..." : "Apply"}
+                              </Button>
+                            </div>
+                            {couponError && (
+                              <div className="flex items-center space-x-1 text-red-500 text-sm">
+                                <XCircle className="w-4 h-4" />
+                                <span>{couponError}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <div>
+                              <div className="font-medium text-green-800">Coupon Applied!</div>
+                              <div className="text-sm text-green-600">
+                                {appliedCoupon.code} - {appliedCoupon.title}
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={handleRemoveCoupon}
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -1001,10 +1001,12 @@ import { useSearchParams } from "next/navigation"
 import OfferSection from "@/components/sections/offer-section"
 import NewUserSpinnerSection from "@/components/sections/new-user-spinner-section"
 import Services from "@/components/sections/services"
-import NewArrivals from "@/components/sections/new-arrivals"
 import ProductList from "@/components/sections/product-list"
+import { useAuth } from "@/lib/contexts/auth-context"
 
 export default function ProductsPage() {
+
+  const { isAuthenticated } = useAuth() 
 
   const dispatch = useDispatch<AppDispatch>()
 
@@ -1046,7 +1048,7 @@ export default function ProductsPage() {
 
       <Navbar />
       <OfferSection />
-      <NewUserSpinnerSection />
+      {!isAuthenticated && <NewUserSpinnerSection />}
       <Services />
       <ProductList />
       <Footer />
