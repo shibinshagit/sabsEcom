@@ -19,13 +19,9 @@ export default function HomePage() {
       </Suspense>
 
       <OfferSection />
-
       {!isAuthenticated && <NewUserSpinnerSection />}
-
       <Services />
-
       <ProductList />
-
       <Footer />
     </main>
   )
