@@ -9,7 +9,7 @@ export default function UserNavVisibility() {
   if (isAdmin) return null
   return (
     <>
-      <ShopToggle />
+      {/* <ShopToggle /> */}
       <BottomTabs />
     </>
   )
