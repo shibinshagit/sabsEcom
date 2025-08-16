@@ -58,10 +58,6 @@ export async function POST(request: Request) {
       sku,
     } = body
 
-<<<<<<< HEAD
-    // Ensure new_until_date is null if empty string or falsy
-    const safeNewUntilDate = new_until_date ? new_until_date : null;
-=======
     // Validate required fields
     if (!name || !price || !category_id) {
       return NextResponse.json(
@@ -80,7 +76,6 @@ export async function POST(request: Request) {
 
     // Generate SKU if not provided
     const finalSku = sku || `${shop_category}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
->>>>>>> pr-1
 
     const [product] = await sql`
       INSERT INTO products (
@@ -89,19 +84,12 @@ export async function POST(request: Request) {
         warranty_months, brand, model, condition_type, warranty_period,
         storage_capacity, color, stock_quantity, sku
       ) VALUES (
-<<<<<<< HEAD
-        ${name}, ${description}, ${price}, ${image_url}, ${category_id},
-        ${is_available}, ${is_featured}, ${is_new}, ${safeNewUntilDate}, ${features}, ${specifications_text},
-        ${warranty_months}, ${brand}, ${model}, ${condition_type}, ${warranty_period},
-        ${storage_capacity}, ${color}, ${stock_quantity}, ${sku}
-=======
         ${name}, ${description || ''}, ${price}, ${image_url || ''}, ${category_id}, ${shop_category},
         ${is_available ?? true}, ${is_featured ?? false}, ${is_new ?? false}, 
         ${new_until_date || null}, ${features || []}, ${specifications_text || ''},
         ${warranty_months || 12}, ${brand || ''}, ${model || ''}, ${condition_type || 'new'}, 
         ${warranty_period || 12}, ${storage_capacity || ''}, ${color || ''}, 
         ${stock_quantity || 1}, ${finalSku}
->>>>>>> pr-1
       )
       RETURNING *;
     `
