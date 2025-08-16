@@ -105,9 +105,9 @@ export default function ProductsPage() {
           </div>
           <div className="w-full overflow-x-auto py-2 scrollbar-hide">
             <div className="flex gap-2 px-2 min-w-max">
-              <Button
-                variant={selectedCategory === null ? "default" : "outline"}
-                onClick={() => dispatch(setSelectedCategory(null))}
+            <Button
+              variant={selectedCategory === null ? "default" : "outline"}
+              onClick={() => dispatch(setSelectedCategory(null))}
                 className={`rounded-full px-5 py-2 font-semibold shadow transition-all duration-200
                   ${selectedCategory === null
                     ? shop === "A"
@@ -115,14 +115,14 @@ export default function ProductsPage() {
                       : "bg-gradient-to-r from-gray-300 via-gray-400 to-gray-500 text-black border-gray-400"
                     : "bg-white/10 text-gray-700 border border-gray-300"
                   }`}
-              >
-                All Categories
-              </Button>
-              {categories.map((category) => (
-                <Button
-                  key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
-                  onClick={() => dispatch(setSelectedCategory(category.id))}
+            >
+              All Categories
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                variant={selectedCategory === category.id ? "default" : "outline"}
+                onClick={() => dispatch(setSelectedCategory(category.id))}
                   className={`rounded-full px-5 py-2 font-semibold shadow transition-all duration-200
                     ${selectedCategory === category.id
                       ? shop === "A"
@@ -130,10 +130,10 @@ export default function ProductsPage() {
                         : "bg-gradient-to-r from-gray-300 via-gray-400 to-gray-500 text-black border-gray-400"
                       : "bg-white/10 text-gray-700 border border-gray-300"
                     }`}
-                >
-                  {category.name}
-                </Button>
-              ))}
+              >
+                {category.name}
+              </Button>
+            ))}
             </div>
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function ProductsPage() {
                       disabled={!item.is_available}
                     >
                       <Plus className="w-4 h-4 mr-1" />
-                      {item.is_available ? "Add to Cart" : "Unavailable"}
+                      {item.is_available ? "Add" : "Unavailable"}
                     </Button>
                   </div>
                 </CardContent>
@@ -242,7 +242,7 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <Footer />
+
     </div>
   )
 }

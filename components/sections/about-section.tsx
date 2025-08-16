@@ -28,7 +28,7 @@ export default function AboutSection() {
       const response = await fetch("/api/about")
       if (response.ok) {
         const data = await response.json()
-        setAboutContent(data[0] || null)
+        setAboutContent(data || null)
       }
     } catch (error) {
       console.error("Failed to fetch about content:", error)
@@ -53,7 +53,7 @@ Step into a world of elegance and self-care, where quality, experience, and empo
 
   if (loading) {
     return (
-      <section id="about" className="py-20 bg-white">
+      <section id="about" className="py-20 bg-white overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-4">
           <div className="animate-pulse">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -76,7 +76,7 @@ Step into a world of elegance and self-care, where quality, experience, and empo
   }
 
   return (
-    <section id="about" className="py-20 bg-white">
+    <section id="about" className="py-20 bg-white overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6 animate-fade-in">

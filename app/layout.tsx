@@ -30,9 +30,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <StoreProvider>
               <ShopProvider>
                 <UserNavVisibility />
-                <div className="pb-16 lg:pb-0">
-                  {children}
-                </div>
+              <div className="pb-16 lg:pb-0">
+                {children}
+              </div>
               </ShopProvider>
             </StoreProvider>
           </SettingsProvider>

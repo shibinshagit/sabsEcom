@@ -56,6 +56,10 @@ export async function POST(request: Request) {
     }
     const data = parse.data
 
+    // Convert empty string dates to null
+    const startDate = !data.start_date || data.start_date === "" ? null : data.start_date
+    const endDate = !data.end_date || data.end_date === "" ? null : data.end_date
+
     const [banner] = await sql`
       INSERT INTO banners (
         title, message, banner_type, background_color, text_color,
@@ -70,7 +74,7 @@ export async function POST(request: Request) {
         ${data.button_text}, ${data.button_link}, ${data.button_color},
         ${data.background_image_url}, ${data.auto_disappear_seconds},
         ${data.display_pages}, ${data.is_active},
-        ${data.start_date}, ${data.end_date},
+        ${startDate}, ${endDate},
         ${data.priority}, ${data.is_dismissible}
       )
       RETURNING *

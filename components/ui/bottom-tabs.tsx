@@ -13,7 +13,7 @@ const mobileNavigation = [
   // { name: "Orders", href: "/orders", icon: ShoppingBag },
   // { name: "Reviews", href: "/#testimonials", icon: Star, scroll: true },
   // { name: "About", href: "/#about", icon: Info, scroll: true },
-  { name: "Contact", href: "/#contact", icon: Phone, scroll: true },
+  { name: "Contact", href: "/contact", icon: Phone,},
 ]
 
 export default function BottomTabs() {

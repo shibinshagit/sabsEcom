@@ -26,7 +26,7 @@ export default function AdminLayout({
       <div className="flex">
         {/* Sidebar: only show on desktop */}
         <div className="hidden lg:block">
-          <AdminSidebar />
+        <AdminSidebar />
         </div>
         <div className="flex-1 flex flex-col min-w-0">
           <AdminHeader />

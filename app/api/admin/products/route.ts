@@ -48,6 +48,9 @@ export async function POST(request: Request) {
       sku,
     } = body
 
+    // Ensure new_until_date is null if empty string or falsy
+    const safeNewUntilDate = new_until_date ? new_until_date : null;
+
     const [product] = await sql`
       INSERT INTO products (
         name, description, price, image_url, category_id,
@@ -56,7 +59,7 @@ export async function POST(request: Request) {
         storage_capacity, color, stock_quantity, sku
       ) VALUES (
         ${name}, ${description}, ${price}, ${image_url}, ${category_id},
-        ${is_available}, ${is_featured}, ${is_new}, ${new_until_date}, ${features}, ${specifications_text},
+        ${is_available}, ${is_featured}, ${is_new}, ${safeNewUntilDate}, ${features}, ${specifications_text},
         ${warranty_months}, ${brand}, ${model}, ${condition_type}, ${warranty_period},
         ${storage_capacity}, ${color}, ${stock_quantity}, ${sku}
       )

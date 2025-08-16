@@ -28,7 +28,7 @@ const navigation = [
   { name: "Orders", href: "/orders" },
   { name: "Reviews", href: "/#testimonials", scroll: true },
   { name: "About", href: "/#about", scroll: true },
-  { name: "Contact", href: "/#contact", scroll: true },
+  { name: "Contact", href: "/contact" },
 ]
 
 export default function Navbar() {
@@ -236,7 +236,18 @@ export default function Navbar() {
             </div>
 
             {/* Mobile menu button - hidden when using bottom tabs */}
-            <div className="lg:hidden">
+            <div className="lg:hidden flex items-center space-x-2">
+              {/* Cart button always visible on mobile */}
+              <Link href="/order" className="relative">
+                <Button variant="ghost" size="sm" className="text-white hover:text-amber-400">
+                  <ShoppingBag className="w-5 h-5" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-amber-500 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={() => setIsOpen(!isOpen)} className="text-white">
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </Button>
@@ -262,7 +273,7 @@ export default function Navbar() {
                   </Link>
                 ))}
                 <div className="flex items-center space-x-4 px-3 py-2">
-                  <Link href="/order" className="relative">
+                  {/* <Link href="/order" className="relative">
                     <Button variant="ghost" size="sm" className="text-white hover:text-amber-400">
                       <ShoppingBag className="w-5 h-5" />
                       {cartCount > 0 && (
@@ -271,7 +282,7 @@ export default function Navbar() {
                         </span>
                       )}
                     </Button>
-                  </Link>
+                  </Link> */}
                   {isAuthenticated ? (
                     <Button
                       variant="ghost"

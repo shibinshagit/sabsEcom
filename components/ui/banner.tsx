@@ -100,11 +100,13 @@ export default function Banner({ page = "all" }: BannerProps) {
   }
 
   return (
-    <div className="banner-container">
-      <div className="space-y-0">
-        {activeBanners.map((banner) => (
-          <BannerItem key={banner.id} banner={banner} onDismiss={() => dismissBanner(banner.id)} />
-        ))}
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-2 sm:px-4 pointer-events-none">
+      <div className="w-full max-w-md sm:max-w-lg md:max-w-2xl pointer-events-auto">
+        <div className="space-y-4">
+          {activeBanners.map((banner) => (
+            <BannerItem key={banner.id} banner={banner} onDismiss={() => dismissBanner(banner.id)} />
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -148,45 +150,46 @@ function BannerItem({ banner, onDismiss }: BannerItemProps) {
   }
 
   return (
-    <div className="banner-item animate-slide-down" style={bannerStyle}>
-      <div className="banner-content">
-        <div className="banner-text">
-          <div className="text-center sm:text-left">
-            <span className="font-bold text-lg block sm:inline">{banner.title}</span>
-            <span className="block sm:inline sm:ml-3 text-base mt-1 sm:mt-0">{banner.message}</span>
-            {countdown !== null && countdown > 0 && (
-              <span className="block sm:inline sm:ml-2 text-sm opacity-75 mt-1 sm:mt-0">
-                (Auto-closes in {countdown}s)
-              </span>
-            )}
-          </div>
-          {banner.button_text && banner.button_link && (
-            <Link href={banner.button_link}>
-              <Button
-                size="sm"
-                style={{
-                  backgroundColor: banner.button_color,
-                  color: banner.background_color,
-                }}
-                className="hover:opacity-80 transition-opacity mt-2 sm:mt-0"
-              >
-                {banner.button_text}
-              </Button>
-            </Link>
+    <div
+      className="rounded-xl shadow-lg p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 min-w-0 w-full bg-opacity-95 backdrop-blur-md animate-slide-down border border-black/10"
+      style={bannerStyle}
+    >
+      <div className="flex-1 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-4 min-w-0">
+        <div className="text-center sm:text-left min-w-0 flex-1">
+          <span className="font-bold text-lg block sm:inline truncate max-w-full">{banner.title}</span>
+          <span className="block sm:inline sm:ml-3 text-base mt-1 sm:mt-0 break-words max-w-full">{banner.message}</span>
+          {countdown !== null && countdown > 0 && (
+            <span className="block sm:inline sm:ml-2 text-sm opacity-75 mt-1 sm:mt-0">
+              (Auto-closes in {countdown}s)
+            </span>
           )}
         </div>
-        {banner.is_dismissible && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDismiss}
-            className="ml-4 hover:bg-black/10 flex-shrink-0"
-            style={{ color: banner.text_color }}
-          >
-            <X className="w-4 h-4" />
-          </Button>
+        {banner.button_text && banner.button_link && (
+          <Link href={banner.button_link} className="mt-2 sm:mt-0">
+            <Button
+              size="sm"
+              style={{
+                backgroundColor: banner.button_color,
+                color: banner.background_color,
+              }}
+              className="hover:opacity-80 transition-opacity"
+            >
+              {banner.button_text}
+            </Button>
+          </Link>
         )}
       </div>
+      {banner.is_dismissible && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onDismiss}
+          className="ml-0 sm:ml-4 hover:bg-black/10 flex-shrink-0"
+          style={{ color: banner.text_color }}
+        >
+          <X className="w-4 h-4" />
+        </Button>
+      )}
     </div>
   )
 }

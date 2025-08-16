@@ -4,7 +4,7 @@ import { useShop } from "@/lib/contexts/shop-context"
 export default function ShopToggle() {
   const { shop, setShop } = useShop()
   return (
-    <div className="fixed top-3 right-4 z-50 flex gap-2 items-center bg-black/60 rounded-full px-2 py-1 shadow-lg backdrop-blur-md border border-yellow-400/30 border-gray-400/30">
+    <div className="fixed top-20 right-4 z-50 flex gap-2 items-center bg-black/60 rounded-full px-2 py-1 shadow-lg backdrop-blur-md border border-yellow-400/30 border-gray-400/30">
       <button
         className={`flex items-center px-3 py-1 rounded-full font-semibold text-sm transition-all duration-200 border-2 focus:outline-none ${
           shop === "A"
