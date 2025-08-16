@@ -26,8 +26,8 @@ import { useShop } from "@/lib/contexts/shop-context";
 const navigation = [
   { name: "Home", href: "/" },
   { name: "Products", href: "/products" },
-  { name: "Shop A", href: "/shop-a" },
-  { name: "Shop B", href: "/shop-b" },
+  { name: "Shop A", href: "/products" },
+  { name: "Shop B", href: "/products" },
   { name: "Orders", href: "/orders" },
   { name: "Reviews", href: "/#testimonials", scroll: true },
   { name: "About", href: "/#about", scroll: true },
