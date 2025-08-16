@@ -2,49 +2,16 @@
 
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
+import { ensureOfferTypeSupport } from "@/lib/migrations/ensure-offer-type";
 
-// GET - Fetch the latest offer
+// GET - Fetch all offers
 export async function GET() {
   try {
-    
-    await sql`
-      CREATE TABLE IF NOT EXISTS offers (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        start_date DATE NOT NULL,
-        end_date DATE NOT NULL,
-        offers TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-
-    try {
-      await sql`
-        DO $$ 
-        BEGIN 
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns 
-            WHERE table_name = 'offers' AND column_name = 'updated_at'
-          ) THEN
-            ALTER TABLE offers ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-          END IF;
-        END $$;
-      `;
-    } catch (error) {
-      console.log("Could not add updated_at column:", error.message);
-    }
-
-    const columnCheck = await sql`
-      SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'offers' AND column_name = 'updated_at';
-    `;
-
-    const hasUpdatedAt = columnCheck.length > 0;
+    // Ensure the database schema is up to date
+    await ensureOfferTypeSupport();
 
     const offers = await sql`
-      SELECT * FROM offers ORDER BY ${
-        hasUpdatedAt ? sql`updated_at` : sql`created_at`
-      } DESC;
+      SELECT * FROM offers ORDER BY updated_at DESC, created_at DESC;
     `;
     
     if (offers.length === 0) {
@@ -53,8 +20,8 @@ export async function GET() {
 
     return NextResponse.json(offers);
   } catch (error) {
-    console.error("Error fetching offer:", error);
-    return NextResponse.json({ error: "Failed to fetch offer" }, { status: 500 });
+    console.error("Error fetching offers:", error);
+    return NextResponse.json({ error: "Failed to fetch offers" }, { status: 500 });
   }
 }
 
@@ -70,62 +37,72 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate offer structure
+    const invalidOffers = offers.filter((offer: any) => 
+      !offer.value || 
+      !offer.type || 
+      !['percentage', 'cash'].includes(offer.type)
+    );
+
+    if (invalidOffers.length > 0) {
+      return NextResponse.json(
+        { error: "Invalid offer structure. Each offer must have a value and type (percentage or cash)" }, 
+        { status: 400 }
+      );
+    }
+
+    // Validate percentage values (1-100)
+    const percentageOffers = offers.filter((offer: any) => offer.type === 'percentage');
+    const invalidPercentages = percentageOffers.filter((offer: any) => {
+      const value = parseFloat(offer.value);
+      return isNaN(value) || value < 1 || value > 100;
+    });
+
+    if (invalidPercentages.length > 0) {
+      return NextResponse.json(
+        { error: "Percentage offers must be between 1 and 100" }, 
+        { status: 400 }
+      );
+    }
+
+    // Validate cash values (positive numbers)
+    const cashOffers = offers.filter((offer: any) => offer.type === 'cash');
+    const invalidCashValues = cashOffers.filter((offer: any) => {
+      const value = parseFloat(offer.value);
+      return isNaN(value) || value <= 0;
+    });
+
+    if (invalidCashValues.length > 0) {
+      return NextResponse.json(
+        { error: "Cash offers must be positive values" }, 
+        { status: 400 }
+      );
+    }
+
     console.log("Creating offer with data:", { title, startDate, endDate, offers });
 
-    await sql`
-      CREATE TABLE IF NOT EXISTS offers (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        start_date DATE NOT NULL,
-        end_date DATE NOT NULL,
-        offers TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+    // Ensure the database schema is up to date
+    await ensureOfferTypeSupport();
+
+    // Determine the primary offer type for this offer set
+    const hasPercentage = offers.some((offer: any) => offer.type === 'percentage');
+    const hasCash = offers.some((offer: any) => offer.type === 'cash');
+    const primaryOfferType = hasPercentage && hasCash ? 'mixed' : 
+                            hasPercentage ? 'percentage' : 'cash';
+
+    const [inserted] = await sql`
+      INSERT INTO offers (title, start_date, end_date, offers, offer_type, created_at, updated_at)
+      VALUES (${title}, ${startDate}, ${endDate}, ${JSON.stringify(offers)}, ${primaryOfferType}, NOW(), NOW())
+      RETURNING *;
     `;
-
-    // Try to add updated_at column safely
-    try {
-      await sql`
-        DO $$ 
-        BEGIN 
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns 
-            WHERE table_name = 'offers' AND column_name = 'updated_at'
-          ) THEN
-            ALTER TABLE offers ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-          END IF;
-        END $$;
-      `;
-    } catch (error) {
-      console.log("Could not add updated_at column:", error.message);
-    }
-
-    const columnCheck = await sql`
-      SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'offers' AND column_name = 'updated_at';
-    `;
-
-    const hasUpdatedAt = columnCheck.length > 0;
-
-    let inserted;
-    if (hasUpdatedAt) {
-      [inserted] = await sql`
-        INSERT INTO offers (title, start_date, end_date, offers, created_at, updated_at)
-        VALUES (${title}, ${startDate}, ${endDate}, ${JSON.stringify(offers)}, NOW(), NOW())
-        RETURNING *;
-      `;
-    } else {
-      [inserted] = await sql`
-        INSERT INTO offers (title, start_date, end_date, offers, created_at)
-        VALUES (${title}, ${startDate}, ${endDate}, ${JSON.stringify(offers)}, NOW())
-        RETURNING *;
-      `;
-    }
 
     console.log("Offer created successfully:", inserted);
     return NextResponse.json(inserted);
   } catch (error) {
     console.error("Error saving offer:", error);
-    return NextResponse.json({ error: "Failed to save offer", details: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to save offer", 
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 });
   }
 }

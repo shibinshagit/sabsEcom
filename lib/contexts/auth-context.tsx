@@ -1,3 +1,4 @@
+
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
@@ -14,6 +15,8 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   login: (email: string, otp: string, name?: string) => Promise<void>
+  register: (email: string, otp: string, name: string, password: string) => Promise<void>
+  loginWithPassword: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   sendOTP: (email: string) => Promise<{ success: boolean; message: string; otp?: string }>
   isAuthenticated: boolean
@@ -69,6 +72,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user)
   }
 
+  const register = async (email: string, otp: string, name: string, password: string) => {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp, name, password }),
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to register")
+    }
+
+    setUser(data.user)
+  }
+
+  const loginWithPassword = async (email: string, password: string) => {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to login")
+    }
+
+    setUser(data.user)
+  }
+
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" })
     setUser(null)
@@ -84,6 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         login,
+        register,
+        loginWithPassword,
         logout,
         sendOTP,
         isAuthenticated: !!user,

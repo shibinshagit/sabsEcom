@@ -1,8 +1,8 @@
-
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 import { cookies } from "next/headers";
 import { SignJWT } from "jose";
+import bcrypt from "bcryptjs";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production");
 
@@ -29,56 +29,47 @@ async function ensureAuthSchema() {
     // If the column already exists, this will fail silently
     console.log("password_hash column may already exist");
   }
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS user_otps (
-      id SERIAL PRIMARY KEY,
-      email VARCHAR(255) NOT NULL,
-      otp_code VARCHAR(6) NOT NULL,
-      expires_at TIMESTAMP NOT NULL,
-      is_used BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
 }
 
 export async function POST(request: Request) {
   try {
     await ensureAuthSchema();
 
-    const { email, otp, name } = await request.json();
-    if (!email || !otp) {
-      return NextResponse.json({ error: "Email and OTP are required" }, { status: 400 });
+    const { email, password } = await request.json();
+    
+    if (!email || !password) {
+      return NextResponse.json({ 
+        error: "Email and password are required" 
+      }, { status: 400 });
     }
 
-    // Verify OTP
-    const [otpRecord] = await sql`
-      SELECT * FROM user_otps
-      WHERE email = ${email}
-        AND otp_code = ${otp}
-        AND expires_at > NOW()
-        AND is_used = FALSE
-      ORDER BY created_at DESC
-      LIMIT 1
-    `;
-
-    if (!otpRecord) {
-      return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
-    }
-
-    // Mark OTP as used
-    await sql`UPDATE user_otps SET is_used = TRUE WHERE id = ${otpRecord.id}`;
-
-    // Create or update user (for OTP-only login, no password)
+    // Find user by email
     const [user] = await sql`
-      INSERT INTO users (email, name, is_verified)
-      VALUES (${email}, ${name || null}, TRUE)
-      ON CONFLICT (email) DO UPDATE SET
-        is_verified = TRUE,
-        name = COALESCE(EXCLUDED.name, users.name),
-        updated_at = CURRENT_TIMESTAMP
-      RETURNING id, email, name, is_verified, created_at
+      SELECT id, email, name, password_hash, is_verified, created_at
+      FROM users 
+      WHERE email = ${email}
     `;
+
+    if (!user) {
+      return NextResponse.json({ 
+        error: "Invalid email or password" 
+      }, { status: 401 });
+    }
+
+    if (!user.password_hash) {
+      return NextResponse.json({ 
+        error: "This account was created with OTP. Please use OTP login or contact support to set a password." 
+      }, { status: 401 });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isValidPassword) {
+      return NextResponse.json({ 
+        error: "Invalid email or password" 
+      }, { status: 401 });
+    }
 
     // Generate JWT token
     const token = await new SignJWT({
@@ -111,7 +102,9 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error verifying OTP:", error);
-    return NextResponse.json({ error: "Failed to verify OTP" }, { status: 500 });
+    console.error("Error logging in user:", error);
+    return NextResponse.json({ 
+      error: "Failed to login" 
+    }, { status: 500 });
   }
 }

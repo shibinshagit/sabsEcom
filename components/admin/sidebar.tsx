@@ -26,7 +26,7 @@ const navigation = [
   { name: "Hero Slider", href: "/admin/slider", icon: ImageIcon },
   { name: "Banners", href: "/admin/banners", icon: MessageSquare },
   { name: "Settings", href: "/admin/settings", icon: Settings },
-  { name: "Offers", href: "/admin/offer", icon:BadgePercent}
+  { name: "Spinner-Offers", href: "/admin/offer", icon:BadgePercent}
 ]
 
 export default function AdminSidebar() {

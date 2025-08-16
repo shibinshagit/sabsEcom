@@ -1,11 +1,13 @@
 
+
 "use client"
 import { useState, useEffect } from "react"
-import { X, Plus, Trash2, Calendar, Tag, Percent, AlertCircle } from "lucide-react"
+import { X, Plus, Trash2, Calendar, Tag, Percent, DollarSign, AlertCircle } from "lucide-react"
 
 const OfferPage = () => {
   const [showModal, setShowModal] = useState(false)
-  const [offers, setOffers] = useState([{ percentage: "" }])
+  const [offers, setOffers] = useState([{ value: "" }])
+  const [offerType, setOfferType] = useState("percentage") // Single offer type for all offers
   const [title, setTitle] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
@@ -20,14 +22,15 @@ const OfferPage = () => {
       title: string
       startDate: string
       endDate: string
-      offers: { percentage: string }[]
+      offers: { value: string; type: string }[]
+      offerType: string
     }[]
   >([])
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null)
 
   const handleAddOffer = () => {
     if (offers.length < 6) {
-      setOffers([...offers, { percentage: "" }])
+      setOffers([...offers, { value: "" }])
     }
   }
 
@@ -40,15 +43,22 @@ const OfferPage = () => {
 
   const handleOfferChange = (index: number, value: string) => {
     const newOffers = [...offers]
-    newOffers[index].percentage = value
+    newOffers[index].value = value
     setOffers(newOffers)
+  }
+
+  const handleOfferTypeChange = (type: string) => {
+    setOfferType(type)
+    // Reset all offer values when type changes to avoid confusion
+    setOffers(offers.map(() => ({ value: "" })))
   }
 
   const resetForm = () => {
     setTitle("")
     setStartDate("")
     setEndDate("")
-    setOffers([{ percentage: "" }])
+    setOffers([{ value: "" }])
+    setOfferType("percentage")
   }
 
   const handleSubmit = async () => {
@@ -57,11 +67,36 @@ const OfferPage = () => {
       return
     }
 
-    const validOffers = offers.filter((offer) => offer.percentage && offer.percentage.trim() !== "")
+    const validOffers = offers.filter((offer) => offer.value && offer.value.trim() !== "")
     if (validOffers.length === 0) {
-      alert("Please add at least one offer percentage")
+      alert("Please add at least one offer value")
       return
     }
+
+    // Validate offer values based on type
+    const invalidOffers = validOffers.filter((offer) => {
+      const value = parseFloat(offer.value)
+      if (isNaN(value) || value <= 0) return true
+      
+      if (offerType === "percentage" && (value < 1 || value > 100)) return true
+      
+      return false
+    })
+
+    if (invalidOffers.length > 0) {
+      if (offerType === "percentage") {
+        alert("Percentage offers must be between 1 and 100")
+      } else {
+        alert("Cash offers must be positive values")
+      }
+      return
+    }
+
+    // Convert offers to include type
+    const offersWithType = validOffers.map(offer => ({
+      value: offer.value,
+      type: offerType
+    }))
 
     setLoading(true)
     try {
@@ -77,7 +112,7 @@ const OfferPage = () => {
           title,
           startDate,
           endDate,
-          offers: validOffers,
+          offers: offersWithType,
         }),
       })
 
@@ -92,6 +127,7 @@ const OfferPage = () => {
         startDate: data.start_date,
         endDate: data.end_date,
         offers: typeof data.offers === "string" ? JSON.parse(data.offers) : data.offers,
+        offerType: data.offer_type || offerType,
       }
 
       if (isEditing) {
@@ -117,7 +153,18 @@ const OfferPage = () => {
     setTitle(offer.title)
     setStartDate(offer.startDate)
     setEndDate(offer.endDate)
-    setOffers(offer.offers.length > 0 ? offer.offers : [{ percentage: "" }])
+    
+    // Set the offer type from the first offer or fallback to percentage
+    const firstOffer = offer.offers[0]
+    const editOfferType = firstOffer?.type || offer.offerType || "percentage"
+    setOfferType(editOfferType)
+    
+    // Extract just the values for the form
+    const offerValues = offer.offers.length > 0 
+      ? offer.offers.map(o => ({ value: o.value }))
+      : [{ value: "" }]
+    setOffers(offerValues)
+    
     setEditingOfferId(offer.id)
     setShowModal(true)
   }
@@ -166,6 +213,7 @@ const OfferPage = () => {
           startDate: offer.start_date,
           endDate: offer.end_date,
           offers: typeof offer.offers === "string" ? JSON.parse(offer.offers) : offer.offers || [],
+          offerType: offer.offer_type || "percentage",
         }))
         setSavedOffers(parsedOffers)
       }
@@ -244,6 +292,26 @@ const OfferPage = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h2 className="text-xl font-semibold mb-2">{offer.title}</h2>
+                  <div className="text-gray-300 mb-2">
+                    <strong>Type:</strong>{" "}
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ${
+                      offer.offerType === 'cash' 
+                        ? 'bg-orange-600 text-white' 
+                        : 'bg-green-600 text-white'
+                    }`}>
+                      {offer.offerType === 'cash' ? (
+                        <>
+                          <DollarSign size={14} />
+                          Cash (AED)
+                        </>
+                      ) : (
+                        <>
+                          <Percent size={14} />
+                          Percentage
+                        </>
+                      )}
+                    </span>
+                  </div>
                   <p className="text-gray-300">
                     <strong>Start:</strong> {new Date(offer.startDate).toLocaleDateString()}
                     <span className="mx-2">|</span>
@@ -270,8 +338,13 @@ const OfferPage = () => {
                 <h3 className="text-lg font-medium mb-2">Available Discounts:</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {offer.offers.map((offerDiscount, index) => (
-                    <div key={index} className="bg-green-600 text-white px-3 py-2 rounded text-center">
-                      {offerDiscount.percentage}% OFF
+                    <div key={index} className={`text-white px-3 py-2 rounded text-center ${
+                      offerDiscount.type === 'cash' ? 'bg-orange-600' : 'bg-green-600'
+                    }`}>
+                      {offerDiscount.type === 'cash' 
+                        ? `${offerDiscount.value} AED OFF` 
+                        : `${offerDiscount.value}% OFF`
+                      }
                     </div>
                   ))}
                 </div>
@@ -364,27 +437,83 @@ const OfferPage = () => {
                 </div>
               </div>
 
-              {/* Discount Percentages */}
+              {/* Offer Type Selection */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <DollarSign size={16} className="text-purple-600" />
+                  Offer Type *
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="percentage"
+                      checked={offerType === "percentage"}
+                      onChange={(e) => handleOfferTypeChange(e.target.value)}
+                      className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                    />
+                    <span className="flex items-center gap-1 text-gray-700">
+                      <Percent size={16} className="text-green-600" />
+                      Percentage Discount
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="cash"
+                      checked={offerType === "cash"}
+                      onChange={(e) => handleOfferTypeChange(e.target.value)}
+                      className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+                    />
+                    <span className="flex items-center gap-1 text-gray-700">
+                      <DollarSign size={16} className="text-orange-600" />
+                      Cash Discount (AED)
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Discount Values */}
               <div className="space-y-4">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <Percent size={16} className="text-purple-600" />
-                  Discount Percentages *
+                  {offerType === 'cash' ? (
+                    <>
+                      <DollarSign size={16} className="text-orange-600" />
+                      Cash Amounts (AED) *
+                    </>
+                  ) : (
+                    <>
+                      <Percent size={16} className="text-green-600" />
+                      Discount Percentages *
+                    </>
+                  )}
                 </label>
                 <div className="space-y-3">
                   {offers.map((offer, index) => (
                     <div key={index} className="flex gap-3 items-center group">
+                      {/* Value Input */}
                       <div className="flex-1 relative">
                         <input
                           type="number"
-                          placeholder={`Discount ${index + 1} (%)`}
-                          value={offer.percentage}
+                          placeholder={offerType === 'cash' ? `Amount in AED (e.g., 50)` : `Percentage (1-100)`}
+                          value={offer.value}
                           onChange={(e) => handleOfferChange(index, e.target.value)}
-                          className="w-full border-2 border-gray-200 px-4 py-3 pr-12 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                          className={`w-full border-2 border-gray-200 px-4 py-3 pr-16 rounded-xl focus:outline-none focus:ring-4 transition-all duration-200 text-gray-800 placeholder-gray-400 ${
+                            offerType === 'cash'
+                              ? 'focus:border-orange-500 focus:ring-orange-100'
+                              : 'focus:border-green-500 focus:ring-green-100'
+                          }`}
                           min="1"
-                          max="100"
+                          max={offerType === 'percentage' ? "100" : undefined}
+                          step={offerType === 'cash' ? "0.01" : "1"}
                         />
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">%</div>
+                        <div className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium ${
+                          offerType === 'cash' ? 'text-orange-600' : 'text-green-600'
+                        }`}>
+                          {offerType === 'cash' ? 'AED' : '%'}
+                        </div>
                       </div>
+                      
                       {offers.length > 1 && (
                         <button
                           onClick={() => handleRemoveOffer(index)}
@@ -400,27 +529,40 @@ const OfferPage = () => {
                 {offers.length < 6 && (
                   <button
                     onClick={handleAddOffer}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-xl transition-all duration-200 font-medium"
+                    className={`flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-xl transition-all duration-200 font-medium ${
+                      offerType === 'cash' ? 'text-orange-600' : 'text-green-600'
+                    }`}
                   >
                     <Plus size={16} />
-                    Add Another Discount
+                    Add Another {offerType === 'cash' ? 'Amount' : 'Percentage'}
                   </button>
                 )}
               </div>
 
               {/* Preview Section */}
-              {offers.some((offer) => offer.percentage) && (
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200">
+              {offers.some((offer) => offer.value) && (
+                <div className={`p-4 rounded-xl border ${
+                  offerType === 'cash'
+                    ? 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'
+                    : 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200'
+                }`}>
                   <h4 className="text-sm font-semibold text-gray-700 mb-2">Preview:</h4>
                   <div className="flex flex-wrap gap-2">
                     {offers
-                      .filter((offer) => offer.percentage)
+                      .filter((offer) => offer.value)
                       .map((offer, index) => (
                         <span
                           key={index}
-                          className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm"
+                          className={`text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm ${
+                            offerType === 'cash' 
+                              ? 'bg-gradient-to-r from-orange-500 to-orange-600' 
+                              : 'bg-gradient-to-r from-green-500 to-green-600'
+                          }`}
                         >
-                          {offer.percentage}% OFF
+                          {offerType === 'cash' 
+                            ? `${offer.value} AED OFF` 
+                            : `${offer.value}% OFF`
+                          }
                         </span>
                       ))}
                   </div>
