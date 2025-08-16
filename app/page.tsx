@@ -14,14 +14,16 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen">
-      <Suspense fallback={<div>Loading navbar...</div>}>
+   
         <Navbar />
-      </Suspense>
+  
 
       <OfferSection />
       {!isAuthenticated && <NewUserSpinnerSection />}
       <Services />
+         <Suspense fallback={<div>Loading navbar...</div>}>
       <ProductList />
+          </Suspense>
       <Footer />
     </main>
   )
