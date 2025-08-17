@@ -1,11 +1,10 @@
-
 "use client"
 
 import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, ShoppingBag, User, LogOut, Search, Bell, Heart } from "lucide-react"
+import { Menu, X, ShoppingBag, User, LogOut, Search, Bell, Heart, Sparkles, Watch } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSelector } from "react-redux"
@@ -21,8 +20,8 @@ import LoginModal from "@/components/auth/login-modal"
 const navigation = [
   { name: "Home", href: "/" },
   { name: "Products", href: "/products" },
-  { name: "Shop A", href: "/products" },
-  { name: "Shop B", href: "/products" },
+  { name: "Beauty", href: "/products" },
+  { name: "Style", href: "/products" },
   { name: "Orders", href: "/orders" },
   { name: "Reviews", href: "/#testimonials", scroll: true },
   { name: "About", href: "/#about", scroll: true },
@@ -147,7 +146,7 @@ export default function Navbar() {
                     </div>
                   )}
                   <h1 className="text-2xl font-bold text-white">
-                    {shop === "A" ? "SABS ONLINE - SHOP A" : "SABS ONLINE - SHOP B"}
+                    {shop === "A" ? "SABS ONLINE - BEAUTY" : "SABS ONLINE - STYLE"}
                   </h1>
                 </Link>
 
@@ -155,7 +154,7 @@ export default function Navbar() {
                 <div className="relative flex-1 max-w-2xl">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                   <Input
-                    placeholder={shop === "A" ? "Search for beauty products..." : "Search for tech gadgets..."}
+                    placeholder={shop === "A" ? "Search for beauty products..." : "Search for style accessories..."}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-12 pr-16 h-12 rounded-full bg-white border-0 text-base shadow-lg"
@@ -294,25 +293,26 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Desktop Navigation with Shop Toggle */}
-            <div className="flex items-center gap-6">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={(e) => handleNavClick(item, e)}
-                  className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 ${
-                    pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
-                      ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
-                      : "text-white hover:bg-white/20"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
+            {/* Desktop Navigation with Icon Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={(e) => handleNavClick(item, e)}
+                    className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 ${
+                      pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
+                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
+                        : "text-white hover:bg-white/20"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
 
-              {/* Shop Toggle */}
-              <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300">
+             <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300">
                 <div
                   className="absolute top-1 bg-white rounded-full transition-all duration-300 ease-out shadow-lg"
                   style={{
@@ -324,22 +324,25 @@ export default function Navbar() {
                 <div className="relative flex">
                   <button
                     onClick={() => handleShopToggle("A")}
-                    className={`px-4 py-2 text-sm font-semibold rounded-full transition-all duration-300 relative z-10 ${
-                      shop === "A" ? "text-orange-600" : "text-white"
+                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative z-10 ${
+                      shop === "A" ? "text-orange-600" : "text-white hover:text-gray-200"
                     }`}
+                    title="Beauty Products"
                   >
-                    SHOP A
+                    <Sparkles className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleShopToggle("B")}
-                    className={`px-4 py-2 text-sm font-semibold rounded-full transition-all duration-300 relative z-10 ${
-                      shop === "B" ? "text-purple-600" : "text-white"
+                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative z-10 ${
+                      shop === "B" ? "text-purple-600" : "text-white hover:text-gray-200"
                     }`}
+                    title="Style Accessories"
                   >
-                    SHOP B
+                    <Watch className="w-5 h-5" />
                   </button>
                 </div>
               </div>
+              
             </div>
           </div>
         </div>
@@ -349,7 +352,7 @@ export default function Navbar() {
           <div className="px-4 py-3">
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-xl font-bold text-white">
-                {shop === "A" ? "SABS ONLINE - SHOP A" : "SABS ONLINE - SHOP B"}
+                {shop === "A" ? "SABS ONLINE - BEAUTY" : "SABS ONLINE - STYLE"}
               </h1>
               <div className="flex items-center gap-3">
                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
@@ -447,7 +450,7 @@ export default function Navbar() {
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
               <Input
-                placeholder={shop === "A" ? "Search beauty products" : "Search tech gadgets"}
+                placeholder={shop === "A" ? "Search beauty products" : "Search style accessories"}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-12 h-10 rounded-full bg-white border-0 text-sm shadow-lg"
@@ -480,8 +483,10 @@ export default function Navbar() {
               <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className="text-white p-0">
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </Button>
-              <h1 className="text-lg font-bold text-white">{shop === "A" ? "SHOP A" : "SHOP B"}</h1>
+              <h1 className="text-lg font-bold text-white">{shop === "A" ? "BEAUTY" : "STYLE"}</h1>
               <div className="flex items-center gap-2">
+                {/* Mobile Icon Toggle - Removed, will use footer toggle instead */}
+
                 <Link href="/order" className="relative">
                   <ShoppingBag className="w-5 h-5 text-white" />
                   {cartCount > 0 && (
@@ -571,7 +576,7 @@ export default function Navbar() {
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder={shop === "A" ? "Search beauty" : "Search tech"}
+                placeholder={shop === "A" ? "Search beauty" : "Search style"}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 pr-10 h-9 rounded-full bg-white border-0 text-sm"
@@ -584,10 +589,10 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleNavClick(item, e)}
-                  className={`block px-3 py-2 text-base font-medium transition-colors rounded-lg ${
+                  className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${
                     pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
-                      ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
-                      : `text-gray-700 ${shop === "A" ? "hover:text-orange-600 hover:bg-orange-50" : "hover:text-purple-600 hover:bg-purple-50"}`
+                      ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
+                      : "text-gray-700"
                   }`}
                 >
                   {item.name}
@@ -606,40 +611,19 @@ export default function Navbar() {
                     className={`block px-3 py-2 text-base font-medium transition-colors rounded-lg ${
                       pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
                         ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
-                        : `text-gray-700 ${shop === "A" ? "hover:text-orange-600 hover:bg-orange-50" : "hover:text-purple-600 hover:bg-purple-50"}`
+                        : `text-gray-700`
                     }`}
                   >
                     {item.name}
                   </Link>
                 ))}
                 <div className="flex items-center justify-center mt-4 pt-4 border-t border-gray-200">
-                  <div className={`relative ${shop === "A" ? "bg-orange-100" : "bg-purple-100"} rounded-full p-1`}>
-                    <div
-                      className={`absolute top-1 ${shop === "A" ? "bg-orange-500" : "bg-purple-500"} rounded-full transition-all duration-300 ease-out shadow-lg`}
-                      style={{
-                        width: "calc(50% - 4px)",
-                        height: "calc(100% - 8px)",
-                        left: shop === "A" ? "4px" : "calc(50% + 0px)",
-                      }}
-                    />
-                    <div className="relative flex">
-                      <button
-                        onClick={() => handleShopToggle("A")}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all duration-300 relative z-10 ${
-                          shop === "A" ? "text-white" : "text-orange-600"
-                        }`}
-                      >
-                        A
-                      </button>
-                      <button
-                        onClick={() => handleShopToggle("B")}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all duration-300 relative z-10 ${
-                          shop === "B" ? "text-white" : "text-purple-600"
-                        }`}
-                      >
-                        B
-                      </button>
-                    </div>
+                  <div className="text-sm text-gray-600 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Beauty</span>
+                    <span className="text-gray-400">|</span>
+                    <Watch className="w-4 h-4" />
+                    <span>Style</span>
                   </div>
                 </div>
               </div>
