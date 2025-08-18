@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag } from "lucide-react"
 import Image from "next/image"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
 
 interface ProductListProps {
@@ -28,6 +28,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const [showFilters, setShowFilters] = useState(false)
   const [categoryTransition, setCategoryTransition] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+ 
 
   const dispatch = useDispatch<AppDispatch>()
   const { items, categories, selectedCategory, loading } = useSelector((state: RootState) => state.products)
@@ -203,9 +204,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             </div>
             {loading ? (
               <div
-                className={`grid gap-3 lg:gap-6 ${
-                  viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                }`}
+                className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                  }`}
               >
                 {[...Array(10)].map((_, i) => (
                   <div key={i} className="animate-pulse">
@@ -218,16 +218,14 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               </div>
             ) : (
               <div
-                className={`grid gap-3 lg:gap-6 ${
-                  viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                }`}
+                className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                  }`}
               >
                 {filteredItems.map((item) => (
                   <Card
                     key={item.id}
-                    className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group ${
-                      viewMode === "list" ? "flex" : ""
-                    }`}
+                    className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group ${viewMode === "list" ? "flex" : ""
+                      }`}
                   >
                     <div className={`relative ${viewMode === "list" ? "w-48 flex-shrink-0" : ""}`}>
                       <Image
@@ -238,9 +236,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         alt={item.name}
                         width={200}
                         height={200}
-                        className={`object-cover group-hover:scale-105 transition-transform duration-300 ${
-                          viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
-                        }`}
+                        className={`object-cover group-hover:scale-105 transition-transform duration-300 ${viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
+                          }`}
                       />
                       {item.is_new && (
                         <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs">NEW</Badge>
@@ -325,9 +322,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               </div>
               {loading ? (
                 <div
-                  className={`grid gap-3 lg:gap-6 ${
-                    viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                  }`}
+                  className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                    }`}
                 >
                   {[...Array(8)].map((_, i) => (
                     <div key={i} className="animate-pulse">
@@ -340,16 +336,14 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                 </div>
               ) : (
                 <div
-                  className={`grid gap-3 lg:gap-6 ${
-                    viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                  }`}
+                  className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                    }`}
                 >
                   {newArrivals.map((item) => (
                     <Card
                       key={item.id}
-                      className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group ${
-                        viewMode === "list" ? "flex" : ""
-                      }`}
+                      className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group ${viewMode === "list" ? "flex" : ""
+                        }`}
                     >
                       <div className={`relative ${viewMode === "list" ? "w-48 flex-shrink-0" : ""}`}>
                         <Image
@@ -360,9 +354,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                           alt={item.name}
                           width={200}
                           height={200}
-                          className={`object-cover group-hover:scale-105 transition-transform duration-300 ${
-                            viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
-                          }`}
+                          className={`object-cover group-hover:scale-105 transition-transform duration-300 ${viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
+                            }`}
                         />
                         <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs">NEW</Badge>
                         {item.is_featured && (
