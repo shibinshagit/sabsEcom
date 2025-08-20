@@ -7,28 +7,20 @@ import bcrypt from "bcryptjs";
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production");
 
 async function ensureAuthSchema() {
-  // Create users table if it doesn't exist
+  // Create users table with updated schema
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       email VARCHAR(255) UNIQUE NOT NULL,
       name VARCHAR(255),
       phone VARCHAR(20),
-      is_verified BOOLEAN DEFAULT FALSE,
+      email_verified TIMESTAMP,
+      image TEXT,
+      password_hash VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
-
-  // Add password_hash column if it doesn't exist
-  try {
-    await sql`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
-    `;
-  } catch (error) {
-    // If the column already exists, this will fail silently
-    console.log("password_hash column may already exist");
-  }
 
   await sql`
     CREATE TABLE IF NOT EXISTS user_otps (
@@ -95,11 +87,11 @@ export async function POST(request: Request) {
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Create user
+    // Create user - using email_verified timestamp instead of is_verified boolean
     const [user] = await sql`
-      INSERT INTO users (email, name, password_hash, is_verified)
-      VALUES (${email}, ${name}, ${passwordHash}, TRUE)
-      RETURNING id, email, name, is_verified, created_at
+      INSERT INTO users (email, name, password_hash, email_verified)
+      VALUES (${email}, ${name}, ${passwordHash}, CURRENT_TIMESTAMP)
+      RETURNING id, email, name, email_verified, created_at
     `;
 
     // Generate JWT token
@@ -128,7 +120,7 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email,
         name: user.name,
-        isVerified: user.is_verified,
+        isVerified: !!user.email_verified, // Convert timestamp to boolean
         createdAt: user.created_at,
       },
     });

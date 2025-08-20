@@ -6,10 +6,12 @@ import "./globals.css"
 import { StoreProvider } from "@/lib/store/provider"
 import { SettingsProvider } from "@/lib/contexts/settings-context"
 import { AuthProvider } from "@/lib/contexts/auth-context"
-import BottomTabs from "@/components/ui/bottom-tabs"
-import { ShopProvider, useShop } from "@/lib/contexts/shop-context"
-import ShopToggle from "@/components/ui/shop-toggle"
+import { ShopProvider } from "@/lib/contexts/shop-context"
 import UserNavVisibility from "@/components/ui/user-nav-visibility"
+
+import {
+  ClerkProvider,
+} from "@clerk/nextjs"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" })
@@ -17,27 +19,30 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfa
 export const metadata: Metadata = {
   title: "SABS - ONLINE STORE",
   description: "Your trusted source for GADGETS AND COSMETICS.",
-    generator: 'Shah'
+  generator: "Shah",
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${playfair.variable} font-sans`}>
-        {/* AuthProvider must wrap the entire app so that useAuth is always in context */}
-        <AuthProvider>
-          <SettingsProvider>
-            <StoreProvider>
-              <ShopProvider>
-                <UserNavVisibility />
-                <div className="pb-16 lg:pb-0">
-                  {children}
-                </div>
-              </ShopProvider>
-            </StoreProvider>
-          </SettingsProvider>
-        </AuthProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={`${inter.variable} ${playfair.variable} font-sans`}>
+          {/* Remove the Clerk header completely */}
+          <AuthProvider>
+            <SettingsProvider>
+              <StoreProvider>
+                <ShopProvider>
+                  {/* Your existing User Nav */}
+                  <UserNavVisibility />
+
+                  <div className="pb-16 lg:pb-0">{children}</div>
+                </ShopProvider>
+              </StoreProvider>
+            </SettingsProvider>
+          </AuthProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }
+

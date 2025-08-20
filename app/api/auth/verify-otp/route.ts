@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 import { cookies } from "next/headers";
@@ -7,28 +6,20 @@ import { SignJWT } from "jose";
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production");
 
 async function ensureAuthSchema() {
-  // Create users table if it doesn't exist
+  // Create users table with updated schema
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       email VARCHAR(255) UNIQUE NOT NULL,
       name VARCHAR(255),
       phone VARCHAR(20),
-      is_verified BOOLEAN DEFAULT FALSE,
+      email_verified TIMESTAMP,
+      image TEXT,
+      password_hash VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
-
-  // Add password_hash column if it doesn't exist
-  try {
-    await sql`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
-    `;
-  } catch (error) {
-    // If the column already exists, this will fail silently
-    console.log("password_hash column may already exist");
-  }
 
   await sql`
     CREATE TABLE IF NOT EXISTS user_otps (
@@ -69,15 +60,15 @@ export async function POST(request: Request) {
     // Mark OTP as used
     await sql`UPDATE user_otps SET is_used = TRUE WHERE id = ${otpRecord.id}`;
 
-    // Create or update user (for OTP-only login, no password)
+    // Create or update user (for OTP-only login, no password) - using email_verified timestamp
     const [user] = await sql`
-      INSERT INTO users (email, name, is_verified)
-      VALUES (${email}, ${name || null}, TRUE)
+      INSERT INTO users (email, name, email_verified)
+      VALUES (${email}, ${name || null}, CURRENT_TIMESTAMP)
       ON CONFLICT (email) DO UPDATE SET
-        is_verified = TRUE,
+        email_verified = CURRENT_TIMESTAMP,
         name = COALESCE(EXCLUDED.name, users.name),
         updated_at = CURRENT_TIMESTAMP
-      RETURNING id, email, name, is_verified, created_at
+      RETURNING id, email, name, email_verified, created_at
     `;
 
     // Generate JWT token
@@ -106,7 +97,7 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email,
         name: user.name,
-        isVerified: user.is_verified,
+        isVerified: !!user.email_verified, // Convert timestamp to boolean
         createdAt: user.created_at,
       },
     });

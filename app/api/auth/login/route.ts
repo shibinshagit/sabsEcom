@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 import { cookies } from "next/headers";
@@ -7,28 +8,31 @@ import bcrypt from "bcryptjs";
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production");
 
 async function ensureAuthSchema() {
-  // Create users table if it doesn't exist
+  // Create users table with updated schema
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       email VARCHAR(255) UNIQUE NOT NULL,
       name VARCHAR(255),
       phone VARCHAR(20),
-      is_verified BOOLEAN DEFAULT FALSE,
+      email_verified TIMESTAMP,
+      image TEXT,
+      password_hash VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
 
-  // Add password_hash column if it doesn't exist
-  try {
-    await sql`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
-    `;
-  } catch (error) {
-    // If the column already exists, this will fail silently
-    console.log("password_hash column may already exist");
-  }
+  await sql`
+    CREATE TABLE IF NOT EXISTS user_otps (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      otp_code VARCHAR(6) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      is_used BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
 }
 
 export async function POST(request: Request) {
@@ -43,9 +47,9 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Find user by email
+    // Find user by email - using email_verified instead of is_verified
     const [user] = await sql`
-      SELECT id, email, name, password_hash, is_verified, created_at
+      SELECT id, email, name, password_hash, email_verified, created_at, image
       FROM users 
       WHERE email = ${email}
     `;
@@ -97,8 +101,9 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email,
         name: user.name,
-        isVerified: user.is_verified,
+        isVerified: !!user.email_verified, // Convert timestamp to boolean
         createdAt: user.created_at,
+        image: user.image,
       },
     });
   } catch (error) {

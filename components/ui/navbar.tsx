@@ -16,6 +16,8 @@ import Banner from "@/components/ui/banner"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useShop } from "@/lib/contexts/shop-context"
 import LoginModal from "@/components/auth/login-modal"
+import { useUser } from "@clerk/nextjs"
+
 
 // Base navigation without categories
 const baseNavigation = [
@@ -39,13 +41,15 @@ export default function Navbar() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   const pathname = usePathname()
   const cartItems = useSelector((state: RootState) => state.order.cart)
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const { settings } = useSettings()
   const { user, logout, isAuthenticated } = useAuth()
   const { shop, setShop } = useShop()
+  const { user: clerkUser } = useUser()
+
 
   const currentPage = pathname === "/" ? "home" : pathname.split("/")[1] || "home"
 
@@ -57,12 +61,12 @@ export default function Navbar() {
         // Replace this with your actual API endpoint
         const response = await fetch('/api/categories')
         const data = await response.json()
-        
+
         // Filter categories by shop if needed
-        const filteredCategories = shop 
+        const filteredCategories = shop
           ? data.filter((cat: Category) => !cat.shop || cat.shop === shop)
           : data
-        
+
         setCategories(filteredCategories)
       } catch (error) {
         console.error('Error fetching categories:', error)
@@ -132,26 +136,26 @@ export default function Navbar() {
       await handleLogout()
       return
     }
-    
+
     // Handle Home click - redirect to home page
     if (item.name === "Home") {
       // Let the default Link behavior handle the navigation
       return
     }
-    
+
     // Handle Products click - show all products (no category filter)
     if (item.name === "Products") {
       // Navigate to /products without any category parameter
       window.location.href = "/products"
       return
     }
-    
+
     // Handle category clicks - show specific category
     if ((item as any).isCategory) {
       // Let the default Link behavior handle the navigation with category parameter
       return
     }
-    
+
     // Handle scroll-based navigation (if you have any)
     if ((item as any).scroll && pathname === "/") {
       e.preventDefault()
@@ -195,7 +199,7 @@ export default function Navbar() {
       }
       return false
     }
-    
+
     // For category links - active when category param matches
     if (item.isCategory) {
       if (pathname === "/products") {
@@ -205,7 +209,7 @@ export default function Navbar() {
       }
       return false
     }
-    
+
     // For other links
     return pathname === item.href
   }
@@ -216,11 +220,10 @@ export default function Navbar() {
         <Banner page={currentPage} />
       </div>
       <nav
-        className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${
-          shop === "A"
+        className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${shop === "A"
             ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
             : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
-        }`}
+          }`}
         style={{ top: "var(--banner-height, 0px)" }}
       >
         {/* Desktop Header */}
@@ -286,28 +289,53 @@ export default function Navbar() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                        <User className="w-6 h-6" />
+                        {user?.isClerkUser ? (
+                          // Show Clerk user avatar if available
+                          clerkUser?.imageUrl ? (
+                            <Image
+                              src={clerkUser.imageUrl}
+                              alt="Profile"
+                              width={24}
+                              height={24}
+                              className="rounded-full"
+                            />
+                          ) : (
+                            <User className="w-6 h-6" />
+                          )
+                        ) : (
+                          <User className="w-6 h-6" />
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-80 p-0 border-0 shadow-2xl">
                       <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-6">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                            <User className="w-6 h-6 text-white" />
+                            {user?.isClerkUser && clerkUser?.imageUrl ? (
+                              <Image
+                                src={clerkUser.imageUrl}
+                                alt="Profile"
+                                width={48}
+                                height={48}
+                                className="rounded-full"
+                              />
+                            ) : (
+                              <User className="w-6 h-6 text-white" />
+                            )}
                           </div>
                           <div className="flex-1">
                             <h3 className="text-white font-semibold text-lg">{user?.name || "User"}</h3>
                             <p className="text-white/80 text-sm">{user?.email}</p>
+                            {user?.isClerkUser && (
+                              <p className="text-white/60 text-xs">Google Account</p>
+                            )}
                           </div>
                         </div>
                       </div>
 
                       <div className="bg-white rounded-b-lg">
                         <div className="p-2">
-                          <DropdownMenuItem
-                            asChild
-                            className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors"
-                          >
+                          <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
                             <Link href="/dashboard" className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                                 <User className="w-4 h-4 text-orange-600" />
@@ -316,10 +344,7 @@ export default function Navbar() {
                             </Link>
                           </DropdownMenuItem>
 
-                          <DropdownMenuItem
-                            asChild
-                            className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors"
-                          >
+                          <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
                             <Link href="/dashboard/orders" className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                                 <ShoppingBag className="w-4 h-4 text-orange-600" />
@@ -328,10 +353,7 @@ export default function Navbar() {
                             </Link>
                           </DropdownMenuItem>
 
-                          <DropdownMenuItem
-                            asChild
-                            className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors"
-                          >
+                          <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
                             <Link href="/dashboard/reservations" className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                                 <Bell className="w-4 h-4 text-orange-600" />
@@ -358,6 +380,7 @@ export default function Navbar() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
+                  // Show login dropdown for non-authenticated users
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
@@ -389,6 +412,7 @@ export default function Navbar() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
+
               </div>
             </div>
 
@@ -407,11 +431,10 @@ export default function Navbar() {
                       key={item.name}
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
-                      className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 ${
-                        isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                      className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
                           ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
                           : "text-white hover:bg-white/20"
-                      }`}
+                        }`}
                     >
                       {item.name}
                     </Link>
@@ -419,7 +442,7 @@ export default function Navbar() {
                 )}
               </div>
 
-             <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300">
+              <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300">
                 <div
                   className="absolute top-1 bg-white rounded-full transition-all duration-300 ease-out shadow-lg"
                   style={{
@@ -431,25 +454,23 @@ export default function Navbar() {
                 <div className="relative flex">
                   <button
                     onClick={() => handleShopToggle("A")}
-                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative z-10 ${
-                      shop === "A" ? "text-orange-600" : "text-white hover:text-gray-200"
-                    }`}
+                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative z-10 ${shop === "A" ? "text-orange-600" : "text-white hover:text-gray-200"
+                      }`}
                     title="Beauty Products"
                   >
                     <Sparkles className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleShopToggle("B")}
-                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative z-10 ${
-                      shop === "B" ? "text-purple-600" : "text-white hover:text-gray-200"
-                    }`}
+                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative z-10 ${shop === "B" ? "text-purple-600" : "text-white hover:text-gray-200"
+                      }`}
                     title="Style Accessories"
                   >
                     <Watch className="w-5 h-5" />
                   </button>
                 </div>
               </div>
-              
+
             </div>
           </div>
         </div>
@@ -501,11 +522,10 @@ export default function Navbar() {
                     key={item.name}
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${
-                      isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                    className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
                         ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
                         : "text-white hover:bg-white/20"
-                    }`}
+                      }`}
                   >
                     {item.name}
                   </Link>
@@ -557,11 +577,10 @@ export default function Navbar() {
                     key={item.name}
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${
-                      isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                    className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
                         ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
                         : "text-gray-700"
-                    }`}
+                      }`}
                   >
                     {item.name}
                   </Link>
@@ -584,11 +603,10 @@ export default function Navbar() {
                       key={item.name}
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
-                      className={`block px-3 py-2 text-base font-medium transition-colors rounded-lg ${
-                        isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                      className={`block px-3 py-2 text-base font-medium transition-colors rounded-lg ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
                           ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
                           : `text-gray-700`
-                      }`}
+                        }`}
                     >
                       {item.name}
                     </Link>
