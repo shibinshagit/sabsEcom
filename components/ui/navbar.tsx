@@ -26,12 +26,11 @@ const baseNavigation = [
   { name: "Orders", href: "/orders" }
 ]
 
-// Category interface - adjust according to your data structure
 interface Category {
   id: string | number
   name: string
   slug?: string
-  shop?: "A" | "B" // if categories are shop-specific
+  shop?: "A" | "B"
 }
 
 export default function Navbar() {
@@ -42,6 +41,7 @@ export default function Navbar() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
 
+
   const pathname = usePathname()
   const cartItems = useSelector((state: RootState) => state.order.cart)
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
@@ -49,6 +49,9 @@ export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth()
   const { shop, setShop } = useShop()
   const { user: clerkUser } = useUser()
+
+const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
+const wishlistCount = wishlistItems.length
 
 
   const currentPage = pathname === "/" ? "home" : pathname.split("/")[1] || "home"
@@ -221,8 +224,8 @@ export default function Navbar() {
       </div>
       <nav
         className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${shop === "A"
-            ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
-            : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
+          ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
+          : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
           }`}
         style={{ top: "var(--banner-height, 0px)" }}
       >
@@ -270,9 +273,20 @@ export default function Navbar() {
                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
                   <Bell className="w-6 h-6" />
                 </Button>
-                <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
+
+                {/* <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
                   <Heart className="w-6 h-6" />
-                </Button>
+                </Button> */}
+                <Link href="/wishlist" className="relative group">
+                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
+                    <Heart className={`w-6 h-6 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
 
                 <Link href="/order" className="relative group">
                   <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
@@ -432,8 +446,8 @@ export default function Navbar() {
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
                       className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                          ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
-                          : "text-white hover:bg-white/20"
+                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
+                        : "text-white hover:bg-white/20"
                         }`}
                     >
                       {item.name}
@@ -523,8 +537,8 @@ export default function Navbar() {
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
                     className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
-                        : "text-white hover:bg-white/20"
+                      ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
+                      : "text-white hover:bg-white/20"
                       }`}
                   >
                     {item.name}
@@ -578,8 +592,8 @@ export default function Navbar() {
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
                     className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
-                        : "text-gray-700"
+                      ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
+                      : "text-gray-700"
                       }`}
                   >
                     {item.name}
@@ -604,8 +618,8 @@ export default function Navbar() {
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
                       className={`block px-3 py-2 text-base font-medium transition-colors rounded-lg ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                          ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
-                          : `text-gray-700`
+                        ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
+                        : `text-gray-700`
                         }`}
                     >
                       {item.name}

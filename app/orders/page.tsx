@@ -1,12 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat } from "lucide-react"
 import Image from "next/image"
+import { useAuth } from "@/lib/contexts/auth-context"
 
 // Utility: safely format numeric or string values coming from the API
 function formatMoney(value: unknown) {
@@ -38,20 +40,46 @@ interface Order {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const router = useRouter()
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/products")
+    }
+  }, [isAuthenticated, authLoading, router])
 
   useEffect(() => {
-    fetchOrders()
-  }, [])
+    if (isAuthenticated && user) {
+      fetchUserOrders()
+    }
+  }, [isAuthenticated, user])
 
-  const fetchOrders = async () => {
+  const fetchUserOrders = async () => {
     try {
+      setError(null)
       const response = await fetch("/api/orders")
+      
+      if (response.status === 401) {
+        // User is not authenticated, redirect to login
+        router.push("/products")
+        return
+      }
+      
       if (response.ok) {
         const data = await response.json()
         setOrders(data)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || "Failed to fetch orders")
+        setOrders([])
       }
     } catch (error) {
       console.error("Error fetching orders:", error)
+      setError("Network error while fetching orders")
+      setOrders([])
     } finally {
       setLoading(false)
     }
@@ -114,6 +142,30 @@ export default function OrdersPage() {
     }
   }
 
+  // Show loading while checking authentication
+  if (authLoading || (!isAuthenticated && loading)) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -147,23 +199,43 @@ export default function OrdersPage() {
           />
         </div>
         <div className="relative z-10 text-center">
-          <h1 className="font-playfair text-5xl font-bold text-white mb-4">Order Status</h1>
-          <p className="text-xl text-gray-200">Track all orders and their current status</p>
+          <h1 className="font-playfair text-5xl font-bold text-white mb-4">My Orders</h1>
+          <p className="text-xl text-gray-200">Track your order history and current status</p>
         </div>
       </section>
 
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">All Orders</h2>
-          <p className="text-gray-600">Real-time updates on all  orders</p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+            {user?.name ? `${user.name}'s Orders` : 'Your Orders'}
+          </h2>
+          <p className="text-gray-600">Real-time updates on your orders</p>
         </div>
 
-        {orders.length === 0 ? (
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800">{error}</p>
+            <button
+              onClick={fetchUserOrders}
+              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {orders.length === 0 && !error ? (
           <Card>
             <CardContent className="text-center py-12">
               <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-800 mb-2">No orders yet</h3>
-              <p className="text-gray-600">Orders will appear here once customers start placing them</p>
+              <p className="text-gray-600 mb-4">You haven't placed any orders yet</p>
+              <button
+                onClick={() => router.push("/products")}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Start Shopping
+              </button>
             </CardContent>
           </Card>
         ) : (
@@ -216,7 +288,7 @@ export default function OrdersPage() {
                         <span>Subtotal</span>
                         <span>${formatMoney(order.total_amount)}</span>
                       </div>
-                      {order.delivery_fee > 0 && (
+                      {Number(order.delivery_fee) > 0 && (
                         <div className="flex justify-between">
                           <span>Delivery Fee</span>
                           <span>${formatMoney(order.delivery_fee)}</span>

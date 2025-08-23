@@ -1,3 +1,4 @@
+
 import type { ReactNode } from "react"
 import type { Metadata } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
@@ -27,14 +28,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <ClerkProvider>
       <html lang="en">
         <body className={`${inter.variable} ${playfair.variable} font-sans`}>
-          {/* Remove the Clerk header completely */}
           <AuthProvider>
             <SettingsProvider>
               <StoreProvider>
                 <ShopProvider>
-                  {/* Your existing User Nav */}
                   <UserNavVisibility />
-
                   <div className="pb-16 lg:pb-0">{children}</div>
                 </ShopProvider>
               </StoreProvider>
@@ -44,5 +42,4 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </html>
     </ClerkProvider>
   )
-}
-
+} 
