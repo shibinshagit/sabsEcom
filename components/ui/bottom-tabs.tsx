@@ -1,91 +1,127 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Menu, Calendar, ShoppingBag, User, Star, Info, Phone } from "lucide-react"
+import { ShoppingBag, User, Sparkles, Watch, QrCode, Home, ShoppingCart } from "lucide-react"
 import { useSelector } from "react-redux"
 import { useAuth } from "@/lib/contexts/auth-context"
+import { useShop } from "@/lib/contexts/shop-context"
 import type { RootState } from "@/lib/store"
-
-const mobileNavigation = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Products", href: "/products", icon: Menu },
-  // { name: "Orders", href: "/orders", icon: ShoppingBag },
-  // { name: "Reviews", href: "/#testimonials", icon: Star, scroll: true },
-  // { name: "About", href: "/#about", icon: Info, scroll: true },
-  { name: "Contact", href: "/#contact", icon: Phone, scroll: true },
-]
 
 export default function BottomTabs() {
   const pathname = usePathname()
   const cartItems = useSelector((state: RootState) => state.order.cart)
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const { isAuthenticated } = useAuth()
+  const { shop, setShop } = useShop()
 
-  const handleNavClick = (item: (typeof mobileNavigation)[0], e: React.MouseEvent) => {
-    if (item.scroll && pathname === "/") {
-      e.preventDefault()
-      const targetId = item.href.split("#")[1]
-      const element = document.getElementById(targetId)
-      if (element) {
-        const navbarHeight = 80
-        const bannerHeight = Number.parseInt(
-          getComputedStyle(document.documentElement).getPropertyValue("--banner-height") || "0",
-        )
-        const bottomTabsHeight = 64 // Height of bottom tabs (h-16 = 64px)
-        const offset = navbarHeight + bannerHeight + bottomTabsHeight
-        const elementPosition = element.offsetTop - offset
+  // Map shop context to local display names
+  const shopType = shop === "A" ? "cosmetics" : "accessories"
 
-        window.scrollTo({
-          top: elementPosition,
-          behavior: "smooth",
-        })
-      }
-    }
+  const navItems = [
+    { href: "/products", icon: Home, label: "Home", isActive: pathname === "/" },
+    { href: "/orders", icon: ShoppingBag, label: "Orders", isActive: pathname === "/orders", badge: cartCount || null },
+    { type: "toggle" },
+    { href: "/cart", icon: ShoppingCart, label: "Cart", isActive: pathname === "/cart" },
+    { href: "/profile", icon: User, label: "Profile", isActive: pathname === "/profile" },
+  ]
+
+  const handleShopToggle = (type: "cosmetics" | "accessories") => {
+    // Update global shop context when toggle is clicked
+    setShop(type === "cosmetics" ? "A" : "B")
   }
 
   return (
-    <>
-      {/* Background blur overlay */}
-      <div className="fixed bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/20 to-transparent lg:hidden" />
-      
-      {/* Main bottom tabs */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/98 via-black/95 to-black/90 backdrop-blur-xl border-t border-gray-700/50 shadow-2xl lg:hidden">
-        <div className="flex items-center justify-around h-16 px-4 py-2">
-        {mobileNavigation.map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href || (item.scroll && pathname === "/" && item.href.includes("#"))
-          
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={(e) => handleNavClick(item, e)}
-              className={`flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 relative group ${
-                isActive 
-                  ? "text-amber-400" 
-                  : "text-gray-400 hover:text-gray-300"
-              }`}
-            >
-              <div className="relative">
-                <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
-                {item.name === "Orders" && cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg">
-                    {cartCount}
+    <div className="fixed bottom-0 left-0 right-0 z-50 md:block lg:hidden">
+      <div className={`relative rounded-t-2xl backdrop-blur-xl border-t shadow-lg transition-all duration-300 ${
+        shop === "A" 
+          ? "bg-gradient-to-r from-yellow-400/60 via-orange-400/60 to-yellow-500/60 border-yellow-300/30" 
+          : "bg-gradient-to-r from-purple-600/60 via-blue-600/60 to-indigo-700/60 border-purple-300/30"
+      }`}>
+        <div className={`absolute inset-0 pointer-events-none transition-all duration-300 ${
+          shop === "A"
+            ? "bg-gradient-to-r from-[#f6d365]/20 to-[#fda085]/20"
+            : "bg-gradient-to-r from-purple-500/20 to-indigo-500/20"
+        }`} />
+
+        <div className="relative flex items-center justify-between px-5 py-3">
+          {navItems.map((item, index) => {
+            // Toggle switch
+            if (item.type === "toggle") {
+              return (
+                <div key="toggle" className="flex flex-col items-center">
+                  <div className={`relative flex rounded-full p-1 backdrop-blur-md border shadow-sm transition-all duration-300 ${
+                    shop === "A" 
+                      ? "bg-white/40 border-white/50" 
+                      : "bg-white/30 border-purple-200/50"
+                  }`}>
+                    <button
+                      onClick={() => handleShopToggle("cosmetics")}
+                      className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 ${
+                        shopType === "cosmetics"
+                          ? "bg-gradient-to-r from-[#f6d365] to-[#fda085] text-white shadow"
+                          : shop === "A"
+                          ? "text-gray-600 hover:text-gray-800"
+                          : "text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      <Sparkles size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleShopToggle("accessories")}
+                      className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 ${
+                        shopType === "accessories"
+                          ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow"
+                          : shop === "A"
+                          ? "text-gray-600 hover:text-gray-800"
+                          : "text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      <Watch size={16} />
+                    </button>
+                  </div>
+                  <span className={`mt-1 text-xs font-medium transition-colors duration-300 ${
+                    shop === "A" ? "text-orange-700" : "text-purple-200"
+                  }`}>
+                    {shopType === "cosmetics" ? "Beauty" : "Style"}
                   </span>
-                )}
-              </div>
-              <span className={`text-xs mt-1 font-medium transition-all duration-300 ${isActive ? 'text-amber-400' : 'text-gray-400 group-hover:text-gray-300'}`}>
-                {item.name}
-              </span>
-              {isActive && (
-                <div className="absolute bottom-0 w-8 h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-lg" />
-              )}
-            </Link>
-          )
-        })}
+                </div>
+              )
+            }
+
+            // Regular nav items
+            const Icon = item.icon!
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`relative flex flex-col items-center transition-all duration-300 ${
+                  item.isActive 
+                    ? shop === "A" 
+                      ? "text-orange-600" 
+                      : "text-purple-200"
+                    : shop === "A"
+                    ? "text-gray-600 hover:text-gray-800"
+                    : "text-gray-300 hover:text-white"
+                }`}
+              >
+                <div className="relative mb-0.5">
+                  <Icon size={20} />
+                  {item.badge && (
+                    <div className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold border border-white">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs">{item.label}</span>
+              </Link>
+            )
+          })}
         </div>
+
+        <div className="h-[env(safe-area-inset-bottom)]" />
       </div>
-    </>
+    </div>
   )
-} 
+}

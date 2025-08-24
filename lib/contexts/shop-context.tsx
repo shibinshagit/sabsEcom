@@ -35,3 +35,4 @@ export const useShop = () => {
   if (!ctx) throw new Error("useShop must be used within a ShopProvider")
   return ctx
 } 
+

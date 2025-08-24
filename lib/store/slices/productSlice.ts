@@ -43,6 +43,7 @@ interface ProductState {
   loading: boolean
   error: string | null
   selectedCategory: number | null
+  initialized: boolean,
 }
 
 const initialState: ProductState = {
@@ -52,7 +53,23 @@ const initialState: ProductState = {
   loading: false,
   error: null,
   selectedCategory: null,
+  initialized: false,
 }
+
+export const initializeApp = createAsyncThunk(
+  "products/initialize", 
+  async (_, { dispatch }) => {
+    const [productsResult, categoriesResult] = await Promise.allSettled([
+      dispatch(fetchProducts()).unwrap(),
+      dispatch(fetchCategories()).unwrap()
+    ])
+
+    return {
+      products: productsResult.status === 'fulfilled' ? productsResult.value : null,
+      categories: categoriesResult.status === 'fulfilled' ? categoriesResult.value : null,
+    }
+  }
+)
 
 export const fetchProducts = createAsyncThunk("products/fetchItems", async () => {
   const response = await fetch("/api/products")
@@ -95,8 +112,31 @@ const productSlice = createSlice({
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.categories = action.payload
       })
+       .addCase(initializeApp.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(initializeApp.fulfilled, (state, action) => {
+        state.loading = false
+        state.initialized = true
+        
+        if (action.payload.products) {
+          state.items = action.payload.products.items || []
+          state.featuredItems = state.items.filter((item: Product) => item.is_featured)
+        }
+        
+        if (action.payload.categories) {
+          state.categories = action.payload.categories
+        }
+      })
+      .addCase(initializeApp.rejected, (state, action) => {
+        state.loading = false
+        state.initialized = true // Still mark as initialized
+        state.error = action.error.message || "Failed to initialize app"
+      })
   },
 })
 
 export const { setSelectedCategory, clearError } = productSlice.actions
 export default productSlice.reducer 
+
