@@ -9,6 +9,7 @@ import { SettingsProvider } from "@/lib/contexts/settings-context"
 import { AuthProvider } from "@/lib/contexts/auth-context"
 import { ShopProvider } from "@/lib/contexts/shop-context"
 import UserNavVisibility from "@/components/ui/user-nav-visibility"
+import { CurrencyProvider } from '@/lib/contexts/currency-context'
 
 import {
   ClerkProvider,
@@ -32,8 +33,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <SettingsProvider>
               <StoreProvider>
                 <ShopProvider>
+                  <CurrencyProvider>
                   <UserNavVisibility />
                   <div className="pb-16 lg:pb-0">{children}</div>
+                  </CurrencyProvider>
                 </ShopProvider>
               </StoreProvider>
             </SettingsProvider>

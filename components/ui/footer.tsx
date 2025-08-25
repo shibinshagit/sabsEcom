@@ -50,7 +50,7 @@ export default function Footer() {
   return (
     <footer id="contact" className={`${theme.bg} ${theme.text} relative overflow-hidden transition-all duration-500`}>
       {/* Floating background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
@@ -67,7 +67,7 @@ export default function Footer() {
             }}
           />
         ))}
-      </div>
+      </div> */}
 
       <div className="max-w-7xl mx-auto px-4 py-20 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">

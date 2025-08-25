@@ -5,13 +5,14 @@ import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "@/lib/store"
 import { fetchProducts, fetchCategories, setSelectedCategory } from "@/lib/store/slices/productSlice"
 import { addToCart } from "@/lib/store/slices/orderSlice"
-import { addToWishlist, removeFromWishlist } from "@/lib/store/slices/wishlistSlice" // Add this import
+import { addToWishlist, removeFromWishlist } from "@/lib/store/slices/wishlistSlice"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useShop } from "@/lib/contexts/shop-context"
+import { useCurrency } from "@/lib/contexts/currency-context" // Add this import
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart } from "lucide-react" // Add Heart icon
+import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -29,11 +30,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const [categoryTransition, setCategoryTransition] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Use the existing dispatch - don't declare it again
   const dispatch = useDispatch<AppDispatch>()
   const { items, categories, selectedCategory, loading } = useSelector((state: RootState) => state.products)
-  const wishlistItems = useSelector((state: RootState) => state.wishlist.items) // Add wishlist selector
-  const { formatPrice } = useSettings()
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
+  const { selectedCurrency, formatPrice } = useCurrency() // Add this line
   const searchParams = useSearchParams()
   const categoryFromUrl = searchParams.get("category")
   const { shop } = useShop()
@@ -42,6 +42,16 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   // Helper function to check if product is in wishlist
   const isInWishlist = (productId: number) => {
     return wishlistItems.some(item => item.id === productId)
+  }
+
+  // Helper function to check if product has price in selected currency
+  const hasSelectedCurrencyPrice = (product: any) => {
+    if (selectedCurrency === 'AED') {
+      return product.price_aed && product.price_aed > 0
+    } else if (selectedCurrency === 'INR') {
+      return product.price_inr && product.price_inr > 0
+    }
+    return true // fallback
   }
 
   // Handle wishlist toggle
@@ -53,6 +63,9 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         id: product.id,
         name: product.name,
         price: product.price,
+        price_aed: product.price_aed,
+        price_inr: product.price_inr,
+        default_currency: product.default_currency,
         image_url: product.image_url,
         category_id: product.category_id,
         category_name: product.category_name,
@@ -93,12 +106,16 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     dispatch(addToCart({ menuItem: product, quantity: 1 }))
   }
 
-  // Filter items by shop category first, then by other filters
+  // Filter items by shop category first, then by currency availability, then by other filters
   const shopFilteredItems = items.filter((item: any) => {
     return item.shop_category === shop
   })
 
-  const filteredItems = shopFilteredItems.filter((item) => {
+  const currencyFilteredItems = shopFilteredItems.filter((item: any) => {
+    return hasSelectedCurrencyPrice(item)
+  })
+
+  const filteredItems = currencyFilteredItems.filter((item) => {
     const matchesCategory = selectedCategory === null || item.category_id === selectedCategory
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -109,13 +126,20 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const shouldShowSpinButton = authInitialized && !isAuthenticated && !showSpinner
 
   const getCurrentCategoryName = () => {
-    if (selectedCategory === null) return `SHOP ${shop}`
+    if (selectedCategory === null) return `SHOP ${shop} (${selectedCurrency})`
     const category = categories.find((cat) => cat.id === selectedCategory)
-    return `Shop ${shop} - ${category?.name || "Products"}`
+    return `Shop ${shop} - ${category?.name || "Products"} (${selectedCurrency})`
   }
 
   const lightningDeals = filteredItems.filter((item) => item.is_featured).slice(0, 4)
-  const clearanceDeals = filteredItems.filter((item) => item.price < 50).slice(0, 4)
+  const clearanceDeals = filteredItems.filter((item) => {
+    if (selectedCurrency === 'AED' && item.price_aed) {
+      return item.price_aed < 50
+    } else if (selectedCurrency === 'INR' && item.price_inr) {
+      return item.price_inr < 2000
+    }
+    return item.price < 50
+  }).slice(0, 4)
   const newArrivals = filteredItems.filter((item) => item.is_new).slice(0, 12)
 
   return (
@@ -129,6 +153,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             <div className="flex items-center gap-4">
               <h3 className="text-xl font-bold text-gray-900">{getCurrentCategoryName()}</h3>
               <span className="text-gray-500">({filteredItems.length} items)</span>
+              {currencyFilteredItems.length !== shopFilteredItems.length && (
+                <Badge variant="outline" className="text-orange-600 border-orange-300">
+                  Filtered by {selectedCurrency} availability
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <Button
@@ -194,11 +223,19 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                       </div>
                       <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">FLASH</Badge>
                       <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs">{shop}</Badge>
-                      
                     </div>
                     <CardContent className="p-3 lg:p-4">
-                      <p className="text-red-500 font-bold text-sm lg:text-base">{formatPrice(item.price)}</p>
-                      <p className="text-gray-400 text-xs line-through">{formatPrice(item.price * 1.8)}</p>
+                      <p className="text-red-500 font-bold text-sm lg:text-base">
+                        {formatPrice(item.price_aed, item.price_inr, item.default_currency)}
+                      </p>
+                      <p className="text-gray-400 text-xs line-through">
+                        {selectedCurrency === 'AED' && item.price_aed
+                          ? `AED ${(item.price_aed * 1.8).toFixed(2)}`
+                          : selectedCurrency === 'INR' && item.price_inr
+                          ? `₹ ${(item.price_inr * 1.8).toFixed(2)}`
+                          : `${formatPrice(item.price_aed, item.price_inr, item.default_currency)} + 80%`
+                        }
+                      </p>
                       <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
                       <div className="flex items-center gap-1 mt-2">
                         {[...Array(5)].map((_, i) => (
@@ -236,7 +273,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             <div className="flex items-center justify-between mb-4 lg:mb-6">
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5 text-green-500" />
-                <span className="font-bold text-lg lg:text-xl">All Products in SHOP {shop}</span>
+                <span className="font-bold text-lg lg:text-xl">All Products in SHOP {shop} ({selectedCurrency})</span>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </div>
@@ -289,9 +326,6 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                           <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">HOT</Badge>
                         )}
                         <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs">{shop}</Badge>
-                        
-                        
-                        
                         <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-full text-xs flex items-center">
                           <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
                           4.8
@@ -300,9 +334,16 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                       <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <p className="text-red-500 font-bold text-sm lg:text-lg">{formatPrice(item.price)}</p>
+                            <p className="text-red-500 font-bold text-sm lg:text-lg">
+                              {formatPrice(item.price_aed, item.price_inr, item.default_currency)}
+                            </p>
                             <p className="text-gray-400 text-xs lg:text-sm line-through">
-                              {formatPrice(item.price * 1.6)}
+                              {selectedCurrency === 'AED' && item.price_aed
+                                ? `AED ${(item.price_aed * 1.6).toFixed(2)}`
+                                : selectedCurrency === 'INR' && item.price_inr
+                                ? `₹ ${(item.price_inr * 1.6).toFixed(2)}`
+                                : 'Was higher'
+                              }
                             </p>
                           </div>
                           <Badge className="bg-red-100 text-red-600 text-xs">-38%</Badge>
@@ -359,27 +400,13 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🔍</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found in Shop {shop}</h3>
-                <p className="text-gray-500">Try switching to the other shop or adjusting your search.</p>
+                <p className="text-gray-500">
+                  No products available with {selectedCurrency} pricing. Try switching currency or check the other shop.
+                </p>
               </div>
             )}
           </div>
         </div>
-
-        {/* New Arrivals Section - Apply similar wishlist functionality here as well */}
-        {newArrivals.length > 0 && (
-          <div className="px-4 lg:px-6 mt-6 pb-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-green-500" />
-                  <span className="font-bold text-lg lg:text-xl">New Arrivals in SHOP {shop}</span>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </div>
-              {/* Similar grid structure for new arrivals with wishlist functionality */}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

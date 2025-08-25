@@ -1,10 +1,38 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 
+// interface Product {
+//   id: number
+//   name: string
+//   description: string
+//   price: number
+//   image_url: string
+//   category_id: number
+//   category_name: string
+//   is_available: boolean
+//   is_featured: boolean
+//   is_new: boolean
+//   new_until_date: string
+//   features: string[]
+//   specifications_text: string
+//   warranty_months: number
+//   brand: string
+//   model: string
+//   condition_type: string
+//   warranty_period: number
+//   storage_capacity: string
+//   color: string
+//   stock_quantity: number
+//   sku: string
+//   created_at: string
+// }
 interface Product {
   id: number
   name: string
   description: string
-  price: number
+  price: number // Keep original for backwards compatibility
+  price_aed: number | null
+  price_inr: number | null
+  primary_currency: 'AED' | 'INR'
   image_url: string
   category_id: number
   category_name: string
@@ -23,6 +51,7 @@ interface Product {
   color: string
   stock_quantity: number
   sku: string
+  shop_category: string
   created_at: string
 }
 

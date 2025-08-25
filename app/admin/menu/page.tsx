@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store } from "lucide-react"
+import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store, DollarSign } from "lucide-react"
 import Image from "next/image"
 import ImageUpload from "@/components/ui/image-upload"
 
@@ -22,6 +21,9 @@ interface Product {
   name: string
   description: string
   price: number
+  price_aed?: number
+  price_inr?: number
+  default_currency: 'AED' | 'INR'
   image_url: string
   category_id: number
   category_name: string
@@ -75,7 +77,10 @@ export default function ProductManagement() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: 0,
+    price: 0, // Keep for backward compatibility
+    price_aed: 0,
+    price_inr: 0,
+    default_currency: "AED" as 'AED' | 'INR',
     image_url: "",
     category_id: 0,
     shop_category: "",
@@ -144,8 +149,9 @@ export default function ProductManagement() {
       return
     }
 
-    if (!formData.price || formData.price <= 0) {
-      alert("Valid price is required")
+    // Validate at least one price is provided
+    if (!formData.price_aed && !formData.price_inr) {
+      alert("At least one price (AED or INR) is required")
       return
     }
 
@@ -222,6 +228,9 @@ export default function ProductManagement() {
       name: "",
       description: "",
       price: 0,
+      price_aed: 0,
+      price_inr: 0,
+      default_currency: "AED",
       image_url: "",
       category_id: 0,
       shop_category: "",
@@ -250,6 +259,9 @@ export default function ProductManagement() {
       name: item.name,
       description: item.description || "",
       price: item.price,
+      price_aed: item.price_aed || 0,
+      price_inr: item.price_inr || 0,
+      default_currency: item.default_currency || "AED",
       image_url: item.image_url || "",
       category_id: item.category_id,
       shop_category: item.shop_category || "",
@@ -275,6 +287,30 @@ export default function ProductManagement() {
   const openAddDialog = () => {
     resetForm()
     setIsDialogOpen(true)
+  }
+
+  // Format price display based on currency
+  const formatPrice = (product: Product) => {
+    if (product.price_aed && product.price_inr) {
+      return (
+        <div className="flex flex-col">
+          <span className={`font-semibold ${product.default_currency === 'AED' ? 'text-cyan-400' : ''}`}>
+            AED {product.price_aed} 
+            {product.default_currency === 'AED' && <Badge variant="outline" className="ml-1 text-xs">Default</Badge>}
+          </span>
+          <span className={`text-sm text-gray-400 ${product.default_currency === 'INR' ? 'text-cyan-400' : ''}`}>
+            ₹ {product.price_inr}
+            {product.default_currency === 'INR' && <Badge variant="outline" className="ml-1 text-xs">Default</Badge>}
+          </span>
+        </div>
+      )
+    } else if (product.price_aed) {
+      return <span className="font-semibold">AED {product.price_aed}</span>
+    } else if (product.price_inr) {
+      return <span className="font-semibold">₹ {product.price_inr}</span>
+    } else {
+      return <span className="font-semibold">${product.price}</span>
+    }
   }
 
   const filteredItems = products.filter((item) => {
@@ -340,11 +376,12 @@ export default function ProductManagement() {
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingItem ? "Edit Product" : "Add New Product"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Product Name *</Label>
@@ -358,64 +395,119 @@ export default function ProductManagement() {
                 </div>
 
                 <div>
-                  <Label htmlFor="price">Price ($) *</Label>
+                  <Label htmlFor="default_currency">Default Currency *</Label>
+                  <Select
+                    value={formData.default_currency}
+                    onValueChange={(value: 'AED' | 'INR') => setFormData({ ...formData, default_currency: value })}
+                    required
+                  >
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-700 border-gray-600">
+                      <SelectItem value="AED" className="text-white">
+                        <div className="flex items-center space-x-2">
+                          <DollarSign className="w-4 h-4" />
+                          <span>AED (UAE Dirham)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="INR" className="text-white">
+                        <div className="flex items-center space-x-2">
+                          <DollarSign className="w-4 h-4" />
+                          <span>INR (Indian Rupee)</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Currency Price Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price_aed" className="flex items-center">
+                    AED Price 
+                    {formData.default_currency === 'AED' && <span className="text-red-400 ml-1">*</span>}
+                    {formData.default_currency === 'AED' && <Badge variant="outline" className="ml-2 text-xs">Primary</Badge>}
+                  </Label>
                   <Input
-                    id="price"
+                    id="price_aed"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                    value={formData.price_aed}
+                    onChange={(e) => setFormData({ ...formData, price_aed: Number(e.target.value) })}
                     className="bg-gray-700 border-gray-600 text-white"
-                    required
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="price_inr" className="flex items-center">
+                    INR Price (₹)
+                    {formData.default_currency === 'INR' && <span className="text-red-400 ml-1">*</span>}
+                    {formData.default_currency === 'INR' && <Badge variant="outline" className="ml-2 text-xs">Primary</Badge>}
+                  </Label>
+                  <Input
+                    id="price_inr"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.price_inr}
+                    onChange={(e) => setFormData({ ...formData, price_inr: Number(e.target.value) })}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="0.00"
                   />
                 </div>
               </div>
 
-              {/* Shop Selection - Required field */}
-              <div>
-                <Label htmlFor="shop_category">Shop *</Label>
-                <Select
-                  value={formData.shop_category}
-                  onValueChange={(value) => setFormData({ ...formData, shop_category: value })}
-                  required
-                >
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                    <SelectValue placeholder="Select a shop (required)" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
-                    {shops.map((shop) => (
-                      <SelectItem key={shop.id} value={shop.id} className="text-white">
-                        <div className="flex items-center space-x-2">
-                          <Store className="w-4 h-4" />
-                          <span>{shop.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Shop and Category Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="shop_category">Shop *</Label>
+                  <Select
+                    value={formData.shop_category}
+                    onValueChange={(value) => setFormData({ ...formData, shop_category: value })}
+                    required
+                  >
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select a shop (required)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-700 border-gray-600">
+                      {shops.map((shop) => (
+                        <SelectItem key={shop.id} value={shop.id} className="text-white">
+                          <div className="flex items-center space-x-2">
+                            <Store className="w-4 h-4" />
+                            <span>{shop.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="category">Category *</Label>
+                  <Select
+                    value={formData.category_id.toString()}
+                    onValueChange={(value) => setFormData({ ...formData, category_id: Number(value) })}
+                    required
+                  >
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select a category (required)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-700 border-gray-600">
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()} className="text-white">
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category_id.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, category_id: Number(value) })}
-                  required
-                >
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                    <SelectValue placeholder="Select a category (required)" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()} className="text-white">
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
+              {/* Description */}
               <div>
                 <Label htmlFor="description">Description</Label>
                 <Textarea
@@ -427,12 +519,14 @@ export default function ProductManagement() {
                 />
               </div>
 
+              {/* Image Upload */}
               <ImageUpload
                 value={formData.image_url}
                 onChange={(url) => setFormData({ ...formData, image_url: url })}
                 label="Product Image"
               />
 
+              {/* Brand and Model */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="brand">Brand</Label>
@@ -457,6 +551,7 @@ export default function ProductManagement() {
                 </div>
               </div>
 
+              {/* Condition and Color */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="condition_type">Condition</Label>
@@ -487,6 +582,7 @@ export default function ProductManagement() {
                 </div>
               </div>
 
+              {/* Warranty and Stock */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="warranty_months">Expiry (months)</Label>
@@ -513,6 +609,7 @@ export default function ProductManagement() {
                 </div>
               </div>
 
+              {/* SKU */}
               <div>
                 <Label htmlFor="sku">SKU (Leave empty to auto-generate)</Label>
                 <Input
@@ -524,6 +621,7 @@ export default function ProductManagement() {
                 />
               </div>
 
+              {/* Features */}
               <div>
                 <Label htmlFor="features">Features (comma separated)</Label>
                 <Textarea
@@ -536,6 +634,7 @@ export default function ProductManagement() {
                 />
               </div>
 
+              {/* Specifications */}
               <div>
                 <Label htmlFor="specifications_text">Specifications</Label>
                 <Textarea
@@ -548,7 +647,8 @@ export default function ProductManagement() {
                 />
               </div>
 
-              <div className="flex items-center space-x-4">
+              {/* Switches */}
+              <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="is_available"
@@ -577,6 +677,7 @@ export default function ProductManagement() {
                 </div>
               </div>
 
+              {/* New Until Date */}
               {formData.is_new && (
                 <div>
                   <Label htmlFor="new_until_date">New Until Date</Label>
@@ -590,6 +691,7 @@ export default function ProductManagement() {
                 </div>
               )}
 
+              {/* Form Actions */}
               <div className="flex space-x-2 pt-4">
                 <Button
                   type="button"
@@ -722,7 +824,9 @@ export default function ProductManagement() {
                       <span className="text-gray-300">{item.category_name}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-white font-semibold">${item.price}</span>
+                      <div className="text-white">
+                        {formatPrice(item)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className="text-gray-300">{item.stock_quantity || 0}</span>

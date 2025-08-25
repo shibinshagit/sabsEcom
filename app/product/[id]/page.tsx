@@ -4,14 +4,15 @@ import { useParams, useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import type { AppDispatch } from "@/lib/store"
 import { addToCart } from "@/lib/store/slices/orderSlice"
-import { useSettings } from "@/lib/contexts/settings-context"
+import { useCurrency } from "@/lib/contexts/currency-context" // Add this import
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ArrowLeft, ShoppingCart, Heart, Share2 } from "lucide-react"
+import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe } from "lucide-react"
 import Image from "next/image"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface Product {
   id: number
@@ -39,7 +40,7 @@ export default function ProductPage() {
   const params = useParams()
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const { formatPrice } = useSettings()
+  const { selectedCurrency, setSelectedCurrency, formatPrice, getCurrencySymbol } = useCurrency() // Use currency context
   
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
@@ -79,6 +80,11 @@ export default function ProductPage() {
       dispatch(addToCart({ menuItem: product, quantity }))
       router.push('/checkout')
     }
+  }
+
+  // Currency switch handler
+  const handleCurrencyChange = (currency: 'AED' | 'INR') => {
+    setSelectedCurrency(currency)
   }
 
   if (loading) {
@@ -127,19 +133,78 @@ export default function ProductPage() {
       
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => router.back()}
-            className="flex items-center gap-2 hover:bg-gray-100"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-600">{product.category_name}</span>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-900 font-medium">{product.name}</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              onClick={() => router.back()}
+              className="flex items-center gap-2 hover:bg-gray-100"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-600">{product.category_name}</span>
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-900 font-medium">{product.name}</span>
+          </div>
+
+          {/* Currency Switcher */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                <span className="font-semibold">{selectedCurrency}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 p-2 border-0 shadow-xl">
+              <div className="bg-white rounded-lg">
+                <DropdownMenuItem
+                  onClick={() => handleCurrencyChange('AED')}
+                  className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${
+                    selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span className="text-blue-600 font-bold text-sm">AED</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">UAE Dirham</span>
+                        <p className="text-xs text-gray-500">AED</p>
+                      </div>
+                    </div>
+                    {selectedCurrency === 'AED' && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                  </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => handleCurrencyChange('INR')}
+                  className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${
+                    selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <span className="text-green-600 font-bold text-sm">₹</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Indian Rupee</span>
+                        <p className="text-xs text-gray-500">INR</p>
+                      </div>
+                    </div>
+                    {selectedCurrency === 'INR' && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    )}
+                  </div>
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
@@ -179,7 +244,7 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* Price */}
+            {/* Price - Now uses currency context */}
             <div className="border-b pb-6">
               <div className="flex items-center gap-4 mb-2">
                 <span className="text-3xl font-bold text-red-500">{formatPrice(product.price)}</span>
@@ -272,29 +337,37 @@ export default function ProductPage() {
             <div className="space-y-4">
               <div className="flex gap-4">
                 <Button
-                  onClick={handleAddToCart}
+                  onClick={handleBuyNow}
                   className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-3 text-lg font-medium"
                   disabled={!product.is_available || product.stock_quantity === 0}
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   Buy Now
                 </Button>
-                
               </div>
               
               <div className="flex gap-4">
+                <Button 
+                  onClick={handleAddToCart}
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  disabled={!product.is_available || product.stock_quantity === 0}
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Add to Cart
+                </Button>
                 <Button variant="outline" size="sm" className="flex-1">
                   <Heart className="w-4 h-4 mr-2" />
                   Add to Wishlist
                 </Button>
-                
               </div>
             </div>
 
             {/* Additional Info */}
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">product specification</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">Product Specification</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Fast and free shipping</li>
                   <li>• 30-day return policy</li>

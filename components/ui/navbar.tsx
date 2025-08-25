@@ -4,12 +4,13 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, ShoppingBag, User, LogOut, Search, Bell, Heart, Sparkles, Watch } from "lucide-react"
+import { Menu, X, ShoppingBag, User, LogOut, Search, Bell, Heart, Sparkles, Watch, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSelector } from "react-redux"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useAuth } from "@/lib/contexts/auth-context"
+import { useCurrency } from "@/lib/contexts/currency-context" // Add this import
 import type { RootState } from "@/lib/store"
 import Image from "next/image"
 import Banner from "@/components/ui/banner"
@@ -41,7 +42,6 @@ export default function Navbar() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
 
-
   const pathname = usePathname()
   const cartItems = useSelector((state: RootState) => state.order.cart)
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
@@ -49,10 +49,10 @@ export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth()
   const { shop, setShop } = useShop()
   const { user: clerkUser } = useUser()
+  const { selectedCurrency, setSelectedCurrency, getCurrencySymbol } = useCurrency() // Add this line
 
-const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
-const wishlistCount = wishlistItems.length
-
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
+  const wishlistCount = wishlistItems.length
 
   const currentPage = pathname === "/" ? "home" : pathname.split("/")[1] || "home"
 
@@ -61,11 +61,9 @@ const wishlistCount = wishlistItems.length
     const fetchCategories = async () => {
       try {
         setLoading(true)
-        // Replace this with your actual API endpoint
         const response = await fetch('/api/categories')
         const data = await response.json()
 
-        // Filter categories by shop if needed
         const filteredCategories = shop
           ? data.filter((cat: Category) => !cat.shop || cat.shop === shop)
           : data
@@ -73,7 +71,6 @@ const wishlistCount = wishlistItems.length
         setCategories(filteredCategories)
       } catch (error) {
         console.error('Error fetching categories:', error)
-        // Fallback categories if API fails
         setCategories([
           { id: 1, name: "Beauty Products", slug: "beauty" },
           { id: 2, name: "Style Accessories", slug: "style" }
@@ -84,18 +81,18 @@ const wishlistCount = wishlistItems.length
     }
 
     fetchCategories()
-  }, [shop]) // Re-fetch when shop changes
+  }, [shop])
 
   // Build navigation with dynamic categories
   const navigation = [
-    ...baseNavigation.slice(0, 2), // Home and Products (show all products)
+    ...baseNavigation.slice(0, 2),
     ...categories.map(category => ({
       name: category.name,
       href: `/products?category=${category.slug || category.id}`,
       categoryId: category.id,
       isCategory: true
     })),
-    ...baseNavigation.slice(2) // Orders and other items
+    ...baseNavigation.slice(2)
   ]
 
   useEffect(() => {
@@ -140,26 +137,19 @@ const wishlistCount = wishlistItems.length
       return
     }
 
-    // Handle Home click - redirect to home page
     if (item.name === "Home") {
-      // Let the default Link behavior handle the navigation
       return
     }
 
-    // Handle Products click - show all products (no category filter)
     if (item.name === "Products") {
-      // Navigate to /products without any category parameter
       window.location.href = "/products"
       return
     }
 
-    // Handle category clicks - show specific category
     if ((item as any).isCategory) {
-      // Let the default Link behavior handle the navigation with category parameter
       return
     }
 
-    // Handle scroll-based navigation (if you have any)
     if ((item as any).scroll && pathname === "/") {
       e.preventDefault()
       const targetId = item.href.split("#")[1]
@@ -190,20 +180,17 @@ const wishlistCount = wishlistItems.length
 
   // Helper function to check if current path matches category
   const isActiveCategoryLink = (item: any) => {
-    // For Home and Products links - active when on /products without category param or on home page
     if (item.name === "Home") {
       return pathname === "/"
     }
     if (item.name === "Products") {
-      // Active when on /products page without category parameter
       if (pathname === "/products") {
         const urlParams = new URLSearchParams(window.location.search)
-        return !urlParams.get('category') // No category param means show all products
+        return !urlParams.get('category')
       }
       return false
     }
 
-    // For category links - active when category param matches
     if (item.isCategory) {
       if (pathname === "/products") {
         const urlParams = new URLSearchParams(window.location.search)
@@ -213,7 +200,6 @@ const wishlistCount = wishlistItems.length
       return false
     }
 
-    // For other links
     return pathname === item.href
   }
 
@@ -270,13 +256,67 @@ const wishlistCount = wishlistItems.length
 
               {/* Right side buttons */}
               <div className="flex items-center gap-4">
+                {/* Currency Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3 flex items-center gap-2">
+                      <Globe className="w-5 h-5" />
+                      <span className="font-semibold">{selectedCurrency}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 p-2 border-0 shadow-xl">
+                    <div className="bg-white rounded-lg">
+                      <DropdownMenuItem
+                        onClick={() => setSelectedCurrency('AED')}
+                        className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${
+                          selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <span className="text-blue-600 font-bold text-sm">AED</span>
+                            </div>
+                            <div>
+                              <span className="font-medium">UAE Dirham</span>
+                              <p className="text-xs text-gray-500">AED</p>
+                            </div>
+                          </div>
+                          {selectedCurrency === 'AED' && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={() => setSelectedCurrency('INR')}
+                        className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${
+                          selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                              <span className="text-green-600 font-bold text-sm">₹</span>
+                            </div>
+                            <div>
+                              <span className="font-medium">Indian Rupee</span>
+                              <p className="text-xs text-gray-500">INR</p>
+                            </div>
+                          </div>
+                          {selectedCurrency === 'INR' && (
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
                   <Bell className="w-6 h-6" />
                 </Button>
 
-                {/* <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                  <Heart className="w-6 h-6" />
-                </Button> */}
                 <Link href="/wishlist" className="relative group">
                   <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
                     <Heart className={`w-6 h-6 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
@@ -304,7 +344,6 @@ const wishlistCount = wishlistItems.length
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
                         {user?.isClerkUser ? (
-                          // Show Clerk user avatar if available
                           clerkUser?.imageUrl ? (
                             <Image
                               src={clerkUser.imageUrl}
@@ -394,7 +433,6 @@ const wishlistCount = wishlistItems.length
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  // Show login dropdown for non-authenticated users
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
@@ -426,7 +464,6 @@ const wishlistCount = wishlistItems.length
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-
               </div>
             </div>
 
@@ -484,7 +521,6 @@ const wishlistCount = wishlistItems.length
                   </button>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -497,9 +533,56 @@ const wishlistCount = wishlistItems.length
                 {shop === "A" ? "SABS ONLINE - BEAUTY" : "SABS ONLINE - STYLE"}
               </h1>
               <div className="flex items-center gap-3">
+                {/* Currency Dropdown for Tablet */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2 flex items-center gap-1">
+                      <Globe className="w-4 h-4" />
+                      <span className="text-sm font-semibold">{selectedCurrency}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44 p-1 border-0 shadow-xl">
+                    <div className="bg-white rounded-lg">
+                      <DropdownMenuItem
+                        onClick={() => setSelectedCurrency('AED')}
+                        className={`cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors ${
+                          selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-600 font-bold text-sm">AED</span>
+                          <span className="text-sm">UAE Dirham</span>
+                        </div>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={() => setSelectedCurrency('INR')}
+                        className={`cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors ${
+                          selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600 font-bold text-sm">₹</span>
+                          <span className="text-sm">Indian Rupee</span>
+                        </div>
+                      </DropdownMenuItem>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
                   <Bell className="w-5 h-5" />
                 </Button>
+                <Link href="/wishlist" className="relative">
+                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
+                    <Heart className={`w-5 h-5 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
                 <Link href="/order" className="relative">
                   <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
                     <ShoppingBag className="w-5 h-5" />
@@ -510,7 +593,69 @@ const wishlistCount = wishlistItems.length
                     )}
                   </Button>
                 </Link>
-                {/* ... rest of tablet user dropdown logic same as before ... */}
+
+                {isAuthenticated ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
+                        {user?.isClerkUser && clerkUser?.imageUrl ? (
+                          <Image
+                            src={clerkUser.imageUrl}
+                            alt="Profile"
+                            width={20}
+                            height={20}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          <User className="w-5 h-5" />
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64 p-0 border-0 shadow-2xl">
+                      <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                            {user?.isClerkUser && clerkUser?.imageUrl ? (
+                              <Image
+                                src={clerkUser.imageUrl}
+                                alt="Profile"
+                                width={40}
+                                height={40}
+                                className="rounded-full"
+                              />
+                            ) : (
+                              <User className="w-5 h-5 text-white" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-white font-semibold">{user?.name || "User"}</h3>
+                            <p className="text-white/80 text-sm">{user?.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-b-lg p-2 space-y-1">
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard" className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                            <User className="w-4 h-4 text-orange-600" />
+                            <span className="text-gray-700">Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-50 text-red-600 cursor-pointer">
+                          <LogOut className="w-4 h-4" />
+                          <span>Logout</span>
+                        </DropdownMenuItem>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button 
+                    onClick={handleLoginClick}
+                    variant="ghost" 
+                    className="text-white hover:bg-white/20 rounded-full p-2"
+                  >
+                    <User className="w-5 h-5" />
+                  </Button>
+                )}
               </div>
             </div>
             <div className="relative mb-3">
@@ -558,6 +703,44 @@ const wishlistCount = wishlistItems.length
               </Button>
               <h1 className="text-lg font-bold text-white">{shop === "A" ? "BEAUTY" : "STYLE"}</h1>
               <div className="flex items-center gap-2">
+                {/* Currency for Mobile */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="text-white hover:bg-white/20 p-1">
+                      <div className="flex items-center gap-1">
+                        <Globe className="w-4 h-4" />
+                        <span className="text-xs font-bold">{selectedCurrency}</span>
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 p-1 border-0 shadow-xl">
+                    <DropdownMenuItem
+                      onClick={() => setSelectedCurrency('AED')}
+                      className={`cursor-pointer rounded p-2 text-sm ${
+                        selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                      }`}
+                    >
+                      AED
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setSelectedCurrency('INR')}
+                      className={`cursor-pointer rounded p-2 text-sm ${
+                        selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                      }`}
+                    >
+                      INR ₹
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Link href="/wishlist" className="relative">
+                  <Heart className={`w-5 h-5 text-white ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
                 <Link href="/order" className="relative">
                   <ShoppingBag className="w-5 h-5 text-white" />
                   {cartCount > 0 && (
@@ -566,7 +749,52 @@ const wishlistCount = wishlistItems.length
                     </span>
                   )}
                 </Link>
-                {/* ... rest of mobile user dropdown logic same as before ... */}
+
+                {isAuthenticated ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="text-white p-1">
+                        {user?.isClerkUser && clerkUser?.imageUrl ? (
+                          <Image
+                            src={clerkUser.imageUrl}
+                            alt="Profile"
+                            width={20}
+                            height={20}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          <User className="w-5 h-5" />
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 p-0 border-0 shadow-xl">
+                      <div className="bg-orange-500 rounded-t-lg p-3">
+                        <div className="text-center">
+                          <h3 className="text-white font-semibold text-sm">{user?.name || "User"}</h3>
+                          <p className="text-white/80 text-xs">{user?.email}</p>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-b-lg p-2">
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard" className="block p-2 text-sm text-gray-700 hover:bg-gray-50 rounded">
+                            Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleLogout} className="block p-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer">
+                          Logout
+                        </DropdownMenuItem>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button 
+                    onClick={handleLoginClick}
+                    variant="ghost" 
+                    className="text-white p-1"
+                  >
+                    <User className="w-5 h-5" />
+                  </Button>
+                )}
               </div>
             </div>
             <div className="relative mb-3">

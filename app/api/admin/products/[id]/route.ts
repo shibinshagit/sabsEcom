@@ -1,8 +1,7 @@
-
-// app/api/admin/products/[id]/route.ts
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 import { ensureShopCategoryColumn } from "@/lib/migrations/ensure-shop-category"
+import { ensureCurrencySupport } from "@/lib/migrations/ensure-currency-support"
 
 export async function PUT(
   request: Request,
@@ -11,12 +10,17 @@ export async function PUT(
   try {
     // Ensure shop_category column exists
     await ensureShopCategoryColumn()
+    // Ensure currency support exists
+    await ensureCurrencySupport()
     
     const body = await request.json()
     const {
       name,
       description,
-      price,
+      price, // Keep for backward compatibility
+      price_aed,
+      price_inr,
+      default_currency,
       image_url,
       category_id,
       shop_category,
@@ -38,9 +42,25 @@ export async function PUT(
     } = body
 
     // Validate required fields
-    if (!name || !price || !category_id) {
+    if (!name || !category_id) {
       return NextResponse.json(
-        { error: "Name, price, and category are required" },
+        { error: "Name and category are required" },
+        { status: 400 }
+      )
+    }
+
+    // Validate at least one price is provided
+    if (!price_aed && !price_inr && !price) {
+      return NextResponse.json(
+        { error: "At least one price (AED or INR) is required" },
+        { status: 400 }
+      )
+    }
+
+    // Validate default currency
+    if (default_currency && !['AED', 'INR'].includes(default_currency)) {
+      return NextResponse.json(
+        { error: "Default currency must be either 'AED' or 'INR'" },
         { status: 400 }
       )
     }
@@ -61,11 +81,26 @@ export async function PUT(
       )
     }
 
+    // Determine default currency if not provided
+    let finalDefaultCurrency = default_currency || 'AED'
+    if (!default_currency) {
+      if (price_aed && !price_inr) finalDefaultCurrency = 'AED'
+      else if (price_inr && !price_aed) finalDefaultCurrency = 'INR'
+    }
+
+    // Handle backward compatibility for price field
+    const finalPriceAed = price_aed || (finalDefaultCurrency === 'AED' ? price : null)
+    const finalPriceInr = price_inr || (finalDefaultCurrency === 'INR' ? price : null)
+    const finalPrice = price || (finalDefaultCurrency === 'AED' ? price_aed : price_inr)
+
     const [product] = await sql`
       UPDATE products SET
         name = ${name},
         description = ${description || ''},
-        price = ${price},
+        price = ${finalPrice},
+        price_aed = ${finalPriceAed},
+        price_inr = ${finalPriceInr},
+        default_currency = ${finalDefaultCurrency},
         image_url = ${image_url || ''},
         category_id = ${category_id},
         shop_category = ${shop_category},
@@ -103,6 +138,7 @@ export async function PUT(
   }
 }
 
+// Keep GET and DELETE methods unchanged
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
@@ -146,6 +182,8 @@ export async function GET(
   try {
     // Ensure shop_category column exists
     await ensureShopCategoryColumn()
+    // Ensure currency support exists
+    await ensureCurrencySupport()
     
     // Validate product ID
     if (!params.id || isNaN(Number(params.id))) {
