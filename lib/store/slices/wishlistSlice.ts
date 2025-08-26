@@ -4,6 +4,9 @@ interface WishlistItem {
   id: number
   name: string
   price: number
+  price_aed?: number  
+  price_inr?: number 
+  default_currency?: string 
   image_url: string
   category_id?: number
   category_name?: string

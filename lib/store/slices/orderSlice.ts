@@ -35,6 +35,21 @@ const initialState: OrderState = {
   error: null,
 }
 
+// Helper function to calculate total based on selected currency
+const calculateTotal = (cart: CartItem[], selectedCurrency: string) => {
+  return cart.reduce((sum, item) => {
+    let price = item.menuItem.price // fallback price
+    
+    if (selectedCurrency === 'AED' && item.menuItem.price_aed) {
+      price = item.menuItem.price_aed
+    } else if (selectedCurrency === 'INR' && item.menuItem.price_inr) {
+      price = item.menuItem.price_inr
+    }
+    
+    return sum + price * item.quantity
+  }, 0)
+}
+
 export const submitOrder = createAsyncThunk("order/submit", async (orderData: any) => {
   const response = await fetch("/api/orders", {
     method: "POST",
@@ -49,13 +64,18 @@ const orderSlice = createSlice({
   name: "order",
   initialState,
   reducers: {
-    addToCart: (state, action: PayloadAction<{ menuItem: MenuItem; quantity: number; specialRequests?: string }>) => {
+    addToCart: (state, action: PayloadAction<{ menuItem: MenuItem; quantity: number; specialRequests?: string; selectedCurrency?: string }>) => {
       const existingItem = state.cart.find((item) => item.menuItem.id === action.payload.menuItem.id)
       if (existingItem) {
         existingItem.quantity += action.payload.quantity
       } else {
-        state.cart.push(action.payload)
+        state.cart.push({
+          menuItem: action.payload.menuItem,
+          quantity: action.payload.quantity,
+          specialRequests: action.payload.specialRequests
+        })
       }
+      // Calculate total with default currency (will be recalculated by currency context)
       state.total = state.cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0)
     },
     removeFromCart: (state, action: PayloadAction<number>) => {
@@ -71,6 +91,11 @@ const orderSlice = createSlice({
         }
       }
       state.total = state.cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0)
+    },
+    // New action to recalculate total with selected currency
+    recalculateTotal: (state, action: PayloadAction<string>) => {
+      const selectedCurrency = action.payload
+      state.total = calculateTotal(state.cart, selectedCurrency)
     },
     setOrderType: (state, action: PayloadAction<"dine-in" | "takeaway" | "delivery">) => {
       state.orderType = action.payload
@@ -101,6 +126,6 @@ const orderSlice = createSlice({
   },
 })
 
-export const { addToCart, removeFromCart, updateQuantity, setOrderType, setCustomerInfo, clearCart } =
+export const { addToCart, removeFromCart, updateQuantity, recalculateTotal, setOrderType, setCustomerInfo, clearCart } =
   orderSlice.actions
 export default orderSlice.reducer

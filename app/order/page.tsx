@@ -10,9 +10,11 @@ import {
   setCustomerInfo,
   submitOrder,
   clearCart,
+  recalculateTotal, // Add this import
 } from "@/lib/store/slices/orderSlice"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useAuth } from "@/lib/contexts/auth-context"
+import { useCurrency } from "@/lib/contexts/currency-context" // Add this import
 import Navbar from "@/components/ui/navbar"
 import LoginModal from "@/components/auth/login-modal"
 import { Button } from "@/components/ui/button"
@@ -28,7 +30,7 @@ import { useRouter } from "next/navigation"
 interface CouponData {
   code: string
   discount: string
-  type: string // 'cash' or 'percentage'
+  type: string 
   title: string
   offerTitle: string
   offerId: number
@@ -42,6 +44,8 @@ export default function OrderPage() {
   const { cart, total, orderType, customerInfo, loading } = useSelector((state: RootState) => state.order)
   const { formatPrice } = useSettings()
   const { isAuthenticated, user } = useAuth()
+  const { selectedCurrency, formatPrice: formatCurrencyPrice } = useCurrency() // Add this line
+  
   const [specialInstructions, setSpecialInstructions] = useState("")
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [couponCode, setCouponCode] = useState("")
@@ -53,6 +57,31 @@ export default function OrderPage() {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
   const [discountAmount, setDiscountAmount] = useState(0)
 
+  // Helper function to get currency-specific price for an item
+  const getCurrencySpecificPrice = (item: any) => {
+    if (selectedCurrency === 'AED' && item.price_aed) {
+      return item.price_aed
+    } else if (selectedCurrency === 'INR' && item.price_inr) {
+      return item.price_inr
+    }
+    return item.price // fallback
+  }
+
+  // Helper function to calculate cart total with selected currency
+  const calculateCartTotal = () => {
+    return cart.reduce((sum, item) => {
+      const price = getCurrencySpecificPrice(item.menuItem)
+      return sum + price * item.quantity
+    }, 0)
+  }
+
+  // Recalculate total when currency changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      dispatch(recalculateTotal(selectedCurrency))
+    }
+  }, [selectedCurrency, dispatch])
+
   // Load saved coupon data on component mount
   useEffect(() => {
     const savedCoupon = localStorage.getItem("appliedCoupon")
@@ -63,7 +92,7 @@ export default function OrderPage() {
         if (new Date(couponData.expiresAt) > new Date()) {
           setAppliedCoupon(couponData)
           setCouponCode(couponData.code)
-          calculateDiscount(couponData, total)
+          calculateDiscount(couponData, calculateCartTotal())
         } else {
           // Remove expired coupon
           localStorage.removeItem("appliedCoupon")
@@ -78,9 +107,9 @@ export default function OrderPage() {
   // Recalculate discount when total changes
   useEffect(() => {
     if (appliedCoupon) {
-      calculateDiscount(appliedCoupon, total)
+      calculateDiscount(appliedCoupon, calculateCartTotal())
     }
-  }, [total, appliedCoupon])
+  }, [total, appliedCoupon, selectedCurrency])
 
   const calculateDiscount = (coupon: CouponData, subtotal: number) => {
     let discount = 0
@@ -148,7 +177,7 @@ export default function OrderPage() {
 
       // Apply the coupon
       setAppliedCoupon(validCoupon)
-      calculateDiscount(validCoupon, total)
+      calculateDiscount(validCoupon, calculateCartTotal())
       
       // Save to localStorage for persistence
       localStorage.setItem("appliedCoupon", JSON.stringify(validCoupon))
@@ -188,7 +217,8 @@ export default function OrderPage() {
 
     if (cart.length === 0) return
 
-    const finalTotal = total + deliveryFee - discountAmount
+    const cartTotal = calculateCartTotal()
+    const finalTotal = cartTotal + deliveryFee - discountAmount
 
     const orderData = {
       customerName: user?.name || customerInfo.name,
@@ -198,16 +228,17 @@ export default function OrderPage() {
       tableNumber: customerInfo.tableNumber,
       deliveryAddress: customerInfo.deliveryAddress,
       totalAmount: finalTotal,
-      originalAmount: total + deliveryFee,
+      originalAmount: cartTotal + deliveryFee,
       discountAmount: discountAmount,
       couponCode: appliedCoupon?.code,
       specialInstructions,
       userId: user?.id,
+      currency: selectedCurrency, // Add currency to order data
       items: cart.map((item) => ({
         menuItemId: item.menuItem.id,
         menuItemName: item.menuItem.name,
         quantity: item.quantity,
-        unitPrice: item.menuItem.price,
+        unitPrice: getCurrencySpecificPrice(item.menuItem), // Use currency-specific price
         specialRequests: item.specialRequests,
       })),
     }
@@ -238,6 +269,7 @@ export default function OrderPage() {
     const customerName = user?.name || customerInfo.name || "Customer"
     const customerPhone = customerInfo.phone || "Not provided"
     const customerEmail = user?.email || customerInfo.email || "Not provided"
+    const cartTotal = calculateCartTotal()
 
     let message = `🍽️ *New Order Request*\n\n`
     message += `👤 *Customer Details:*\n`
@@ -246,6 +278,7 @@ export default function OrderPage() {
     message += `Email: ${customerEmail}\n\n`
 
     message += `📋 *Order Type:* ${orderType.charAt(0).toUpperCase() + orderType.slice(1)}\n`
+    message += `💰 *Currency:* ${selectedCurrency}\n`
 
     if (orderType === "dine-in" && customerInfo.tableNumber) {
       message += `🪑 *Table Number:* ${customerInfo.tableNumber}\n`
@@ -257,20 +290,21 @@ export default function OrderPage() {
 
     message += `\n🛒 *Order Items:*\n`
     cart.forEach((item, index) => {
-      message += `${index + 1}. ${item.menuItem.name} x${item.quantity} - ${formatPrice(item.menuItem.price * item.quantity)}\n`
+      const itemPrice = getCurrencySpecificPrice(item.menuItem)
+      message += `${index + 1}. ${item.menuItem.name} x${item.quantity} - ${formatCurrencyPrice(item.menuItem.price_aed, item.menuItem.price_inr, item.menuItem.default_currency)}\n`
     })
 
-    const finalTotal = total + deliveryFee - discountAmount
+    const finalTotal = cartTotal + deliveryFee - discountAmount
 
     message += `\n💰 *Order Summary:*\n`
-    message += `Subtotal: ${formatPrice(total)}\n`
+    message += `Subtotal: ${formatCurrencyPrice(cartTotal, cartTotal, selectedCurrency)}\n`
     if (deliveryFee > 0) {
-      message += `Delivery Fee: ${formatPrice(deliveryFee)}\n`
+      message += `Delivery Fee: ${formatCurrencyPrice(deliveryFee, deliveryFee, selectedCurrency)}\n`
     }
     if (discountAmount > 0) {
-      message += `Discount (${appliedCoupon?.code}): -${formatPrice(discountAmount)}\n`
+      message += `Discount (${appliedCoupon?.code}): -${formatCurrencyPrice(discountAmount, discountAmount, selectedCurrency)}\n`
     }
-    message += `*Total: ${formatPrice(finalTotal)}*\n`
+    message += `*Total: ${formatCurrencyPrice(finalTotal, finalTotal, selectedCurrency)}*\n`
 
     if (specialInstructions) {
       message += `\n📝 *Special Instructions:*\n${specialInstructions}\n`
@@ -286,7 +320,8 @@ export default function OrderPage() {
   }
 
   const deliveryFee = orderType === "delivery" ? 3.99 : 0
-  const subtotalWithDelivery = total + deliveryFee
+  const cartTotal = calculateCartTotal()
+  const subtotalWithDelivery = cartTotal + deliveryFee
   const finalTotal = subtotalWithDelivery - discountAmount
 
   if (cart.length === 0) {
@@ -312,7 +347,12 @@ export default function OrderPage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8">Your Order</h1>
+        <div className="flex items-center justify-between mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Your Order</h1>
+          <div className="text-sm text-gray-500">
+            Currency: <span className="font-semibold text-gray-700">{selectedCurrency}</span>
+          </div>
+        </div>
 
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Cart Items and Customer Info */}
@@ -323,57 +363,65 @@ export default function OrderPage() {
                 <CardTitle className="text-lg sm:text-xl">Order Items</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {cart.map((item) => (
-                  <div key={item.menuItem.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border rounded-lg">
-                    <Image
-                      src={
-                        item.menuItem.image_url ||
-                        `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(item.menuItem.name) || "/placeholder.svg"}`
-                      }
-                      alt={item.menuItem.name}
-                      width={80}
-                      height={80}
-                      className="rounded-lg object-cover w-20 h-20 sm:w-24 sm:h-24"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-base sm:text-lg">{item.menuItem.name}</h3>
-                      <p className="text-gray-600 text-sm">{formatPrice(item.menuItem.price)}</p>
+                {cart.map((item) => {
+                  const itemPrice = getCurrencySpecificPrice(item.menuItem)
+                  return (
+                    <div key={item.menuItem.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border rounded-lg">
+                      <Image
+                        src={
+                          item.menuItem.image_url ||
+                          `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(item.menuItem.name) || "/placeholder.svg"}`
+                        }
+                        alt={item.menuItem.name}
+                        width={80}
+                        height={80}
+                        className="rounded-lg object-cover w-20 h-20 sm:w-24 sm:h-24"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-base sm:text-lg">{item.menuItem.name}</h3>
+                        <p className="text-gray-600 text-sm">
+                          {formatCurrencyPrice(item.menuItem.price_aed, item.menuItem.price_inr, item.menuItem.default_currency)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleQuantityChange(item.menuItem.id, item.quantity - 1)}
+                          className="p-2"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="w-8 text-center text-sm sm:text-base">{item.quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleQuantityChange(item.menuItem.id, item.quantity + 1)}
+                          className="p-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-4">
+                        <p className="font-semibold text-sm sm:text-base">
+                          {formatCurrencyPrice(itemPrice * item.quantity, itemPrice * item.quantity, selectedCurrency)}
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => dispatch(removeFromCart(item.menuItem.id))}
+                          className="text-red-500 hover:text-red-700 p-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuantityChange(item.menuItem.id, item.quantity - 1)}
-                        className="p-2"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <span className="w-8 text-center text-sm sm:text-base">{item.quantity}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuantityChange(item.menuItem.id, item.quantity + 1)}
-                        className="p-2"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-4">
-                      <p className="font-semibold text-sm sm:text-base">{formatPrice(item.menuItem.price * item.quantity)}</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => dispatch(removeFromCart(item.menuItem.id))}
-                        className="text-red-500 hover:text-red-700 p-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CardContent>
             </Card>
 
+            {/* Keep all other sections (Order Type, Customer Information) unchanged */}
             {/* Order Type */}
             <Card>
               <CardHeader>
@@ -397,7 +445,7 @@ export default function OrderPage() {
               </CardContent>
             </Card>
 
-            {/* Customer Information */}
+            {/* Customer Information - Keep unchanged */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Customer Information</CardTitle>
@@ -489,33 +537,36 @@ export default function OrderPage() {
             </Card>
           </div>
 
-          {/* Order Summary */}
+          {/* Order Summary - Updated with currency formatting */}
           <div className="w-full lg:w-80 xl:w-96">
             <Card className="sticky top-4 sm:top-6">
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Order Summary</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Order Summary ({selectedCurrency})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  {cart.map((item) => (
-                    <div key={item.menuItem.id} className="flex justify-between text-sm">
-                      <span>
-                        {item.quantity}x {item.menuItem.name}
-                      </span>
-                      <span>{formatPrice(item.menuItem.price * item.quantity)}</span>
-                    </div>
-                  ))}
+                  {cart.map((item) => {
+                    const itemPrice = getCurrencySpecificPrice(item.menuItem)
+                    return (
+                      <div key={item.menuItem.id} className="flex justify-between text-sm">
+                        <span>
+                          {item.quantity}x {item.menuItem.name}
+                        </span>
+                        <span>{formatCurrencyPrice(itemPrice * item.quantity, itemPrice * item.quantity, selectedCurrency)}</span>
+                      </div>
+                    )
+                  })}
                 </div>
 
                 <div className="border-t pt-4">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
-                    <span>{formatPrice(total)}</span>
+                    <span>{formatCurrencyPrice(cartTotal, cartTotal, selectedCurrency)}</span>
                   </div>
                   {orderType === "delivery" && (
                     <div className="flex justify-between text-sm">
                       <span>Delivery Fee</span>
-                      <span>{formatPrice(deliveryFee)}</span>
+                      <span>{formatCurrencyPrice(deliveryFee, deliveryFee, selectedCurrency)}</span>
                     </div>
                   )}
                   
@@ -525,10 +576,10 @@ export default function OrderPage() {
                       <span>
                         Discount ({appliedCoupon.code})
                         <span className="text-xs text-gray-500 block">
-                          {appliedCoupon.type === 'cash' ? `${appliedCoupon.discount} AED off` : `${appliedCoupon.discount}% off`}
+                          {appliedCoupon.type === 'cash' ? `${appliedCoupon.discount} ${selectedCurrency} off` : `${appliedCoupon.discount}% off`}
                         </span>
                       </span>
-                      <span>-{formatPrice(discountAmount)}</span>
+                      <span>-{formatCurrencyPrice(discountAmount, discountAmount, selectedCurrency)}</span>
                     </div>
                   )}
 
@@ -537,14 +588,14 @@ export default function OrderPage() {
                     <div className="text-right">
                       {appliedCoupon && discountAmount > 0 && (
                         <div className="text-xs sm:text-sm text-gray-500 line-through">
-                          {formatPrice(subtotalWithDelivery)}
+                          {formatCurrencyPrice(subtotalWithDelivery, subtotalWithDelivery, selectedCurrency)}
                         </div>
                       )}
-                      <div>{formatPrice(finalTotal)}</div>
+                      <div>{formatCurrencyPrice(finalTotal, finalTotal, selectedCurrency)}</div>
                     </div>
                   </div>
 
-                  {/* Coupon Section */}
+                  {/* Coupon Section - Keep unchanged */}
                   <div className="mt-4">
                     {!appliedCoupon ? (
                       <>

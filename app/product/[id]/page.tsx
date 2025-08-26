@@ -1,26 +1,32 @@
 "use client"
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useDispatch } from "react-redux"
-import type { AppDispatch } from "@/lib/store"
+import { useDispatch, useSelector } from "react-redux"
+import type { AppDispatch, RootState } from "@/lib/store"
 import { addToCart } from "@/lib/store/slices/orderSlice"
-import { useCurrency } from "@/lib/contexts/currency-context" // Add this import
+import { addToWishlist, removeFromWishlist } from "@/lib/store/slices/wishlistSlice"
+import { useCurrency } from "@/lib/contexts/currency-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe } from "lucide-react"
+import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe, AlertCircle } from "lucide-react"
 import Image from "next/image"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface Product {
   id: number
   name: string
   description: string
-  price: number
+  price: number // Keep for backwards compatibility
+  price_aed: number | null
+  price_inr: number | null
+  default_currency: 'AED' | 'INR'
   image_url: string
   category_id: number
+  category_name: string
   is_available: boolean
   is_featured: boolean
   is_new: boolean
@@ -33,19 +39,58 @@ interface Product {
   storage_capacity: string
   color: string
   stock_quantity: number
-  category_name: string
+  shop_category: string
 }
 
 export default function ProductPage() {
   const params = useParams()
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
-  const { selectedCurrency, setSelectedCurrency, formatPrice, getCurrencySymbol } = useCurrency() // Use currency context
+  const { selectedCurrency, setSelectedCurrency, formatPrice } = useCurrency()
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
   
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
-  const [selectedImage, setSelectedImage] = useState(0)
+
+  // Helper function to check if product is in wishlist
+  const isInWishlist = (productId: number) => {
+    return wishlistItems.some(item => item.id === productId)
+  }
+
+  // Helper function to check if product has price in selected currency
+  const hasSelectedCurrencyPrice = (product: Product) => {
+    if (selectedCurrency === 'AED') {
+      return product.price_aed && product.price_aed > 0
+    } else if (selectedCurrency === 'INR') {
+      return product.price_inr && product.price_inr > 0
+    }
+    return true // fallback
+  }
+
+  // Handle wishlist toggle
+  const handleToggleWishlist = (product: Product) => {
+    if (isInWishlist(product.id)) {
+      dispatch(removeFromWishlist(product.id))
+    } else {
+      dispatch(addToWishlist({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        price_aed: product.price_aed,
+        price_inr: product.price_inr,
+        default_currency: product.default_currency,
+        image_url: product.image_url,
+        category_id: product.category_id,
+        category_name: product.category_name,
+        description: product.description,
+        brand: product.brand,
+        is_available: product.is_available,
+        shop_category: product.shop_category,
+        features: product.features
+      }))
+    }
+  }
 
   useEffect(() => {
     fetchProduct()
@@ -68,17 +113,16 @@ export default function ProductPage() {
   }
 
   const handleAddToCart = () => {
-    if (product) {
+    if (product && hasSelectedCurrencyPrice(product)) {
       dispatch(addToCart({ menuItem: product, quantity }))
-      // Navigate to cart page
       router.push('/order')
     }
   }
 
   const handleBuyNow = () => {
-    if (product) {
+    if (product && hasSelectedCurrencyPrice(product)) {
       dispatch(addToCart({ menuItem: product, quantity }))
-      router.push('/checkout')
+      router.push('/order')
     }
   }
 
@@ -126,6 +170,8 @@ export default function ProductPage() {
       </div>
     )
   }
+
+  const currencyAvailable = hasSelectedCurrencyPrice(product)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -207,6 +253,16 @@ export default function ProductPage() {
           </DropdownMenu>
         </div>
 
+        {/* Currency availability warning */}
+        {!currencyAvailable && (
+          <Alert className="mb-6 border-yellow-200 bg-yellow-50">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-700">
+              This product is not available in {selectedCurrency}. Please switch to {product.default_currency} to view pricing and make a purchase.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Product Images */}
           <div className="space-y-4">
@@ -224,6 +280,9 @@ export default function ProductPage() {
               {product.is_new && (
                 <Badge className="absolute top-4 right-4 bg-green-500 text-white">NEW</Badge>
               )}
+              <Badge className="absolute bottom-4 left-4 bg-blue-500 text-white text-xs">
+                {product.shop_category}
+              </Badge>
             </div>
           </div>
 
@@ -244,14 +303,32 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* Price - Now uses currency context */}
+            {/* Price - Now uses currency context with proper multi-currency support */}
             <div className="border-b pb-6">
               <div className="flex items-center gap-4 mb-2">
-                <span className="text-3xl font-bold text-red-500">{formatPrice(product.price)}</span>
-                <span className="text-lg text-gray-400 line-through">{formatPrice(product.price * 1.6)}</span>
-                <Badge className="bg-red-100 text-red-600">-38% OFF</Badge>
+                <span className="text-3xl font-bold text-red-500">
+                  {currencyAvailable 
+                    ? formatPrice(product.price_aed, product.price_inr, product.default_currency)
+                    : `Not available in ${selectedCurrency}`
+                  }
+                </span>
+                {currencyAvailable && (
+                  <>
+                    <span className="text-lg text-gray-400 line-through">
+                      {selectedCurrency === 'AED' && product.price_aed
+                        ? `AED ${(product.price_aed * 1.6).toFixed(2)}`
+                        : selectedCurrency === 'INR' && product.price_inr
+                        ? `₹ ${(product.price_inr * 1.6).toFixed(2)}`
+                        : `${formatPrice(product.price_aed, product.price_inr, product.default_currency)} + 60%`
+                      }
+                    </span>
+                    <Badge className="bg-red-100 text-red-600">-38% OFF</Badge>
+                  </>
+                )}
               </div>
-              <p className="text-sm text-gray-600">Free shipping • 30-day returns</p>
+              <p className="text-sm text-gray-600">
+                Free shipping • 30-day returns {currencyAvailable && `• Available in ${selectedCurrency}`}
+              </p>
             </div>
 
             {/* Product Info */}
@@ -286,6 +363,19 @@ export default function ProductPage() {
                   <span className="text-gray-500">Model:</span>
                   <span className="ml-2 font-medium">{product.model}</span>
                 </div>
+                <div>
+                  <span className="text-gray-500">Currency:</span>
+                  <span className="ml-2 font-medium">{selectedCurrency}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Available in:</span>
+                  <span className="ml-2 font-medium">
+                    {[
+                      product.price_aed && product.price_aed > 0 ? 'AED' : null,
+                      product.price_inr && product.price_inr > 0 ? 'INR' : null
+                    ].filter(Boolean).join(', ')}
+                  </span>
+                </div>
                 {product.storage_capacity && (
                   <div>
                     <span className="text-gray-500">Storage:</span>
@@ -318,6 +408,7 @@ export default function ProductPage() {
                   size="sm"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="px-3"
+                  disabled={!currencyAvailable}
                 >
                   -
                 </Button>
@@ -327,6 +418,7 @@ export default function ProductPage() {
                   size="sm"
                   onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
                   className="px-3"
+                  disabled={!currencyAvailable}
                 >
                   +
                 </Button>
@@ -339,10 +431,13 @@ export default function ProductPage() {
                 <Button
                   onClick={handleBuyNow}
                   className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-3 text-lg font-medium"
-                  disabled={!product.is_available || product.stock_quantity === 0}
+                  disabled={!product.is_available || product.stock_quantity === 0 || !currencyAvailable}
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
-                  Buy Now
+                  {!currencyAvailable 
+                    ? `Not available in ${selectedCurrency}` 
+                    : "Buy Now"
+                  }
                 </Button>
               </div>
               
@@ -352,14 +447,23 @@ export default function ProductPage() {
                   variant="outline" 
                   size="sm" 
                   className="flex-1"
-                  disabled={!product.is_available || product.stock_quantity === 0}
+                  disabled={!product.is_available || product.stock_quantity === 0 || !currencyAvailable}
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   Add to Cart
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Heart className="w-4 h-4 mr-2" />
-                  Add to Wishlist
+                <Button 
+                  onClick={() => handleToggleWishlist(product)}
+                  variant="outline" 
+                  size="sm" 
+                  className={`flex-1 ${
+                    isInWishlist(product.id)
+                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                      : ''
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 mr-2 ${isInWishlist(product.id) ? 'fill-red-500' : ''}`} />
+                  {isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 </Button>
               </div>
             </div>
@@ -367,12 +471,16 @@ export default function ProductPage() {
             {/* Additional Info */}
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Product Specification</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">Product Information</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Fast and free shipping</li>
                   <li>• 30-day return policy</li>
                   <li>• {product.warranty_months} months warranty</li>
                   <li>• Secure payment options</li>
+                  <li>• Available currencies: {[
+                    product.price_aed && product.price_aed > 0 ? 'AED' : null,
+                    product.price_inr && product.price_inr > 0 ? 'INR' : null
+                  ].filter(Boolean).join(', ')}</li>
                 </ul>
               </CardContent>
             </Card>
