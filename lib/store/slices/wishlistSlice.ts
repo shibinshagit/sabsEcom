@@ -25,11 +25,11 @@ const initialState: WishlistState = {
   items: []
 }
 
-// Load wishlist from localStorage
-const loadWishlistFromStorage = (): WishlistItem[] => {
-  if (typeof window !== 'undefined') {
+// Load wishlist from localStorage with user-specific key
+const loadWishlistFromStorage = (userId?: string | number): WishlistItem[] => {
+  if (typeof window !== 'undefined' && userId) {
     try {
-      const savedWishlist = localStorage.getItem('wishlist')
+      const savedWishlist = localStorage.getItem(`wishlist_${userId}`)
       return savedWishlist ? JSON.parse(savedWishlist) : []
     } catch (error) {
       console.error('Error loading wishlist from storage:', error)
@@ -39,44 +39,74 @@ const loadWishlistFromStorage = (): WishlistItem[] => {
   return []
 }
 
-// Save wishlist to localStorage
-const saveWishlistToStorage = (items: WishlistItem[]) => {
-  if (typeof window !== 'undefined') {
+// Save wishlist to localStorage with user-specific key
+const saveWishlistToStorage = (items: WishlistItem[], userId?: string | number) => {
+  if (typeof window !== 'undefined' && userId) {
     try {
-      localStorage.setItem('wishlist', JSON.stringify(items))
+      localStorage.setItem(`wishlist_${userId}`, JSON.stringify(items))
     } catch (error) {
       console.error('Error saving wishlist to storage:', error)
     }
   }
 }
 
+// Clear user-specific wishlist from localStorage
+const clearWishlistFromStorage = (userId?: string | number) => {
+  if (typeof window !== 'undefined' && userId) {
+    try {
+      localStorage.removeItem(`wishlist_${userId}`)
+    } catch (error) {
+      console.error('Error clearing wishlist from storage:', error)
+    }
+  }
+}
+
 const wishlistSlice = createSlice({
   name: 'wishlist',
-  initialState: {
-    ...initialState,
-    items: loadWishlistFromStorage()
-  },
+  initialState,
   reducers: {
-    addToWishlist: (state, action: PayloadAction<WishlistItem>) => {
-      const existingItem = state.items.find(item => item.id === action.payload.id)
+    addToWishlist: (state, action: PayloadAction<{ item: WishlistItem, userId?: string | number }>) => {
+      const { item, userId } = action.payload
+      const existingItem = state.items.find(wishlistItem => wishlistItem.id === item.id)
       if (!existingItem) {
-        state.items.push(action.payload)
-        saveWishlistToStorage(state.items)
+        state.items.push(item)
+        saveWishlistToStorage(state.items, userId)
       }
     },
-    removeFromWishlist: (state, action: PayloadAction<number>) => {
-      state.items = state.items.filter(item => item.id !== action.payload)
-      saveWishlistToStorage(state.items)
+    removeFromWishlist: (state, action: PayloadAction<{ productId: number, userId?: string | number }>) => {
+      const { productId, userId } = action.payload
+      state.items = state.items.filter(item => item.id !== productId)
+      saveWishlistToStorage(state.items, userId)
     },
-    clearWishlist: (state) => {
+    clearWishlist: (state, action: PayloadAction<{ userId?: string | number }>) => {
+      const { userId } = action.payload
       state.items = []
-      saveWishlistToStorage(state.items)
+      clearWishlistFromStorage(userId)
     },
+    loadUserWishlist: (state, action: PayloadAction<{ userId?: string | number }>) => {
+      const { userId } = action.payload
+      state.items = loadWishlistFromStorage(userId)
+    },
+    // For backwards compatibility and guest users
     loadWishlistFromStorage: (state) => {
-      state.items = loadWishlistFromStorage()
+      // Load from generic key for guest users
+      if (typeof window !== 'undefined') {
+        try {
+          const savedWishlist = localStorage.getItem('wishlist')
+          state.items = savedWishlist ? JSON.parse(savedWishlist) : []
+        } catch (error) {
+          console.error('Error loading wishlist from storage:', error)
+        }
+      }
     }
   }
 })
 
-export const { addToWishlist, removeFromWishlist, clearWishlist, loadWishlistFromStorage: loadWishlist } = wishlistSlice.actions
+export const { 
+  addToWishlist, 
+  removeFromWishlist, 
+  clearWishlist, 
+  loadUserWishlist,
+  loadWishlistFromStorage: loadWishlist 
+} = wishlistSlice.actions
 export default wishlistSlice.reducer

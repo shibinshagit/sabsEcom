@@ -1,4 +1,3 @@
-
 import type { ReactNode } from "react"
 import type { Metadata } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
@@ -10,6 +9,8 @@ import { AuthProvider } from "@/lib/contexts/auth-context"
 import { ShopProvider } from "@/lib/contexts/shop-context"
 import UserNavVisibility from "@/components/ui/user-nav-visibility"
 import { CurrencyProvider } from '@/lib/contexts/currency-context'
+import WishlistSync from '@/components/wishlist-sync'
+import CartSync from '@/components/cart-sync'
 
 import {
   ClerkProvider,
@@ -34,8 +35,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <StoreProvider>
                 <ShopProvider>
                   <CurrencyProvider>
-                  <UserNavVisibility />
-                  <div className="pb-16 lg:pb-0">{children}</div>
+                    <WishlistSync />
+                    <CartSync />
+                    <UserNavVisibility />
+                    <div className="pb-16 lg:pb-0">{children}</div>
                   </CurrencyProvider>
                 </ShopProvider>
               </StoreProvider>
@@ -45,4 +48,4 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </html>
     </ClerkProvider>
   )
-} 
+}

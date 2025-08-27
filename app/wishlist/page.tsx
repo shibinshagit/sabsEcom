@@ -5,7 +5,8 @@ import { addToCart } from "@/lib/store/slices/orderSlice"
 import { removeFromWishlist } from "@/lib/store/slices/wishlistSlice"
 import type { RootState, AppDispatch } from "@/lib/store"
 import { useSettings } from "@/lib/contexts/settings-context"
-import { useCurrency } from "@/lib/contexts/currency-context" // Add this import
+import { useCurrency } from "@/lib/contexts/currency-context"
+import { useAuth } from "@/lib/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -17,25 +18,27 @@ import Footer from "@/components/ui/footer"
 
 export default function WishlistPage() {
   const dispatch = useDispatch<AppDispatch>()
+  const { user } = useAuth()
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
   const { formatPrice } = useSettings()
-  const { selectedCurrency, formatPrice: formatCurrencyPrice } = useCurrency() // Add this line
+  const { selectedCurrency, formatPrice: formatCurrencyPrice } = useCurrency()
 
-  // Helper function to check if item has price in selected currency
   const hasSelectedCurrencyPrice = (item: any) => {
     if (selectedCurrency === 'AED') {
       return item.price_aed && item.price_aed > 0
     } else if (selectedCurrency === 'INR') {
       return item.price_inr && item.price_inr > 0
     }
-    return true // fallback
+    return true 
   }
 
-  // Filter items by currency availability
   const currencyFilteredItems = wishlistItems.filter(item => hasSelectedCurrencyPrice(item))
 
   const handleRemoveFromWishlist = (productId: number) => {
-    dispatch(removeFromWishlist(productId))
+    dispatch(removeFromWishlist({ 
+      productId, 
+      userId: user?.id 
+    }))
   }
 
   const handleAddToCart = (product: any) => {

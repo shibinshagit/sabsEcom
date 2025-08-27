@@ -31,9 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { user: clerkUser, isLoaded: clerkLoaded } = useClerkUser()
   const { signOut: clerkSignOut } = useClerkAuth()
 
-  // ---- CHECK AUTH STATUS ----
   useEffect(() => {
-    // Prefer Clerk user if present
     if (clerkLoaded && clerkUser) {
       setUser({
         id: clerkUser.id,
@@ -45,7 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       setLoading(false)
     } else if (clerkLoaded && !clerkUser) {
-      // Fallback to manual auth (your backend)
       fetch("/api/auth/me")
         .then(async (resp) => {
           if (resp.ok) {
@@ -151,4 +148,3 @@ export function useAuth() {
   }
   return context
 }
-

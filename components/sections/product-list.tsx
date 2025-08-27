@@ -8,7 +8,7 @@ import { addToCart } from "@/lib/store/slices/orderSlice"
 import { addToWishlist, removeFromWishlist } from "@/lib/store/slices/wishlistSlice"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useShop } from "@/lib/contexts/shop-context"
-import { useCurrency } from "@/lib/contexts/currency-context" // Add this import
+import { useCurrency } from "@/lib/contexts/currency-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -39,12 +39,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const { shop } = useShop()
   const router = useRouter()
 
-  // Helper function to check if product is in wishlist
   const isInWishlist = (productId: number) => {
     return wishlistItems.some(item => item.id === productId)
   }
 
-  // Helper function to check if product has price in selected currency
   const hasSelectedCurrencyPrice = (product: any) => {
     if (selectedCurrency === 'AED') {
       return product.price_aed && product.price_aed > 0
@@ -54,29 +52,35 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     return true // fallback
   }
 
-  // Handle wishlist toggle
   const handleToggleWishlist = (product: any) => {
     if (isInWishlist(product.id)) {
-      dispatch(removeFromWishlist(product.id))
+      dispatch(removeFromWishlist({
+        productId: product.id,
+        userId: user?.id
+      }))
     } else {
       dispatch(addToWishlist({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        price_aed: product.price_aed,
-        price_inr: product.price_inr,
-        default_currency: product.default_currency,
-        image_url: product.image_url,
-        category_id: product.category_id,
-        category_name: product.category_name,
-        description: product.description,
-        brand: product.brand,
-        is_available: product.is_available,
-        shop_category: product.shop_category,
-        features: product.features
+        item: {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          price_aed: product.price_aed,
+          price_inr: product.price_inr,
+          default_currency: product.default_currency,
+          image_url: product.image_url,
+          category_id: product.category_id,
+          category_name: product.category_name,
+          description: product.description,
+          brand: product.brand,
+          is_available: product.is_available,
+          shop_category: product.shop_category,
+          features: product.features
+        },
+        userId: user?.id
       }))
     }
   }
+
 
   useEffect(() => {
     const initTimer = setTimeout(() => {
@@ -102,11 +106,17 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     }, 150)
   }
 
+
   const handleAddToCart = (product: any) => {
-    dispatch(addToCart({ menuItem: product, quantity: 1 }))
+    dispatch(addToCart({
+      menuItem: product,
+      quantity: 1,
+      selectedCurrency,
+      userId: user?.id
+    }))
   }
 
-  // Filter items by shop category first, then by currency availability, then by other filters
+
   const shopFilteredItems = items.filter((item: any) => {
     return item.shop_category === shop
   })
@@ -232,8 +242,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         {selectedCurrency === 'AED' && item.price_aed
                           ? `AED ${(item.price_aed * 1.8).toFixed(2)}`
                           : selectedCurrency === 'INR' && item.price_inr
-                          ? `₹ ${(item.price_inr * 1.8).toFixed(2)}`
-                          : `${formatPrice(item.price_aed, item.price_inr, item.default_currency)} + 80%`
+                            ? `₹ ${(item.price_inr * 1.8).toFixed(2)}`
+                            : `${formatPrice(item.price_aed, item.price_inr, item.default_currency)} + 80%`
                         }
                       </p>
                       <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
@@ -251,11 +261,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                       </Button>
                       <Button
                         onClick={() => handleToggleWishlist(item)}
-                        className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium ${
-                          isInWishlist(item.id)
+                        className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium ${isInWishlist(item.id)
                             ? 'bg-red-500 hover:bg-red-600 text-white'
                             : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                        }`}
+                          }`}
                       >
                         {isInWishlist(item.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                       </Button>
@@ -279,9 +288,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             </div>
             {loading ? (
               <div
-                className={`grid gap-3 lg:gap-6 ${
-                  viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                }`}
+                className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                  }`}
               >
                 {[...Array(10)].map((_, i) => (
                   <div key={i} className="animate-pulse">
@@ -294,16 +302,14 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               </div>
             ) : (
               <div
-                className={`grid gap-3 lg:gap-6 ${
-                  viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                }`}
+                className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                  }`}
               >
                 {filteredItems.map((item) => (
                   <div key={item.id} className="cursor-pointer">
                     <Card
-                      className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group ${
-                        viewMode === "list" ? "flex" : ""
-                      }`}
+                      className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group ${viewMode === "list" ? "flex" : ""
+                        }`}
                     >
                       <div className={`relative ${viewMode === "list" ? "w-48 flex-shrink-0" : ""}`}>
                         <Image
@@ -315,9 +321,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                           alt={item.name}
                           width={200}
                           height={200}
-                          className={`object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer ${
-                            viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
-                          }`}
+                          className={`object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer ${viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
+                            }`}
                         />
                         {item.is_new && (
                           <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs">NEW</Badge>
@@ -341,8 +346,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                               {selectedCurrency === 'AED' && item.price_aed
                                 ? `AED ${(item.price_aed * 1.6).toFixed(2)}`
                                 : selectedCurrency === 'INR' && item.price_inr
-                                ? `₹ ${(item.price_inr * 1.6).toFixed(2)}`
-                                : 'Was higher'
+                                  ? `₹ ${(item.price_inr * 1.6).toFixed(2)}`
+                                  : 'Was higher'
                               }
                             </p>
                           </div>
@@ -382,11 +387,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         </Button>
                         <Button
                           onClick={() => handleToggleWishlist(item)}
-                          className={`w-full mt-2 rounded-full py-2 text-sm font-medium ${
-                            isInWishlist(item.id)
+                          className={`w-full mt-2 rounded-full py-2 text-sm font-medium ${isInWishlist(item.id)
                               ? 'bg-red-500 hover:bg-red-600 text-white'
                               : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                          }`}
+                            }`}
                         >
                           {isInWishlist(item.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                         </Button>
