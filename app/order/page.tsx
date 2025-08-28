@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "@/lib/store"
@@ -45,12 +44,14 @@ export default function OrderPage() {
   const { formatPrice } = useSettings()
   const { isAuthenticated, user } = useAuth()
   const { selectedCurrency, formatPrice: formatCurrencyPrice } = useCurrency()
-
   const [specialInstructions, setSpecialInstructions] = useState("")
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [couponCode, setCouponCode] = useState("")
   const [isCouponFieldOpen, setIsCouponFieldOpen] = useState(false)
-
+  
+  // Payment method state - defaulted to UPI
+  const [paymentMethod, setPaymentMethod] = useState("upi")
+  
   // New coupon functionality states
   const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null)
   const [couponError, setCouponError] = useState("")
@@ -99,7 +100,6 @@ export default function OrderPage() {
   // Show warning if there are invalid items when currency changes
   useEffect(() => {
     if (invalidCartItems.length > 0) {
-      // Optional: You could show a toast notification here
       console.warn(`${invalidCartItems.length} items don't have ${selectedCurrency} pricing`)
     }
   }, [selectedCurrency, invalidCartItems.length])
@@ -110,13 +110,11 @@ export default function OrderPage() {
     if (savedCoupon) {
       try {
         const couponData: CouponData = JSON.parse(savedCoupon)
-        // Check if coupon is still valid
         if (new Date(couponData.expiresAt) > new Date()) {
           setAppliedCoupon(couponData)
           setCouponCode(couponData.code)
           calculateDiscount(couponData, calculateCartTotal())
         } else {
-          // Remove expired coupon
           localStorage.removeItem("appliedCoupon")
         }
       } catch (error) {
@@ -136,7 +134,7 @@ export default function OrderPage() {
   const calculateDiscount = (coupon: CouponData, subtotal: number) => {
     let discount = 0
     if (coupon.type === "cash") {
-      discount = Math.min(parseFloat(coupon.discount), subtotal) // Don't exceed subtotal
+      discount = Math.min(parseFloat(coupon.discount), subtotal)
     } else if (coupon.type === "percentage") {
       discount = (subtotal * parseFloat(coupon.discount)) / 100
     }
@@ -144,35 +142,26 @@ export default function OrderPage() {
   }
 
   const validateCouponCode = (code: string): CouponData | null => {
-    // Check localStorage for saved offers from spin wheel
     const pendingOffer = localStorage.getItem("pendingOffer")
     const usedCoupons = JSON.parse(localStorage.getItem("usedCoupons") || "[]")
 
     if (pendingOffer) {
       try {
         const offerData: CouponData = JSON.parse(pendingOffer)
-
-        // Check if code matches
         if (offerData.code !== code) {
           return null
         }
-
-        // Check if already used
         if (usedCoupons.includes(code)) {
           return null
         }
-
-        // Check expiration
         if (new Date(offerData.expiresAt) <= new Date()) {
           return null
         }
-
         return offerData
       } catch (error) {
         console.error("Error validating coupon:", error)
       }
     }
-
     return null
   }
 
@@ -186,9 +175,7 @@ export default function OrderPage() {
     setCouponError("")
 
     try {
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000))
-
       const validCoupon = validateCouponCode(couponCode.trim())
 
       if (!validCoupon) {
@@ -197,16 +184,10 @@ export default function OrderPage() {
         return
       }
 
-      // Apply the coupon
       setAppliedCoupon(validCoupon)
       calculateDiscount(validCoupon, calculateCartTotal())
-
-      // Save to localStorage for persistence
       localStorage.setItem("appliedCoupon", JSON.stringify(validCoupon))
-
-      // Success message
       setCouponError("")
-
     } catch (error) {
       console.error("Error applying coupon:", error)
       setCouponError("Failed to apply coupon. Please try again.")
@@ -223,13 +204,6 @@ export default function OrderPage() {
     localStorage.removeItem("appliedCoupon")
   }
 
-  // const handleQuantityChange = (id: number, newQuantity: number) => {
-  //   if (newQuantity <= 0) {
-  //     dispatch(removeFromCart(id))
-  //   } else {
-  //     dispatch(updateQuantity({ id, quantity: newQuantity }))
-  //   }
-  // }
   const handleQuantityChange = (id: number, newQuantity: number) => {
     if (newQuantity <= 0) {
       dispatch(removeFromCart({
@@ -245,19 +219,12 @@ export default function OrderPage() {
     }
   }
 
-  // Function to remove invalid currency items
-  // const handleRemoveInvalidItems = () => {
-  //   invalidCartItems.forEach(item => {
-  //     dispatch(removeFromCart(item.menuItem.id))
-  //   })
-  // }
   const handleRemoveInvalidItems = () => {
     dispatch(removeInvalidCurrencyItems({
       selectedCurrency,
       userId: user?.id
     }))
   }
-
 
   const handleSubmitOrder = async () => {
     if (!isAuthenticated) {
@@ -278,6 +245,7 @@ export default function OrderPage() {
       customerEmail: user?.email || customerInfo.email,
       customerPhone: customerInfo.phone,
       orderType,
+      paymentMethod, // Include payment method in order data
       tableNumber: customerInfo.tableNumber,
       deliveryAddress: customerInfo.deliveryAddress,
       totalAmount: finalTotal,
@@ -298,8 +266,7 @@ export default function OrderPage() {
 
     try {
       const result = await dispatch(submitOrder(orderData)).unwrap()
-
-      // Mark coupon as used
+      
       if (appliedCoupon) {
         const usedCoupons = JSON.parse(localStorage.getItem("usedCoupons") || "[]")
         usedCoupons.push(appliedCoupon.code)
@@ -309,7 +276,7 @@ export default function OrderPage() {
       }
 
       alert(`Order placed successfully! Order ID: ${result.orderId}`)
-      router.push("/dashboard/orders")
+      router.push("/orders")
     } catch (error) {
       console.error("Failed to submit order:", error)
       alert("Failed to place order. Please try again.")
@@ -332,8 +299,8 @@ export default function OrderPage() {
     message += `Name: ${customerName}\n`
     message += `Phone: ${customerPhone}\n`
     message += `Email: ${customerEmail}\n\n`
-
     message += `📋 *Order Type:* ${orderType.charAt(0).toUpperCase() + orderType.slice(1)}\n`
+    message += `💳 *Payment Method:* ${paymentMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}\n`
     message += `💰 *Currency:* ${selectedCurrency}\n`
 
     if (orderType === "dine-in" && customerInfo.tableNumber) {
@@ -368,10 +335,10 @@ export default function OrderPage() {
 
     message += `\nPlease confirm this order and let me know the estimated preparation time. Thank you! 🙏`
 
-    const phoneNumber = "+1234567890" // Replace with actual restaurant WhatsApp number
+    const phoneNumber = "+1234567890"
     const encodedMessage = encodeURIComponent(message)
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
-
+    
     window.open(whatsappUrl, "_blank")
   }
 
@@ -401,7 +368,6 @@ export default function OrderPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex items-center justify-between mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Your Order</h1>
@@ -410,7 +376,6 @@ export default function OrderPage() {
           </div>
         </div>
 
-        {/* Currency Warning for Invalid Items */}
         {invalidCartItems.length > 0 && (
           <div className="mb-6">
             <Card className="border-orange-200 bg-orange-50">
@@ -457,9 +422,7 @@ export default function OrderPage() {
         )}
 
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Cart Items and Customer Info */}
           <div className="flex-1 space-y-6">
-            {/* Valid Cart Items */}
             {validCartItems.length > 0 && (
               <Card>
                 <CardHeader>
@@ -511,14 +474,6 @@ export default function OrderPage() {
                           <p className="font-semibold text-sm sm:text-base">
                             {formatCurrencyPrice(itemPrice * item.quantity, itemPrice * item.quantity, selectedCurrency)}
                           </p>
-                          {/* <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => dispatch(removeFromCart(item.menuItem.id))}
-                            className="text-red-500 hover:text-red-700 p-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button> */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -538,7 +493,6 @@ export default function OrderPage() {
               </Card>
             )}
 
-            {/* Invalid Cart Items (Read-only display) */}
             {invalidCartItems.length > 0 && (
               <Card className="opacity-60">
                 <CardHeader>
@@ -582,31 +536,29 @@ export default function OrderPage() {
               </Card>
             )}
 
-            {/* Rest of your existing components (Order Type, Customer Information) remain the same */}
-            {/* Order Type */}
+            {/* Updated Payment Method Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Order Type</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Payment Method</CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup value={orderType} onValueChange={(value) => dispatch(setOrderType(value as any))} className="grid grid-cols-3 gap-2 sm:gap-4">
+                <RadioGroup 
+                  value={paymentMethod} 
+                  onValueChange={(value) => setPaymentMethod(value)} 
+                  className="grid grid-cols-1 gap-4"
+                >
                   <div className="flex items-center gap-2">
-                    <RadioGroupItem value="dine-in" id="dine-in" />
-                    <Label htmlFor="dine-in" className="text-sm sm:text-base">Dine In</Label>
+                    <RadioGroupItem value="upi" id="upi" />
+                    <Label htmlFor="upi" className="text-sm sm:text-base cursor-pointer">UPI Payment</Label>
                   </div>
                   <div className="flex items-center gap-2">
-                    <RadioGroupItem value="takeaway" id="takeaway" />
-                    <Label htmlFor="takeaway" className="text-sm sm:text-base">Takeaway</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="delivery" id="delivery" />
-                    <Label htmlFor="delivery" className="text-sm sm:text-base">Delivery</Label>
+                    <RadioGroupItem value="cod" id="cod" />
+                    <Label htmlFor="cod" className="text-sm sm:text-base cursor-pointer">Cash on Delivery</Label>
                   </div>
                 </RadioGroup>
               </CardContent>
             </Card>
 
-            {/* Customer Information */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Customer Information</CardTitle>
@@ -619,7 +571,6 @@ export default function OrderPage() {
                     </p>
                   </div>
                 )}
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name" className="text-sm sm:text-base">Full Name *</Label>
@@ -664,7 +615,6 @@ export default function OrderPage() {
                     className="text-sm sm:text-base"
                   />
                 </div>
-
                 {orderType === "dine-in" && (
                   <div>
                     <Label htmlFor="table" className="text-sm sm:text-base">Table Number</Label>
@@ -680,7 +630,6 @@ export default function OrderPage() {
                     />
                   </div>
                 )}
-
                 {orderType === "delivery" && (
                   <div>
                     <Label htmlFor="address" className="text-sm sm:text-base">Delivery Address *</Label>
@@ -696,7 +645,6 @@ export default function OrderPage() {
                     />
                   </div>
                 )}
-
                 <div>
                   <Label htmlFor="instructions" className="text-sm sm:text-base">Special Instructions</Label>
                   <Textarea
@@ -711,7 +659,6 @@ export default function OrderPage() {
             </Card>
           </div>
 
-          {/* Order Summary - Updated to only show valid items */}
           <div className="w-full lg:w-80 xl:w-96">
             <Card className="sticky top-4 sm:top-6">
               <CardHeader>
@@ -733,7 +680,6 @@ export default function OrderPage() {
                         )
                       })}
                     </div>
-
                     <div className="border-t pt-4">
                       <div className="flex justify-between text-sm">
                         <span>Subtotal</span>
@@ -745,8 +691,6 @@ export default function OrderPage() {
                           <span>{formatCurrencyPrice(deliveryFee, deliveryFee, selectedCurrency)}</span>
                         </div>
                       )}
-
-                      {/* Show discount if applied */}
                       {appliedCoupon && discountAmount > 0 && (
                         <div className="flex justify-between text-sm text-green-600">
                           <span>
@@ -758,7 +702,6 @@ export default function OrderPage() {
                           <span>-{formatCurrencyPrice(discountAmount, discountAmount, selectedCurrency)}</span>
                         </div>
                       )}
-
                       <div className="flex justify-between font-bold text-base sm:text-lg border-t pt-2">
                         <span>Total</span>
                         <div className="text-right">
@@ -771,7 +714,6 @@ export default function OrderPage() {
                         </div>
                       </div>
 
-                      {/* Coupon Section */}
                       <div className="mt-4">
                         {!appliedCoupon ? (
                           <>
@@ -837,45 +779,52 @@ export default function OrderPage() {
                           </div>
                         )}
                       </div>
-                    </div>
 
-                    <Button
-                      onClick={handleSubmitOrder}
-                      disabled={loading || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
-                      className="w-full bg-amber-500 hover:bg-amber-600 text-black text-sm sm:text-base py-2 sm:py-3"
-                    >
-                      {loading ? "Processing..." : isAuthenticated ? "Place Order" : "Login to Place Order"}
-                    </Button>
+                      {paymentMethod === "cod" ? (
+                        <Button
+                          onClick={handleSubmitOrder}
+                          disabled={loading || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-black text-sm sm:text-base py-2 sm:py-3"
+                        >
+                          {loading ? "Processing..." : isAuthenticated ? "Place Order" : "Login to Place Order"}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleSubmitOrder}
+                          disabled={loading || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-black text-sm sm:text-base py-2 sm:py-3"
+                        >
+                          {loading ? "Processing..." : isAuthenticated ? "Pay Now" : "Login to Pay"}
+                        </Button>
+                      )}
 
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-white px-2 text-gray-500">Or</span>
+                        </div>
                       </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white px-2 text-gray-500">Or</span>
-                      </div>
+
+                      <Button
+                        onClick={handleWhatsAppOrder}
+                        variant="outline"
+                        className="w-full border-green-500 text-green-600 hover:bg-green-50 bg-transparent text-sm sm:text-base py-2 sm:py-3"
+                        disabled={!customerInfo.name || !customerInfo.phone || validCartItems.length === 0}
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Order via WhatsApp
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => dispatch(clearCart({ userId: user?.id }))}
+                        className="w-full text-sm sm:text-base py-2 sm:py-3"
+                      >
+                        Clear Cart
+                      </Button>
                     </div>
-
-                    <Button
-                      onClick={handleWhatsAppOrder}
-                      variant="outline"
-                      className="w-full border-green-500 text-green-600 hover:bg-green-50 bg-transparent text-sm sm:text-base py-2 sm:py-3"
-                      disabled={!customerInfo.name || !customerInfo.phone || validCartItems.length === 0}
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Order via WhatsApp
-                    </Button>
-
-                    {/* <Button variant="outline" onClick={() => dispatch(clearCart())} className="w-full text-sm sm:text-base py-2 sm:py-3">
-                      Clear Cart
-                    </Button> */}
-                    <Button
-                      variant="outline"
-                      onClick={() => dispatch(clearCart({ userId: user?.id }))}
-                      className="w-full text-sm sm:text-base py-2 sm:py-3"
-                    >
-                      Clear Cart
-                    </Button>
                   </>
                 ) : (
                   <div className="text-center py-8">

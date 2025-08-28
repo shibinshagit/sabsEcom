@@ -32,7 +32,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     const getCurrencySymbol = (currency: Currency): string => {
         switch (currency) {
             case 'AED':
-                return 'AED'
+                return 'D'
             case 'INR':
                 return '₹'
             default:
@@ -58,7 +58,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
 
 
         // Last fallback
-        if (priceAed) return `AED ${priceAed.toFixed(2)}`
+        if (priceAed) return `D ${priceAed.toFixed(2)}`
         if (priceInr) return `₹ ${priceInr.toFixed(2)}`
 
         return 'Price not available'

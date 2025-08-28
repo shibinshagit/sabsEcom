@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { useSelector } from "react-redux"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useAuth } from "@/lib/contexts/auth-context"
-import { useCurrency } from "@/lib/contexts/currency-context" // Add this import
+import { useCurrency } from "@/lib/contexts/currency-context"
 import type { RootState } from "@/lib/store"
 import Image from "next/image"
 import Banner from "@/components/ui/banner"
@@ -24,7 +24,6 @@ import { useUser } from "@clerk/nextjs"
 const baseNavigation = [
   { name: "Home", href: "/" },
   { name: "Products", href: "/products" },
-  { name: "Orders", href: "/orders" }
 ]
 
 interface Category {
@@ -398,7 +397,7 @@ export default function Navbar() {
                           </DropdownMenuItem>
 
                           <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                            <Link href="/dashboard/orders" className="flex items-center gap-3">
+                            <Link href="/orders" className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                                 <ShoppingBag className="w-4 h-4 text-orange-600" />
                               </div>

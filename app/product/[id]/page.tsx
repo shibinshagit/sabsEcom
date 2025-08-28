@@ -6,6 +6,7 @@ import type { AppDispatch, RootState } from "@/lib/store"
 import { addToCart } from "@/lib/store/slices/orderSlice"
 import { addToWishlist, removeFromWishlist } from "@/lib/store/slices/wishlistSlice"
 import { useCurrency } from "@/lib/contexts/currency-context"
+import { useAuth } from "@/lib/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,7 +21,7 @@ interface Product {
   id: number
   name: string
   description: string
-  price: number // Keep for backwards compatibility
+  price: number 
   price_aed: number | null
   price_inr: number | null
   default_currency: 'AED' | 'INR'
@@ -43,6 +44,9 @@ interface Product {
 }
 
 export default function ProductPage() {
+  // ADD AUTH CONTEXT
+  const { user, isAuthenticated } = useAuth()
+  
   const params = useParams()
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
@@ -53,12 +57,10 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
 
-  // Helper function to check if product is in wishlist
   const isInWishlist = (productId: number) => {
     return wishlistItems.some(item => item.id === productId)
   }
 
-  // Helper function to check if product has price in selected currency
   const hasSelectedCurrencyPrice = (product: Product) => {
     if (selectedCurrency === 'AED') {
       return product.price_aed && product.price_aed > 0
@@ -68,26 +70,31 @@ export default function ProductPage() {
     return true // fallback
   }
 
-  // Handle wishlist toggle
   const handleToggleWishlist = (product: Product) => {
     if (isInWishlist(product.id)) {
-      dispatch(removeFromWishlist(product.id))
+      dispatch(removeFromWishlist({
+        productId: product.id,
+        userId: user?.id
+      }))
     } else {
       dispatch(addToWishlist({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        price_aed: product.price_aed,
-        price_inr: product.price_inr,
-        default_currency: product.default_currency,
-        image_url: product.image_url,
-        category_id: product.category_id,
-        category_name: product.category_name,
-        description: product.description,
-        brand: product.brand,
-        is_available: product.is_available,
-        shop_category: product.shop_category,
-        features: product.features
+        item: {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          price_aed: product.price_aed,
+          price_inr: product.price_inr,
+          default_currency: product.default_currency,
+          image_url: product.image_url,
+          category_id: product.category_id,
+          category_name: product.category_name,
+          description: product.description,
+          brand: product.brand,
+          is_available: product.is_available,
+          shop_category: product.shop_category,
+          features: product.features
+        },
+        userId: user?.id
       }))
     }
   }
@@ -112,16 +119,28 @@ export default function ProductPage() {
     }
   }
 
+  // FIXED ADD TO CART - NOW MATCHES PRODUCT LIST FORMAT
   const handleAddToCart = () => {
     if (product && hasSelectedCurrencyPrice(product)) {
-      dispatch(addToCart({ menuItem: product, quantity }))
-      router.push('/order')
+      dispatch(addToCart({
+        menuItem: product,
+        quantity,
+        selectedCurrency,
+        userId: user?.id
+      }))
+      // Don't redirect to /order for "Add to Cart" - just add to cart
     }
   }
 
+  // FIXED BUY NOW - NOW MATCHES PRODUCT LIST FORMAT
   const handleBuyNow = () => {
     if (product && hasSelectedCurrencyPrice(product)) {
-      dispatch(addToCart({ menuItem: product, quantity }))
+      dispatch(addToCart({
+        menuItem: product,
+        quantity,
+        selectedCurrency,
+        userId: user?.id
+      }))
       router.push('/order')
     }
   }
@@ -226,7 +245,6 @@ export default function ProductPage() {
                     )}
                   </div>
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
                   onClick={() => handleCurrencyChange('INR')}
                   className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${

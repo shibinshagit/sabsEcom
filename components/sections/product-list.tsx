@@ -240,7 +240,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                       </p>
                       <p className="text-gray-400 text-xs line-through">
                         {selectedCurrency === 'AED' && item.price_aed
-                          ? `AED ${(item.price_aed * 1.8).toFixed(2)}`
+                          ? `D ${(item.price_aed * 1.8).toFixed(2)}`
                           : selectedCurrency === 'INR' && item.price_inr
                             ? `₹ ${(item.price_inr * 1.8).toFixed(2)}`
                             : `${formatPrice(item.price_aed, item.price_inr, item.default_currency)} + 80%`
@@ -344,7 +344,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                             </p>
                             <p className="text-gray-400 text-xs lg:text-sm line-through">
                               {selectedCurrency === 'AED' && item.price_aed
-                                ? `AED ${(item.price_aed * 1.6).toFixed(2)}`
+                                ? `D ${(item.price_aed * 1.6).toFixed(2)}`
                                 : selectedCurrency === 'INR' && item.price_inr
                                   ? `₹ ${(item.price_inr * 1.6).toFixed(2)}`
                                   : 'Was higher'
