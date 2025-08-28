@@ -31,14 +31,6 @@ export default function AdminHeader() {
             />
           </div>
 
-          {/* Notifications */}
-          <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-gray-800/50 relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              3
-            </span>
-          </Button>
-
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -47,12 +39,7 @@ export default function AdminHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-              {/* <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-700">
-                Profile Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-700">
-                Account Settings
-              </DropdownMenuItem> */}
+              
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem className="text-red-400 hover:text-red-300 hover:bg-gray-700">
                 <LogOut className="w-4 h-4 mr-2" />

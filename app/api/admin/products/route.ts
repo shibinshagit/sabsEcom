@@ -5,9 +5,7 @@ import { ensureCurrencySupport } from "@/lib/migrations/ensure-currency-support"
 
 export async function GET() {
   try {
-    // Ensure shop_category column exists
     await ensureShopCategoryColumn()
-    // Ensure currency support exists
     await ensureCurrencySupport()
     
     const products = await sql`

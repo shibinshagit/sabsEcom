@@ -5,8 +5,6 @@ import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "@/lib/store"
 import { fetchProducts, fetchCategories, setSelectedCategory } from "@/lib/store/slices/productSlice"
 import { addToCart } from "@/lib/store/slices/orderSlice"
-import { addToWishlist, removeFromWishlist } from "@/lib/store/slices/wishlistSlice"
-import { useSettings } from "@/lib/contexts/settings-context"
 import { useShop } from "@/lib/contexts/shop-context"
 import { useCurrency } from "@/lib/contexts/currency-context"
 import { Button } from "@/components/ui/button"
@@ -16,7 +14,7 @@ import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart }
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
-
+import { addToWishlistAPI, removeFromWishlistAPI } from '@/lib/store/slices/wishlistSlice'
 interface ProductListProps {
   showSpinner?: boolean
   onCloseSpinner?: () => void
@@ -33,7 +31,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const dispatch = useDispatch<AppDispatch>()
   const { items, categories, selectedCategory, loading } = useSelector((state: RootState) => state.products)
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
-  const { selectedCurrency, formatPrice } = useCurrency() // Add this line
+  const { selectedCurrency, formatPrice } = useCurrency()
   const searchParams = useSearchParams()
   const categoryFromUrl = searchParams.get("category")
   const { shop } = useShop()
@@ -49,37 +47,43 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     } else if (selectedCurrency === 'INR') {
       return product.price_inr && product.price_inr > 0
     }
-    return true // fallback
+    return true 
   }
 
-  const handleToggleWishlist = (product: any) => {
-    if (isInWishlist(product.id)) {
-      dispatch(removeFromWishlist({
-        productId: product.id,
-        userId: user?.id
-      }))
-    } else {
-      dispatch(addToWishlist({
-        item: {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          price_aed: product.price_aed,
-          price_inr: product.price_inr,
-          default_currency: product.default_currency,
-          image_url: product.image_url,
-          category_id: product.category_id,
-          category_name: product.category_name,
-          description: product.description,
-          brand: product.brand,
-          is_available: product.is_available,
-          shop_category: product.shop_category,
-          features: product.features
-        },
-        userId: user?.id
-      }))
-    }
+  const handleToggleWishlist = async (product: any) => {
+  if (!isAuthenticated) {
+    alert('Please login to add items to wishlist')
+    return
   }
+
+  try {
+    if (isInWishlist(product.id)) {
+      await dispatch(removeFromWishlistAPI(product.id)).unwrap()
+    } else {
+      const wishlistItem = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        price_aed: product.price_aed,
+        price_inr: product.price_inr,
+        default_currency: product.default_currency,
+        image_url: product.image_url,
+        category_id: product.category_id,
+        category_name: product.category_name,
+        description: product.description,
+        brand: product.brand,
+        is_available: product.is_available,
+        shop_category: product.shop_category,
+        features: product.features
+      }
+      await dispatch(addToWishlistAPI(wishlistItem)).unwrap()
+    }
+  } catch (error) {
+    console.error('wishlist operation failed:', error)
+    const errorMessage = typeof error === 'string' ? error : 'Unknown error occurred'
+    alert(`Failed to update wishlist: ${errorMessage}`)
+  }
+}
 
 
   useEffect(() => {
@@ -247,12 +251,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         }
                       </p>
                       <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
-                      <div className="flex items-center gap-1 mt-2">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        ))}
-                        <span className="text-xs text-gray-500 ml-1">(4.8)</span>
-                      </div>
+                      
                       <Button
                         onClick={() => handleAddToCart(item)}
                         className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium"
@@ -262,8 +261,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                       <Button
                         onClick={() => handleToggleWishlist(item)}
                         className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium ${isInWishlist(item.id)
-                            ? 'bg-red-500 hover:bg-red-600 text-white'
-                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                          ? 'bg-red-500 hover:bg-red-600 text-white'
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                           }`}
                       >
                         {isInWishlist(item.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
@@ -331,10 +330,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                           <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">HOT</Badge>
                         )}
                         <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs">{shop}</Badge>
-                        <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-full text-xs flex items-center">
-                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
-                          4.8
-                        </div>
+                        
                       </div>
                       <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
                         <div className="flex items-start justify-between mb-2">
@@ -372,12 +368,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                             </div>
                           </div>
                         )}
-                        <div className="flex items-center gap-1 mb-3">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                          ))}
-                          <span className="text-xs text-gray-500 ml-1">(4.8) • 2.1k sold</span>
-                        </div>
+                        
                         <Button
                           onClick={() => handleAddToCart(item)}
                           className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg"
@@ -388,8 +379,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         <Button
                           onClick={() => handleToggleWishlist(item)}
                           className={`w-full mt-2 rounded-full py-2 text-sm font-medium ${isInWishlist(item.id)
-                              ? 'bg-red-500 hover:bg-red-600 text-white'
-                              : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                             }`}
                         >
                           {isInWishlist(item.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}

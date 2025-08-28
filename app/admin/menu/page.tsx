@@ -67,7 +67,7 @@ export default function ProductManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedShop, setSelectedShop] = useState<string>("all")
-  
+
   // Available shops
   const shops: Shop[] = [
     { id: "A", name: "Shop A", label: "Shop A" },
@@ -295,7 +295,7 @@ export default function ProductManagement() {
       return (
         <div className="flex flex-col">
           <span className={`font-semibold ${product.default_currency === 'AED' ? 'text-cyan-400' : ''}`}>
-            AED {product.price_aed} 
+            AED {product.price_aed}
             {product.default_currency === 'AED' && <Badge variant="outline" className="ml-1 text-xs">Default</Badge>}
           </span>
           <span className={`text-sm text-gray-400 ${product.default_currency === 'INR' ? 'text-cyan-400' : ''}`}>
@@ -426,7 +426,7 @@ export default function ProductManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="price_aed" className="flex items-center">
-                    AED Price 
+                    AED Price
                     {formData.default_currency === 'AED' && <span className="text-red-400 ml-1">*</span>}
                     {formData.default_currency === 'AED' && <Badge variant="outline" className="ml-2 text-xs">Primary</Badge>}
                   </Label>
@@ -648,34 +648,68 @@ export default function ProductManagement() {
               </div>
 
               {/* Switches */}
-              <div className="flex flex-wrap items-center gap-6">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_available"
-                    checked={formData.is_available}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
-                  />
-                  <Label htmlFor="is_available">Available</Label>
-                </div>
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Product Settings</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600">
+                    <div className="flex items-center space-x-3">
+                      <Label htmlFor="is_available" className="text-white font-medium cursor-pointer">
+                        Available
+                      </Label>
+                      {formData.is_available && (
+                        <Badge className="bg-green-500 text-white text-xs">ON</Badge>
+                      )}
+                      {!formData.is_available && (
+                        <Badge variant="secondary" className="text-xs">OFF</Badge>
+                      )}
+                    </div>
+                    <Switch
+                      id="is_available"
+                      checked={formData.is_available}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
+                    />
+                  </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_featured"
-                    checked={formData.is_featured}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
-                  />
-                  <Label htmlFor="is_featured">Featured</Label>
-                </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600">
+                    <div className="flex items-center space-x-3">
+                      <Label htmlFor="is_featured" className="text-white font-medium cursor-pointer">
+                        Featured
+                      </Label>
+                      {formData.is_featured && (
+                        <Badge className="bg-amber-500 text-white text-xs">ON</Badge>
+                      )}
+                      {!formData.is_featured && (
+                        <Badge variant="secondary" className="text-xs">OFF</Badge>
+                      )}
+                    </div>
+                    <Switch
+                      id="is_featured"
+                      checked={formData.is_featured}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                    />
+                  </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_new"
-                    checked={formData.is_new}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_new: checked })}
-                  />
-                  <Label htmlFor="is_new">New Product</Label>
+                  <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600">
+                    <div className="flex items-center space-x-3">
+                      <Label htmlFor="is_new" className="text-white font-medium cursor-pointer">
+                        New Product
+                      </Label>
+                      {formData.is_new && (
+                        <Badge className="bg-blue-500 text-white text-xs">ON</Badge>
+                      )}
+                      {!formData.is_new && (
+                        <Badge variant="secondary" className="text-xs">OFF</Badge>
+                      )}
+                    </div>
+                    <Switch
+                      id="is_new"
+                      checked={formData.is_new}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_new: checked })}
+                    />
+                  </div>
                 </div>
               </div>
+
 
               {/* New Until Date */}
               {formData.is_new && (

@@ -35,68 +35,59 @@ const initialState: OrderState = {
   error: null,
 }
 
-// Load cart from localStorage with user-specific key
-const loadCartFromStorage = (userId?: string | number): CartItem[] => {
-  if (typeof window !== 'undefined' && userId) {
+export const fetchCartFromAPI = createAsyncThunk(
+  'cart/fetchFromAPI',
+  async ({ userId, selectedCurrency }: { userId: string; selectedCurrency: string }, { rejectWithValue }) => {
     try {
-      const savedCart = localStorage.getItem(`cart_${userId}`)
-      return savedCart ? JSON.parse(savedCart) : []
+      const response = await fetch(`/api/cart?userId=${userId}&currency=${selectedCurrency}`, {
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('Unauthorized - user not logged in')
+          return { cart: [], total: 0 }
+        }
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
+      const data = await response.json()
+      return data
     } catch (error) {
-      console.error('Error loading cart from storage:', error)
-      return []
+      console.error('Fetch cart failed:', error)
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch cart')
     }
   }
-  return []
-}
+)
 
-// Save cart to localStorage with user-specific key
-const saveCartToStorage = (cart: CartItem[], userId?: string | number) => {
-  if (typeof window !== 'undefined' && userId) {
-    try {
-      localStorage.setItem(`cart_${userId}`, JSON.stringify(cart))
+export const saveCartToAPI = createAsyncThunk(
+  'cart/saveToAPI',
+  async ({ userId, cart, selectedCurrency }: { userId: string; cart: CartItem[]; selectedCurrency: string }, { rejectWithValue }) => {
+    try {      
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, cart, selectedCurrency }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('api Error:', errorData)
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
+      return await response.json()
     } catch (error) {
-      console.error('Error saving cart to storage:', error)
+      console.error('save cart failed:', error)
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to save cart')
     }
   }
-}
+)
 
-// Clear user-specific cart from localStorage
-const clearCartFromStorage = (userId?: string | number) => {
-  if (typeof window !== 'undefined' && userId) {
-    try {
-      localStorage.removeItem(`cart_${userId}`)
-    } catch (error) {
-      console.error('Error clearing cart from storage:', error)
-    }
-  }
-}
-
-// Save customer info to localStorage with user-specific key
-const saveCustomerInfoToStorage = (customerInfo: any, userId?: string | number) => {
-  if (typeof window !== 'undefined' && userId) {
-    try {
-      localStorage.setItem(`customerInfo_${userId}`, JSON.stringify(customerInfo))
-    } catch (error) {
-      console.error('Error saving customer info to storage:', error)
-    }
-  }
-}
-
-// Load customer info from localStorage with user-specific key
-const loadCustomerInfoFromStorage = (userId?: string | number) => {
-  if (typeof window !== 'undefined' && userId) {
-    try {
-      const savedInfo = localStorage.getItem(`customerInfo_${userId}`)
-      return savedInfo ? JSON.parse(savedInfo) : null
-    } catch (error) {
-      console.error('Error loading customer info from storage:', error)
-      return null
-    }
-  }
-  return null
-}
-
-// Helper function to check if item has valid currency price
 const hasValidCurrencyPrice = (item: MenuItem, currency: string): boolean => {
   if (currency === 'AED' && item.price_aed && item.price_aed > 0) {
     return true
@@ -106,17 +97,15 @@ const hasValidCurrencyPrice = (item: MenuItem, currency: string): boolean => {
   return false
 }
 
-// Helper function to get currency-specific price
 const getCurrencyPrice = (item: MenuItem, currency: string): number => {
   if (currency === 'AED' && item.price_aed && item.price_aed > 0) {
     return item.price_aed
   } else if (currency === 'INR' && item.price_inr && item.price_inr > 0) {
     return item.price_inr
   }
-  return item.price // fallback to default price
+  return item.price 
 }
 
-// Helper function to calculate total based on selected currency (only valid items)
 const calculateTotal = (cart: CartItem[], selectedCurrency: string) => {
   return cart
     .filter(item => hasValidCurrencyPrice(item.menuItem, selectedCurrency))
@@ -129,6 +118,7 @@ const calculateTotal = (cart: CartItem[], selectedCurrency: string) => {
 export const submitOrder = createAsyncThunk("order/submit", async (orderData: any) => {
   const response = await fetch("/api/orders", {
     method: "POST",
+    credentials: 'include',
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(orderData),
   })
@@ -162,17 +152,15 @@ const orderSlice = createSlice({
       
       const currency = selectedCurrency || 'AED'
       state.total = calculateTotal(state.cart, currency)
-      saveCartToStorage(state.cart, userId)
     },
     
     removeFromCart: (state, action: PayloadAction<{ 
       id: number; 
       userId?: string | number 
     }>) => {
-      const { id, userId } = action.payload
+      const { id } = action.payload
       state.cart = state.cart.filter((item) => item.menuItem.id !== id)
       state.total = calculateTotal(state.cart, 'AED')
-      saveCartToStorage(state.cart, userId)
     },
     
     updateQuantity: (state, action: PayloadAction<{ 
@@ -180,7 +168,7 @@ const orderSlice = createSlice({
       quantity: number;
       userId?: string | number;
     }>) => {
-      const { id, quantity, userId } = action.payload
+      const { id, quantity } = action.payload
       const item = state.cart.find((item) => item.menuItem.id === id)
       
       if (item) {
@@ -191,7 +179,6 @@ const orderSlice = createSlice({
       }
       
       state.total = calculateTotal(state.cart, 'AED')
-      saveCartToStorage(state.cart, userId)
     },
     
     recalculateTotal: (state, action: PayloadAction<string>) => {
@@ -207,57 +194,65 @@ const orderSlice = createSlice({
       info: Partial<OrderState["customerInfo"]>;
       userId?: string | number;
     }>) => {
-      const { info, userId } = action.payload
+      const { info } = action.payload
       state.customerInfo = { ...state.customerInfo, ...info }
-      saveCustomerInfoToStorage(state.customerInfo, userId)
     },
     
-    clearCart: (state, action: PayloadAction<{ userId?: string | number }>) => {
-      const { userId } = action.payload
+    clearCart: (state) => {
       state.cart = []
       state.total = 0
-      clearCartFromStorage(userId)
+      state.error = null
     },
     
     removeInvalidCurrencyItems: (state, action: PayloadAction<{
       selectedCurrency: string;
       userId?: string | number;
     }>) => {
-      const { selectedCurrency, userId } = action.payload
+      const { selectedCurrency } = action.payload
       state.cart = state.cart.filter(item => hasValidCurrencyPrice(item.menuItem, selectedCurrency))
       state.total = calculateTotal(state.cart, selectedCurrency)
-      saveCartToStorage(state.cart, userId)
-    },
-    
-    loadUserCart: (state, action: PayloadAction<{ 
-      userId?: string | number;
-      selectedCurrency?: string;
-    }>) => {
-      const { userId, selectedCurrency } = action.payload
-      const savedCart = loadCartFromStorage(userId)
-      const savedCustomerInfo = loadCustomerInfoFromStorage(userId)
-      
-      state.cart = savedCart
-      if (savedCustomerInfo) {
-        state.customerInfo = { ...state.customerInfo, ...savedCustomerInfo }
-      }
-      
-      const currency = selectedCurrency || 'AED'
-      state.total = calculateTotal(state.cart, currency)
     },
   },
   extraReducers: (builder) => {
+    builder
+      .addCase(fetchCartFromAPI.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchCartFromAPI.fulfilled, (state, action) => {
+        state.loading = false
+        state.cart = action.payload.cart || []
+        state.total = action.payload.total || 0
+        state.error = null
+      })
+      .addCase(fetchCartFromAPI.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
+    builder
+      .addCase(saveCartToAPI.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(saveCartToAPI.fulfilled, (state) => {
+        state.loading = false
+        state.error = null
+      })
+      .addCase(saveCartToAPI.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
     builder
       .addCase(submitOrder.pending, (state) => {
         state.loading = true
         state.error = null
       })
-      .addCase(submitOrder.fulfilled, (state, action) => {
+      .addCase(submitOrder.fulfilled, (state) => {
         state.loading = false
         state.cart = []
         state.total = 0
-        const userId = action.meta.arg.userId
-        clearCartFromStorage(userId)
       })
       .addCase(submitOrder.rejected, (state, action) => {
         state.loading = false
@@ -266,7 +261,6 @@ const orderSlice = createSlice({
   },
 })
 
-// Export only the Redux actions (not helper functions)
 export const { 
   addToCart, 
   removeFromCart, 
@@ -276,7 +270,6 @@ export const {
   setCustomerInfo, 
   clearCart,
   removeInvalidCurrencyItems,
-  loadUserCart
 } = orderSlice.actions
 
 export default orderSlice.reducer

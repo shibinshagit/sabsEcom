@@ -4,7 +4,8 @@ import { useParams, useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "@/lib/store"
 import { addToCart } from "@/lib/store/slices/orderSlice"
-import { addToWishlist, removeFromWishlist } from "@/lib/store/slices/wishlistSlice"
+import { addToWishlistAPI, removeFromWishlistAPI } from '@/lib/store/slices/wishlistSlice'
+
 import { useCurrency } from "@/lib/contexts/currency-context"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { Button } from "@/components/ui/button"
@@ -67,37 +68,43 @@ export default function ProductPage() {
     } else if (selectedCurrency === 'INR') {
       return product.price_inr && product.price_inr > 0
     }
-    return true // fallback
+    return true
   }
 
-  const handleToggleWishlist = (product: Product) => {
-    if (isInWishlist(product.id)) {
-      dispatch(removeFromWishlist({
-        productId: product.id,
-        userId: user?.id
-      }))
-    } else {
-      dispatch(addToWishlist({
-        item: {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          price_aed: product.price_aed,
-          price_inr: product.price_inr,
-          default_currency: product.default_currency,
-          image_url: product.image_url,
-          category_id: product.category_id,
-          category_name: product.category_name,
-          description: product.description,
-          brand: product.brand,
-          is_available: product.is_available,
-          shop_category: product.shop_category,
-          features: product.features
-        },
-        userId: user?.id
-      }))
-    }
+  const handleToggleWishlist = async (product: any) => {
+  if (!isAuthenticated) {
+    alert('Please login to add items to wishlist')
+    return
   }
+
+  try {
+    if (isInWishlist(product.id)) {
+      await dispatch(removeFromWishlistAPI(product.id)).unwrap()
+    } else {
+      const wishlistItem = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        price_aed: product.price_aed,
+        price_inr: product.price_inr,
+        default_currency: product.default_currency,
+        image_url: product.image_url,
+        category_id: product.category_id,
+        category_name: product.category_name,
+        description: product.description,
+        brand: product.brand,
+        is_available: product.is_available,
+        shop_category: product.shop_category,
+        features: product.features
+      }
+      await dispatch(addToWishlistAPI(wishlistItem)).unwrap()
+    }
+  } catch (error) {
+    console.error('wishlist operation failed:', error)
+    const errorMessage = typeof error === 'string' ? error : 'Unknown error occurred'
+    alert(`Failed to update wishlist: ${errorMessage}`)
+  }
+}
 
   useEffect(() => {
     fetchProduct()
@@ -119,7 +126,6 @@ export default function ProductPage() {
     }
   }
 
-  // FIXED ADD TO CART - NOW MATCHES PRODUCT LIST FORMAT
   const handleAddToCart = () => {
     if (product && hasSelectedCurrencyPrice(product)) {
       dispatch(addToCart({
@@ -128,11 +134,9 @@ export default function ProductPage() {
         selectedCurrency,
         userId: user?.id
       }))
-      // Don't redirect to /order for "Add to Cart" - just add to cart
     }
   }
 
-  // FIXED BUY NOW - NOW MATCHES PRODUCT LIST FORMAT
   const handleBuyNow = () => {
     if (product && hasSelectedCurrencyPrice(product)) {
       dispatch(addToCart({
@@ -143,11 +147,6 @@ export default function ProductPage() {
       }))
       router.push('/order')
     }
-  }
-
-  // Currency switch handler
-  const handleCurrencyChange = (currency: 'AED' | 'INR') => {
-    setSelectedCurrency(currency)
   }
 
   if (loading) {
@@ -213,62 +212,7 @@ export default function ProductPage() {
             <span className="text-gray-400">/</span>
             <span className="text-gray-900 font-medium">{product.name}</span>
           </div>
-
-          {/* Currency Switcher */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                <span className="font-semibold">{selectedCurrency}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 p-2 border-0 shadow-xl">
-              <div className="bg-white rounded-lg">
-                <DropdownMenuItem
-                  onClick={() => handleCurrencyChange('AED')}
-                  className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${
-                    selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-blue-600 font-bold text-sm">AED</span>
-                      </div>
-                      <div>
-                        <span className="font-medium">UAE Dirham</span>
-                        <p className="text-xs text-gray-500">AED</p>
-                      </div>
-                    </div>
-                    {selectedCurrency === 'AED' && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    )}
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleCurrencyChange('INR')}
-                  className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${
-                    selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <span className="text-green-600 font-bold text-sm">₹</span>
-                      </div>
-                      <div>
-                        <span className="font-medium">Indian Rupee</span>
-                        <p className="text-xs text-gray-500">INR</p>
-                      </div>
-                    </div>
-                    {selectedCurrency === 'INR' && (
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    )}
-                  </div>
-                </DropdownMenuItem>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+         
         </div>
 
         {/* Currency availability warning */}
@@ -309,16 +253,7 @@ export default function ProductPage() {
             {/* Title and Rating */}
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                  <span className="text-sm text-gray-600 ml-1">(4.8)</span>
-                </div>
-                <span className="text-sm text-gray-500">• 2.1k sold</span>
-                <Badge variant="outline" className="text-xs">{product.condition_type}</Badge>
-              </div>
+              
             </div>
 
             {/* Price - Now uses currency context with proper multi-currency support */}
@@ -340,7 +275,7 @@ export default function ProductPage() {
                         : `${formatPrice(product.price_aed, product.price_inr, product.default_currency)} + 60%`
                       }
                     </span>
-                    <Badge className="bg-red-100 text-red-600">-38% OFF</Badge>
+                    
                   </>
                 )}
               </div>
@@ -352,7 +287,7 @@ export default function ProductPage() {
             {/* Product Info */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">About Product</h3>
                 <p className="text-gray-600">{product.description}</p>
               </div>
 
@@ -486,22 +421,6 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* Additional Info */}
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Product Information</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Fast and free shipping</li>
-                  <li>• 30-day return policy</li>
-                  <li>• {product.warranty_months} months warranty</li>
-                  <li>• Secure payment options</li>
-                  <li>• Available currencies: {[
-                    product.price_aed && product.price_aed > 0 ? 'AED' : null,
-                    product.price_inr && product.price_inr > 0 ? 'INR' : null
-                  ].filter(Boolean).join(', ')}</li>
-                </ul>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

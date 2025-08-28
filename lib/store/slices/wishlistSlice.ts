@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 
 interface WishlistItem {
   id: number
@@ -19,94 +19,157 @@ interface WishlistItem {
 
 interface WishlistState {
   items: WishlistItem[]
+  loading: boolean
+  error: string | null
 }
 
 const initialState: WishlistState = {
-  items: []
+  items: [],
+  loading: false,
+  error: null
 }
 
-// Load wishlist from localStorage with user-specific key
-const loadWishlistFromStorage = (userId?: string | number): WishlistItem[] => {
-  if (typeof window !== 'undefined' && userId) {
+export const fetchWishlistFromAPI = createAsyncThunk(
+  'wishlist/fetchFromAPI',
+  async (_, { rejectWithValue }) => {
     try {
-      const savedWishlist = localStorage.getItem(`wishlist_${userId}`)
-      return savedWishlist ? JSON.parse(savedWishlist) : []
+      console.log('🔄 Fetching wishlist from API...')
+      const response = await fetch('/api/wishlist', {
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('unauthorized - user not logged in')
+          return []
+        }
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
+      const data = await response.json()
+      return data.items || []
     } catch (error) {
-      console.error('Error loading wishlist from storage:', error)
-      return []
+      console.error('Fetch wishlist failed:', error)
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch wishlist')
     }
   }
-  return []
-}
+)
 
-// Save wishlist to localStorage with user-specific key
-const saveWishlistToStorage = (items: WishlistItem[], userId?: string | number) => {
-  if (typeof window !== 'undefined' && userId) {
+export const addToWishlistAPI = createAsyncThunk(
+  'wishlist/addToAPI',
+  async (product: WishlistItem, { rejectWithValue }) => {
     try {
-      localStorage.setItem(`wishlist_${userId}`, JSON.stringify(items))
-    } catch (error) {
-      console.error('Error saving wishlist to storage:', error)
-    }
-  }
-}
+      
+      const response = await fetch('/api/wishlist', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ product }),
+      })
 
-// Clear user-specific wishlist from localStorage
-const clearWishlistFromStorage = (userId?: string | number) => {
-  if (typeof window !== 'undefined' && userId) {
-    try {
-      localStorage.removeItem(`wishlist_${userId}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API Error:', errorData)
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
+      return product
     } catch (error) {
-      console.error('Error clearing wishlist from storage:', error)
+      console.error('Add to wishlist failed:', error)
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to add to wishlist')
     }
   }
-}
+)
+
+export const removeFromWishlistAPI = createAsyncThunk(
+  'wishlist/removeFromAPI',
+  async (productId: number, { rejectWithValue }) => {
+    try {
+      
+      const response = await fetch(`/api/wishlist?productId=${productId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
+      return productId
+    } catch (error) {
+      console.error(error)
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to remove from wishlist')
+    }
+  }
+)
 
 const wishlistSlice = createSlice({
   name: 'wishlist',
   initialState,
   reducers: {
-    addToWishlist: (state, action: PayloadAction<{ item: WishlistItem, userId?: string | number }>) => {
-      const { item, userId } = action.payload
-      const existingItem = state.items.find(wishlistItem => wishlistItem.id === item.id)
-      if (!existingItem) {
-        state.items.push(item)
-        saveWishlistToStorage(state.items, userId)
-      }
-    },
-    removeFromWishlist: (state, action: PayloadAction<{ productId: number, userId?: string | number }>) => {
-      const { productId, userId } = action.payload
-      state.items = state.items.filter(item => item.id !== productId)
-      saveWishlistToStorage(state.items, userId)
-    },
-    clearWishlist: (state, action: PayloadAction<{ userId?: string | number }>) => {
-      const { userId } = action.payload
+    clearWishlist: (state) => {
       state.items = []
-      clearWishlistFromStorage(userId)
-    },
-    loadUserWishlist: (state, action: PayloadAction<{ userId?: string | number }>) => {
-      const { userId } = action.payload
-      state.items = loadWishlistFromStorage(userId)
-    },
-    // For backwards compatibility and guest users
-    loadWishlistFromStorage: (state) => {
-      // Load from generic key for guest users
-      if (typeof window !== 'undefined') {
-        try {
-          const savedWishlist = localStorage.getItem('wishlist')
-          state.items = savedWishlist ? JSON.parse(savedWishlist) : []
-        } catch (error) {
-          console.error('Error loading wishlist from storage:', error)
-        }
-      }
+      state.error = null
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchWishlistFromAPI.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchWishlistFromAPI.fulfilled, (state, action) => {
+        state.loading = false
+        state.items = action.payload
+        state.error = null
+      })
+      .addCase(fetchWishlistFromAPI.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
+    // Add to wishlist
+    builder
+      .addCase(addToWishlistAPI.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(addToWishlistAPI.fulfilled, (state, action) => {
+        state.loading = false
+        const existingItem = state.items.find(item => item.id === action.payload.id)
+        if (!existingItem) {
+          state.items.push(action.payload)
+        }
+        state.error = null
+      })
+      .addCase(addToWishlistAPI.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
+    // Remove from wishlist
+    builder
+      .addCase(removeFromWishlistAPI.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(removeFromWishlistAPI.fulfilled, (state, action) => {
+        state.loading = false
+        state.items = state.items.filter(item => item.id !== action.payload)
+        state.error = null
+      })
+      .addCase(removeFromWishlistAPI.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
   }
 })
 
-export const { 
-  addToWishlist, 
-  removeFromWishlist, 
-  clearWishlist, 
-  loadUserWishlist,
-  loadWishlistFromStorage: loadWishlist 
-} = wishlistSlice.actions
+export const { clearWishlist } = wishlistSlice.actions
+export const addToWishlist = addToWishlistAPI
+export const removeFromWishlist = removeFromWishlistAPI
 export default wishlistSlice.reducer

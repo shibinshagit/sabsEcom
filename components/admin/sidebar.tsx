@@ -21,11 +21,11 @@ const navigation = [
   { name: "Products", href: "/admin/menu", icon: Menu },
   { name: "Categories", href: "/admin/categories", icon: Tags },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
-  { name: "Testimonials", href: "/admin/testimonials", icon: Star },
-  { name: "About Section", href: "/admin/about", icon: Info },
-  { name: "Hero Slider", href: "/admin/slider", icon: ImageIcon },
-  { name: "Banners", href: "/admin/banners", icon: MessageSquare },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
+  // { name: "Testimonials", href: "/admin/testimonials", icon: Star },
+  // { name: "About Section", href: "/admin/about", icon: Info },
+  // { name: "Hero Slider", href: "/admin/slider", icon: ImageIcon },
+  // { name: "Banners", href: "/admin/banners", icon: MessageSquare },
+  // { name: "Settings", href: "/admin/settings", icon: Settings },
   { name: "Spinner-Offers", href: "/admin/offer", icon:BadgePercent}
 ]
 

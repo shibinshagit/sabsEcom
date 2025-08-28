@@ -113,7 +113,7 @@ export default function UserReservationsPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
             <Link href="/dashboard">
               <Button variant="outline" size="sm">
@@ -124,7 +124,7 @@ export default function UserReservationsPage() {
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">My Reservations</h1>
           <p className="text-gray-600">View and manage your restaurant reservations</p>
-        </div>
+        </div> */}
 
         {reservations.length === 0 ? (
           <Card>

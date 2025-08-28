@@ -25,6 +25,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Minus, Plus, Trash2, ShoppingCart, MessageSquare, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { fetchCartFromAPI, saveCartToAPI } from '@/lib/store/slices/orderSlice'
+
 
 interface CouponData {
   code: string
@@ -48,17 +50,14 @@ export default function OrderPage() {
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [couponCode, setCouponCode] = useState("")
   const [isCouponFieldOpen, setIsCouponFieldOpen] = useState(false)
-  
-  // Payment method state - defaulted to UPI
+
   const [paymentMethod, setPaymentMethod] = useState("upi")
-  
-  // New coupon functionality states
+
   const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null)
   const [couponError, setCouponError] = useState("")
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
   const [discountAmount, setDiscountAmount] = useState(0)
 
-  // Helper function to check if item has selected currency pricing
   const hasSelectedCurrencyPrice = (item: any) => {
     if (selectedCurrency === 'AED' && item.price_aed && item.price_aed > 0) {
       return true
@@ -68,21 +67,18 @@ export default function OrderPage() {
     return false
   }
 
-  // Helper function to get currency-specific price for an item
   const getCurrencySpecificPrice = (item: any) => {
     if (selectedCurrency === 'AED' && item.price_aed && item.price_aed > 0) {
       return item.price_aed
     } else if (selectedCurrency === 'INR' && item.price_inr && item.price_inr > 0) {
       return item.price_inr
     }
-    return null // Return null if no valid price for selected currency
+    return null 
   }
 
-  // Filter cart items to only include those with valid currency pricing
   const validCartItems = cart.filter(item => hasSelectedCurrencyPrice(item.menuItem))
   const invalidCartItems = cart.filter(item => !hasSelectedCurrencyPrice(item.menuItem))
 
-  // Helper function to calculate cart total with selected currency (only valid items)
   const calculateCartTotal = () => {
     return validCartItems.reduce((sum, item) => {
       const price = getCurrencySpecificPrice(item.menuItem)
@@ -90,21 +86,18 @@ export default function OrderPage() {
     }, 0)
   }
 
-  // Recalculate total when currency changes
   useEffect(() => {
     if (cart.length > 0) {
       dispatch(recalculateTotal(selectedCurrency))
     }
   }, [selectedCurrency, dispatch])
 
-  // Show warning if there are invalid items when currency changes
   useEffect(() => {
     if (invalidCartItems.length > 0) {
       console.warn(`${invalidCartItems.length} items don't have ${selectedCurrency} pricing`)
     }
   }, [selectedCurrency, invalidCartItems.length])
 
-  // Load saved coupon data on component mount
   useEffect(() => {
     const savedCoupon = localStorage.getItem("appliedCoupon")
     if (savedCoupon) {
@@ -204,7 +197,7 @@ export default function OrderPage() {
     localStorage.removeItem("appliedCoupon")
   }
 
-  const handleQuantityChange = (id: number, newQuantity: number) => {
+  const handleQuantityChange = async (id: number, newQuantity: number) => {
     if (newQuantity <= 0) {
       dispatch(removeFromCart({
         id,
@@ -217,15 +210,37 @@ export default function OrderPage() {
         userId: user?.id
       }))
     }
+
+    // Save to database after change
+    if (isAuthenticated && user?.id) {
+      // Get updated cart from state and save
+      setTimeout(() => {
+        dispatch(saveCartToAPI({
+          userId: user.id.toString(),
+          cart: validCartItems, // Use the current cart state
+          selectedCurrency
+        }))
+      }, 500)
+    }
   }
 
-  const handleRemoveInvalidItems = () => {
+  const handleRemoveInvalidItems = async () => {
     dispatch(removeInvalidCurrencyItems({
       selectedCurrency,
       userId: user?.id
     }))
-  }
 
+    // Save to database after removal
+    if (isAuthenticated && user?.id) {
+      setTimeout(() => {
+        dispatch(saveCartToAPI({
+          userId: user.id.toString(),
+          cart: validCartItems.filter(item => hasSelectedCurrencyPrice(item.menuItem)),
+          selectedCurrency
+        }))
+      }, 500)
+    }
+  }
   const handleSubmitOrder = async () => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
@@ -266,7 +281,7 @@ export default function OrderPage() {
 
     try {
       const result = await dispatch(submitOrder(orderData)).unwrap()
-      
+
       if (appliedCoupon) {
         const usedCoupons = JSON.parse(localStorage.getItem("usedCoupons") || "[]")
         usedCoupons.push(appliedCoupon.code)
@@ -338,7 +353,7 @@ export default function OrderPage() {
     const phoneNumber = "+1234567890"
     const encodedMessage = encodeURIComponent(message)
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
-    
+
     window.open(whatsappUrl, "_blank")
   }
 
@@ -542,9 +557,9 @@ export default function OrderPage() {
                 <CardTitle className="text-lg sm:text-xl">Payment Method</CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup 
-                  value={paymentMethod} 
-                  onValueChange={(value) => setPaymentMethod(value)} 
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(value) => setPaymentMethod(value)}
                   className="grid grid-cols-1 gap-4"
                 >
                   <div className="flex items-center gap-2">

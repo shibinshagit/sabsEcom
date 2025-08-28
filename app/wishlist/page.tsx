@@ -2,7 +2,7 @@
 
 import { useSelector, useDispatch } from "react-redux"
 import { addToCart } from "@/lib/store/slices/orderSlice"
-import { removeFromWishlist } from "@/lib/store/slices/wishlistSlice"
+import { removeFromWishlistAPI } from "@/lib/store/slices/wishlistSlice" 
 import type { RootState, AppDispatch } from "@/lib/store"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useCurrency } from "@/lib/contexts/currency-context"
@@ -34,11 +34,13 @@ export default function WishlistPage() {
 
   const currencyFilteredItems = wishlistItems.filter(item => hasSelectedCurrencyPrice(item))
 
-  const handleRemoveFromWishlist = (productId: number) => {
-    dispatch(removeFromWishlist({ 
-      productId, 
-      userId: user?.id 
-    }))
+  const handleRemoveFromWishlist = async (productId: number) => {
+    try {
+      await dispatch(removeFromWishlistAPI(productId)).unwrap()
+    } catch (error) {
+      console.error('Failed to remove from wishlist:', error)
+      alert('Failed to remove item from wishlist. Please try again.')
+    }
   }
 
   const handleAddToCart = (product: any) => {

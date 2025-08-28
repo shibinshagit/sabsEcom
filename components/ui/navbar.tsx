@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, ShoppingBag, User, LogOut, Search, Bell, Heart, Sparkles, Watch, Globe } from "lucide-react"
+import { Menu, X, ShoppingBag, User, LogOut,ShoppingCart, Search, Bell, Heart, Sparkles, Watch, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSelector } from "react-redux"
@@ -18,7 +18,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useShop } from "@/lib/contexts/shop-context"
 import LoginModal from "@/components/auth/login-modal"
 import { useUser } from "@clerk/nextjs"
-
 
 // Base navigation without categories
 const baseNavigation = [
@@ -48,7 +47,7 @@ export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth()
   const { shop, setShop } = useShop()
   const { user: clerkUser } = useUser()
-  const { selectedCurrency, setSelectedCurrency, getCurrencySymbol } = useCurrency() // Add this line
+  const { selectedCurrency, setSelectedCurrency, getCurrencySymbol } = useCurrency()
 
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
   const wishlistCount = wishlistItems.length
@@ -244,7 +243,7 @@ export default function Navbar() {
                 <div className="relative flex-1 max-w-2xl">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                   <Input
-                    placeholder={shop === "A" ? "Search for beauty products..." : "Search for style accessories..."}
+                    placeholder={shop === "A" ? "Search products..." : "Search for style accessories..."}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-12 pr-16 h-12 rounded-full bg-white border-0 text-base shadow-lg"
@@ -313,7 +312,7 @@ export default function Navbar() {
                 </DropdownMenu>
 
                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                  <Bell className="w-6 h-6" />
+                  <ShoppingBag className="w-6 h-6" />
                 </Button>
 
                 <Link href="/wishlist" className="relative group">
@@ -329,7 +328,7 @@ export default function Navbar() {
 
                 <Link href="/order" className="relative group">
                   <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                    <ShoppingBag className="w-6 h-6" />
+                    <ShoppingCart className="w-6 h-6" />
                     {cartCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
                         {cartCount}
@@ -392,7 +391,7 @@ export default function Navbar() {
                               <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                                 <User className="w-4 h-4 text-orange-600" />
                               </div>
-                              <span className="font-medium text-gray-700">My Dashboard</span>
+                              <span className="font-medium text-gray-700">My Profile</span>
                             </Link>
                           </DropdownMenuItem>
 
@@ -405,14 +404,7 @@ export default function Navbar() {
                             </Link>
                           </DropdownMenuItem>
 
-                          <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                            <Link href="/dashboard/reservations" className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <Bell className="w-4 h-4 text-orange-600" />
-                              </div>
-                              <span className="font-medium text-gray-700">My Reservations</span>
-                            </Link>
-                          </DropdownMenuItem>
+                          
                         </div>
 
                         <div className="border-t border-gray-100 p-2">
@@ -572,6 +564,7 @@ export default function Navbar() {
                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
                   <Bell className="w-5 h-5" />
                 </Button>
+                
                 <Link href="/wishlist" className="relative">
                   <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
                     <Heart className={`w-5 h-5 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
@@ -582,6 +575,8 @@ export default function Navbar() {
                     )}
                   </Button>
                 </Link>
+
+                {/* Cart and Profile icons - visible on tablet */}
                 <Link href="/order" className="relative">
                   <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
                     <ShoppingBag className="w-5 h-5" />
@@ -657,6 +652,7 @@ export default function Navbar() {
                 )}
               </div>
             </div>
+            
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
               <Input
@@ -667,6 +663,7 @@ export default function Navbar() {
               />
               <ShoppingBag className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
             </div>
+            
             <div className="flex overflow-x-auto scrollbar-hide gap-2">
               {loading ? (
                 <div className="flex gap-2">
@@ -740,62 +737,11 @@ export default function Navbar() {
                     </span>
                   )}
                 </Link>
-                <Link href="/order" className="relative">
-                  <ShoppingBag className="w-5 h-5 text-white" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                      {cartCount}
-                    </span>
-                  )}
-                </Link>
-
-                {isAuthenticated ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="text-white p-1">
-                        {user?.isClerkUser && clerkUser?.imageUrl ? (
-                          <Image
-                            src={clerkUser.imageUrl}
-                            alt="Profile"
-                            width={20}
-                            height={20}
-                            className="rounded-full"
-                          />
-                        ) : (
-                          <User className="w-5 h-5" />
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 p-0 border-0 shadow-xl">
-                      <div className="bg-orange-500 rounded-t-lg p-3">
-                        <div className="text-center">
-                          <h3 className="text-white font-semibold text-sm">{user?.name || "User"}</h3>
-                          <p className="text-white/80 text-xs">{user?.email}</p>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-b-lg p-2">
-                        <DropdownMenuItem asChild>
-                          <Link href="/dashboard" className="block p-2 text-sm text-gray-700 hover:bg-gray-50 rounded">
-                            Dashboard
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleLogout} className="block p-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer">
-                          Logout
-                        </DropdownMenuItem>
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Button 
-                    onClick={handleLoginClick}
-                    variant="ghost" 
-                    className="text-white p-1"
-                  >
-                    <User className="w-5 h-5" />
-                  </Button>
-                )}
+                
+                {/* Cart and Profile icons are hidden on mobile - removed from here */}
               </div>
             </div>
+            
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
@@ -806,6 +752,7 @@ export default function Navbar() {
               />
               <ShoppingBag className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             </div>
+            
             <div className="flex overflow-x-auto scrollbar-hide gap-2">
               {loading ? (
                 <div className="flex gap-2">
@@ -853,15 +800,7 @@ export default function Navbar() {
                     </Link>
                   ))
                 )}
-                <div className="flex items-center justify-center mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-sm text-gray-600 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    <span>Beauty</span>
-                    <span className="text-gray-400">|</span>
-                    <Watch className="w-4 h-4" />
-                    <span>Style</span>
-                  </div>
-                </div>
+                
               </div>
             )}
           </div>
