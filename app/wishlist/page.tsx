@@ -62,9 +62,9 @@ export default function WishlistPage() {
             <div className="flex items-center gap-3">
               <Heart className="w-8 h-8 text-red-500 fill-red-500" />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">My Wishlist ({selectedCurrency})</h1>
+                <h1 className="text-3xl font-bold text-gray-900">My Wishlist</h1>
                 <p className="text-gray-600">
-                  {currencyFilteredItems.length} {currencyFilteredItems.length === 1 ? 'item' : 'items'} available in {selectedCurrency}
+                  {currencyFilteredItems.length} {currencyFilteredItems.length === 1 ? 'item' : 'items'} available
                 </p>
                 {currencyFilteredItems.length !== wishlistItems.length && (
                   <p className="text-orange-600 text-sm">
@@ -75,11 +75,6 @@ export default function WishlistPage() {
             </div>
           </div>
           
-          {/* Currency indicator */}
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border">
-            <Globe className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Currency: {selectedCurrency}</span>
-          </div>
         </div>
 
         {wishlistItems.length === 0 ? (
@@ -157,16 +152,7 @@ export default function WishlistPage() {
                       <p className="text-orange-600 font-bold text-lg">
                         {formatCurrencyPrice(item.price_aed, item.price_inr, item.default_currency)}
                       </p>
-                      <p className="text-gray-400 text-sm line-through">
-                        {selectedCurrency === 'AED' && item.price_aed
-                          ? `AED ${(item.price_aed * 1.6).toFixed(2)}`
-                          : selectedCurrency === 'INR' && item.price_inr
-                          ? `₹ ${(item.price_inr * 1.6).toFixed(2)}`
-                          : formatCurrencyPrice(item.price_aed ? item.price_aed * 1.6 : 0, item.price_inr ? item.price_inr * 1.6 : 0, item.default_currency)
-                        }
-                      </p>
                     </div>
-                    <Badge className="bg-orange-100 text-orange-600 text-xs">SAVE 38%</Badge>
                   </div>
 
                   <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-2">
@@ -178,13 +164,6 @@ export default function WishlistPage() {
                       {item.description}
                     </p>
                   )}
-
-                  <div className="flex items-center gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                    ))}
-                    <span className="text-xs text-gray-500 ml-1">(4.8)</span>
-                  </div>
 
                   <div className="space-y-2">
                     <Button

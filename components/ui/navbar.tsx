@@ -57,14 +57,12 @@ export default function Navbar() {
 
   const currentPage = pathname === "/" ? "home" : pathname.split("/")[1] || "home"
 
-  // Handle search functionality
   const handleSearch = async (term: string) => {
     setSearchTerm(term)
     
     if (term.trim().length === 0) {
       setShowSearchDropdown(false)
       setSearchResults([])
-      // Update URL to clear search
       if (pathname === "/products") {
         const params = new URLSearchParams(searchParams.toString())
         params.delete('search')
@@ -82,12 +80,9 @@ export default function Navbar() {
     setShowSearchDropdown(true)
 
     try {
-      // Search in products
       const response = await fetch(`/api/admin/products`)
       const allProducts = await response.json()
-      
-      // Filter products by shop and search term
-      const filtered = allProducts.filter((product: any) => {
+            const filtered = allProducts.filter((product: any) => {
         const matchesShop = product.shop_category === shop
         const matchesSearch = 
           product.name.toLowerCase().includes(term.toLowerCase()) ||
@@ -97,9 +92,8 @@ export default function Navbar() {
         return matchesShop && matchesSearch
       })
 
-      setSearchResults(filtered.slice(0, 5)) // Show top 5 results
+      setSearchResults(filtered.slice(0, 5))
       
-      // Update URL with search term
       if (pathname === "/products" || pathname === "/") {
         const params = new URLSearchParams(searchParams.toString())
         params.set('search', term)
@@ -116,14 +110,12 @@ export default function Navbar() {
     }
   }
 
-  // Handle search result click
   const handleSearchResultClick = (productId: number) => {
     setShowSearchDropdown(false)
     setSearchTerm("")
     router.push(`/product/${productId}`)
   }
 
-  // Handle "View all results"
   const handleViewAllResults = () => {
     setShowSearchDropdown(false)
     const params = new URLSearchParams()
@@ -144,31 +136,25 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Fetch categories and products on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
         
-        // Fetch categories
         const categoriesResponse = await fetch('/api/categories')
         const categoriesData = await categoriesResponse.json()
         
-        // Fetch products to calculate counts
         const productsResponse = await fetch('/api/admin/products')
         const productsData = await productsResponse.json()
         
-        // Filter categories by shop
         const shopFilteredCategories = shop
           ? categoriesData.filter((cat: Category) => !cat.shop || cat.shop === shop)
           : categoriesData
         
-        // Filter products by shop
         const shopFilteredProducts = shop
           ? productsData.filter((product: any) => product.shop_category === shop)
           : productsData
         
-        // Calculate product counts per category
         const productCounts = shopFilteredProducts.reduce((acc: any, product: any) => {
           const categoryId = product.category_id?.toString()
           if (categoryId) {
@@ -177,7 +163,6 @@ export default function Navbar() {
           return acc
         }, {})
         
-        // Filter categories to only show those with at least 1 product
         const categoriesWithProducts = shopFilteredCategories.filter((category: Category) => {
           const categoryId = category.id?.toString()
           return productCounts[categoryId] && productCounts[categoryId] > 0
@@ -199,7 +184,6 @@ export default function Navbar() {
     fetchData()
   }, [shop])
 
-  // Build navigation with filtered categories (only categories with products)
   const navigation = [
     ...baseNavigation,
     ...categories.map(category => ({
@@ -253,12 +237,10 @@ export default function Navbar() {
     }
 
     if (item.name === "All Products") {
-      // Force navigation to /products without query parameters
       window.location.href = "/products"
       return
     }
 
-    // Handle category clicks normally
     if ((item as any).isCategory) {
       return
     }

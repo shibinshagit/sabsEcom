@@ -265,23 +265,9 @@ export default function ProductPage() {
                     : `Not available in ${selectedCurrency}`
                   }
                 </span>
-                {/* offer price adding 1.6 % */}
-                {/* {currencyAvailable && (
-                  <>
-                    <span className="text-lg text-gray-400 line-through">
-                      {selectedCurrency === 'AED' && product.price_aed
-                        ? `AED ${(product.price_aed * 1.6).toFixed(2)}`
-                        : selectedCurrency === 'INR' && product.price_inr
-                        ? `₹ ${(product.price_inr * 1.6).toFixed(2)}`
-                        : `${formatPrice(product.price_aed, product.price_inr, product.default_currency)} + 60%`
-                      }
-                    </span>
-                    
-                  </>
-                )} */}
               </div>
               <p className="text-sm text-gray-600">
-                Free shipping • 30-day returns {currencyAvailable && `• Available in ${selectedCurrency}`}
+                Free shipping • 30-day returns {currencyAvailable && `• Available`}
               </p>
             </div>
 
