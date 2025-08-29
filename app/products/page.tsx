@@ -9,7 +9,6 @@ import { useShop } from "@/lib/contexts/shop-context"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { useSearchParams } from "next/navigation"
-import OfferSection from "@/components/sections/offer-section"
 import NewUserSpinnerSection from "@/components/sections/new-user-spinner-section"
 import Services from "@/components/sections/services"
 import ProductList from "@/components/sections/product-list"
@@ -58,7 +57,7 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-gray-50">
 
       <Navbar />
-      <OfferSection />
+
       {!isAuthenticated && <NewUserSpinnerSection />}
       <Services />
       <ProductList />

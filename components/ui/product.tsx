@@ -102,14 +102,7 @@ export default function Product({ product, viewMode = "grid", showShopBadge = tr
       </div>
 
       <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
-        {/* Price and discount */}
-        <div className="flex items-start justify-between mb-2">
-          <div>
-            <p className="text-red-500 font-bold text-sm lg:text-lg">{formatPrice(product.price)}</p>
-            <p className="text-gray-400 text-xs lg:text-sm line-through">{formatPrice(product.price * 1.6)}</p>
-          </div>
-          <Badge className="bg-red-100 text-red-600 text-xs">-38%</Badge>
-        </div>
+        
 
         {/* Product name */}
         <h3 className="text-sm lg:text-base font-medium text-gray-900 line-clamp-2 mb-2">{product.name}</h3>

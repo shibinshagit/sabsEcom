@@ -31,34 +31,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { user: clerkUser, isLoaded: clerkLoaded } = useClerkUser()
   const { signOut: clerkSignOut } = useClerkAuth()
 
-  // ---- CHECK AUTH STATUS ----
-  useEffect(() => {
-    // Prefer Clerk user if present
-    if (clerkLoaded && clerkUser) {
-      setUser({
-        id: clerkUser.id,
-        email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || "",
-        name: clerkUser.fullName || clerkUser.firstName || "",
-        isVerified: true,
-        isClerkUser: true,
-        createdAt: undefined,
+  useEffect(() => {  
+  if (clerkLoaded && clerkUser) {
+    setUser({
+      id: clerkUser.id,
+      email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || "",
+      name: clerkUser.fullName || clerkUser.firstName || "",
+      isVerified: true,
+      isClerkUser: true,
+      createdAt: undefined,
+    })
+    setLoading(false)
+  } else if (clerkLoaded && !clerkUser) {
+    console.log('🔍 No Clerk user, checking manual auth...')
+    fetch("/api/auth/me", { credentials: 'include' }) 
+      .then(async (resp) => {
+        if (resp.ok) {
+          const data = await resp.json()
+          setUser(data.user)
+        } else {
+          setUser(null)
+        }
       })
-      setLoading(false)
-    } else if (clerkLoaded && !clerkUser) {
-      // Fallback to manual auth (your backend)
-      fetch("/api/auth/me")
-        .then(async (resp) => {
-          if (resp.ok) {
-            const data = await resp.json()
-            setUser(data.user)
-          } else {
-            setUser(null)
-          }
-        })
-        .catch(() => setUser(null))
-        .finally(() => setLoading(false))
-    }
-  }, [clerkUser, clerkLoaded])
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false))
+  }
+}, [clerkUser, clerkLoaded])
 
   // ---- MANUAL AUTH FUNCTIONS ----
   const sendOTP = async (email: string) => {
@@ -151,4 +149,3 @@ export function useAuth() {
   }
   return context
 }
-

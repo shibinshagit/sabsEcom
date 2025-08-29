@@ -24,7 +24,6 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen admin-gradient">
       <div className="flex">
-        {/* Sidebar: only show on desktop */}
         <div className="hidden lg:block">
           <AdminSidebar />
         </div>
@@ -33,7 +32,6 @@ export default function AdminLayout({
           <main className="flex-1 p-4 pb-24 sm:pb-24 md:pb-24 lg:pb-6">{children}</main>
         </div>
       </div>
-      {/* Admin bottom tabs: only show on mobile/tablet */}
       <AdminBottomTabs />
     </div>
   )

@@ -8,31 +8,38 @@ import Footer from "@/components/ui/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CalendarDays, ShoppingBag, Clock, CheckCircle, XCircle, User } from "lucide-react"
+import { CalendarDays, ShoppingBag, Clock, CheckCircle, XCircle, User, Mail, Edit3, Settings, ChefHat, Truck } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
+import { useUser } from "@clerk/nextjs"
+
+interface OrderItem {
+  id: number
+  menu_item_name: string
+  quantity: number
+  unit_price: number | string
+  total_price: number | string
+}
 
 interface Order {
   id: number
   status: string
-  final_total: number
-  created_at: string
   order_type: string
-}
-
-interface Reservation {
-  id: number
-  status: string
-  party_size: number
-  reservation_date: string
-  reservation_time: string
+  customer_name: string
+  total_amount: number | string
+  delivery_fee: number | string
+  final_total: number | string
+  special_instructions: string
   created_at: string
+  items: OrderItem[]
 }
 
 export default function DashboardPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const { user: clerkUser } = useUser()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
-  const [reservations, setReservations] = useState<Reservation[]>([])
+  const [totalOrders, setTotalOrders] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -48,19 +55,12 @@ export default function DashboardPage() {
 
   const fetchUserData = async () => {
     try {
-      const [ordersRes, reservationsRes] = await Promise.all([
-        fetch("/api/user/orders"),
-        fetch("/api/user/reservations"),
-      ])
+      const ordersRes = await fetch("/api/orders")
 
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json()
-        setOrders(ordersData.slice(0, 5)) // Show latest 5
-      }
-
-      if (reservationsRes.ok) {
-        const reservationsData = await reservationsRes.json()
-        setReservations(reservationsData.slice(0, 5)) // Show latest 5
+        setTotalOrders(ordersData.length) // Set actual total count
+        setOrders(ordersData.slice(0, 2)) // Show only recent 2 orders
       }
     } catch (error) {
       console.error("Error fetching user data:", error)
@@ -77,11 +77,13 @@ export default function DashboardPage() {
       case "pending":
         return "bg-yellow-100 text-yellow-800"
       case "cancelled":
-      case "rejected":
         return "bg-red-100 text-red-800"
       case "preparing":
-      case "ready":
         return "bg-blue-100 text-blue-800"
+      case "ready":
+        return "bg-purple-100 text-purple-800"
+      case "out-for-delivery":
+        return "bg-orange-100 text-orange-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -93,11 +95,31 @@ export default function DashboardPage() {
       case "completed":
         return <CheckCircle className="w-4 h-4" />
       case "cancelled":
-      case "rejected":
         return <XCircle className="w-4 h-4" />
+      case "preparing":
+        return <ChefHat className="w-4 h-4" />
+      case "out-for-delivery":
+        return <Truck className="w-4 h-4" />
       default:
         return <Clock className="w-4 h-4" />
     }
+  }
+
+  // Get member since year from original data
+  const getMemberSinceYear = () => {
+    if (user?.createdAt) {
+      return new Date(user.createdAt).getFullYear()
+    }
+    if (user?.isClerkUser && clerkUser?.createdAt) {
+      return new Date(clerkUser.createdAt).getFullYear()
+    }
+    return new Date().getFullYear() // Fallback to current year
+  }
+
+  // Format money safely
+  const formatMoney = (value: unknown) => {
+    const num = typeof value === "number" ? value : Number.parseFloat(String(value ?? 0))
+    return num.toFixed(2)
   }
 
   if (authLoading || loading) {
@@ -127,141 +149,209 @@ export default function DashboardPage() {
       <Navbar />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Profile Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome back, {user?.name || "User"}!</h1>
-          <p className="text-gray-600">Here's an overview of your recent activity</p>
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+              {/* Profile Picture */}
+              <div className="flex-shrink-0">
+                <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                  {user?.isClerkUser && clerkUser?.imageUrl ? (
+                    <Image
+                      src={clerkUser.imageUrl}
+                      alt="Profile"
+                      width={96}
+                      height={96}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <User className="w-12 h-12 text-white" />
+                  )}
+                </div>
+              </div>
+
+              {/* User Info */}
+              <div className="flex-1">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                      {user?.name || clerkUser?.fullName || "User"}
+                    </h1>
+                    <div className="flex items-center gap-2 text-gray-600 mb-2">
+                      <Mail className="w-4 h-4" />
+                      <span>{user?.email || clerkUser?.primaryEmailAddress?.emailAddress}</span>
+                    </div>
+                    {user?.isClerkUser && (
+                      <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                        <span>Google Account</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* <div className="flex gap-2 mt-4 md:mt-0">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Edit3 className="w-4 h-4" />
+                      Edit Profile
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Change Password
+                    </Button>
+                  </div> */}
+                </div>
+
+                <p className="text-gray-600">
+                  Welcome to your profile dashboard! Here you can view your account details.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                  <p className="text-2xl font-bold text-gray-800">{orders.length}</p>
+                  <p className="text-3xl font-bold text-gray-800">{totalOrders}</p>
+                  <p className="text-xs text-gray-500 mt-1">All time orders</p>
                 </div>
-                <ShoppingBag className="w-8 h-8 text-amber-500" />
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="w-6 h-6 text-amber-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Reservations</p>
-                  <p className="text-2xl font-bold text-gray-800">{reservations.length}</p>
-                </div>
-                <CalendarDays className="w-8 h-8 text-amber-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Member Since</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {user?.createdAt ? new Date(user.createdAt).getFullYear() : "2024"}
+                  <p className="text-3xl font-bold text-gray-800">{getMemberSinceYear()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Year joined</p>
+                </div>
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <CalendarDays className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Account Status</p>
+                  <p className="text-lg font-bold text-green-600">Active</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {user?.isVerified ? "Verified" : "Pending verification"}
                   </p>
                 </div>
-                <User className="w-8 h-8 text-amber-500" />
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Orders */}
+        {/* Recent Orders */}
+        <div className="grid grid-cols-1 gap-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Orders</CardTitle>
-              <Link href="/dashboard/orders">
-                <Button variant="outline" size="sm">
-                  View All
+              <CardTitle className="text-xl font-semibold">Recent Orders</CardTitle>
+              <Link href="/orders">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4" />
+                  View All Orders
                 </Button>
               </Link>
             </CardHeader>
             <CardContent>
               {orders.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No orders yet</p>
-                  <Link href="/menu">
-                    <Button className="mt-4 bg-amber-500 hover:bg-amber-600 text-black">Browse Menu</Button>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ShoppingBag className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+                  <p className="text-gray-500 mb-6">Start shopping to see your orders here</p>
+                  <Link href="/products">
+                    <Button className="bg-amber-500 hover:bg-amber-600 text-black font-medium">
+                      Browse Products
+                    </Button>
                   </Link>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {orders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-medium">Order #{order.id}</span>
-                          <Badge className={getStatusColor(order.status)}>
+                    <div key={order.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-lg font-semibold text-gray-800">Order #{order.id}</span>
+                          <Badge className={`${getStatusColor(order.status)} flex items-center gap-1`}>
                             {getStatusIcon(order.status)}
-                            <span className="ml-1 capitalize">{order.status}</span>
+                            <span className="capitalize">{order.status}</span>
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {order.order_type} • ${order.final_total?.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-gray-800">
+                            ${formatMoney(order.final_total)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(order.created_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Order Items Summary */}
+                      <div className="mb-4">
+                        <div className="text-sm text-gray-600">
+                          <p className="font-medium mb-2">Items:</p>
+                          {order.items?.slice(0, 2).map((item) => (
+                            <div key={item.id} className="flex justify-between items-center py-1">
+                              <span>{item.menu_item_name} x{item.quantity}</span>
+                              <span>${formatMoney(item.total_price)}</span>
+                            </div>
+                          ))}
+                          {order.items?.length > 2 && (
+                            <p className="text-gray-500 text-xs mt-1">
+                              +{order.items.length - 2} more items
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Type:</span>
+                          <span className="text-sm font-medium text-gray-800 capitalize">{order.order_type}</span>
+                        </div>
+                        <Link href={`/orders`}>
+                          <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-700">
+                            View Details →
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Reservations */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Reservations</CardTitle>
-              <Link href="/dashboard/reservations">
-                <Button variant="outline" size="sm">
-                  View All
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {reservations.length === 0 ? (
-                <div className="text-center py-8">
-                  <CalendarDays className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No reservations yet</p>
-                  <Link href="/reservations">
-                    <Button className="mt-4 bg-amber-500 hover:bg-amber-600 text-black">Make Reservation</Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {reservations.map((reservation) => (
-                    <div key={reservation.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-medium">Reservation #{reservation.id}</span>
-                          <Badge className={getStatusColor(reservation.status)}>
-                            {getStatusIcon(reservation.status)}
-                            <span className="ml-1 capitalize">{reservation.status}</span>
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          {reservation.party_size} guests • {reservation.reservation_date} at{" "}
-                          {new Date(`2000-01-01T${reservation.reservation_time}`).toLocaleTimeString([], {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Requested: {new Date(reservation.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
+                  
+                  {totalOrders > 2 && (
+                    <div className="text-center pt-4">
+                      <Link href="/orders">
+                        <Button variant="outline" className="flex items-center gap-2">
+                          <ShoppingBag className="w-4 h-4" />
+                          View {totalOrders - 2} More Orders
+                        </Button>
+                      </Link>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </CardContent>

@@ -151,17 +151,6 @@ export default function AdminDashboard() {
             <p className="text-xs text-purple-400 mt-1">Requires attention</p>
           </CardContent>
         </Card>
-
-        {/* <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Today's Reservations</CardTitle>
-            <Calendar className="h-4 w-4 text-orange-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.todayReservations || 0}</div>
-            <p className="text-xs text-orange-400 mt-1">Scheduled for today</p>
-          </CardContent>
-        </Card> */}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -199,37 +188,6 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Upcoming Reservations */}
-        {/* <Card className="bg-gray-800/50 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-orange-400" />
-              Upcoming Reservations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {stats.upcomingReservations?.slice(0, 5).map((reservation) => (
-                <div
-                  key={reservation.id}
-                  className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700/50 hover:border-orange-500/30 transition-all duration-200"
-                >
-                  <div>
-                    <p className="text-white font-medium">{reservation.customer_name}</p>
-                    <p className="text-gray-400 text-sm">
-                      {new Date(reservation.reservation_date).toLocaleDateString()} at {reservation.reservation_time}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white font-bold">{reservation.party_size} guests</p>
-                    <p className={`text-sm capitalize ${getStatusColor(reservation.status)}`}>{reservation.status}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card> */}
       </div>
     </div>
   )
