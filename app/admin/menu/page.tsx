@@ -647,81 +647,113 @@ export default function ProductManagement() {
                 />
               </div>
 
-              {/* Switches */}
+              {/* Enhanced Product Settings Toggles */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-gray-300 mb-3">Product Settings</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600">
-                    <div className="flex items-center space-x-3">
-                      <Label htmlFor="is_available" className="text-white font-medium cursor-pointer">
+                <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  Product Settings
+                  <div className="flex-1 border-t border-gray-600 ml-4"></div>
+                </h4>
+                
+                {/* Available Toggle */}
+                <div className="p-4 bg-gray-900/50 rounded-xl border-2 border-gray-700 hover:border-gray-600 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Label htmlFor="is_available" className="text-white font-semibold text-base cursor-pointer">
                         Available
                       </Label>
-                      {formData.is_available && (
-                        <Badge className="bg-green-500 text-white text-xs">ON</Badge>
-                      )}
-                      {!formData.is_available && (
-                        <Badge variant="secondary" className="text-xs">OFF</Badge>
-                      )}
+                      <Badge 
+                        className={`text-xs font-bold px-3 py-1 ${
+                          formData.is_available 
+                            ? 'bg-green-500 text-white' 
+                            : 'bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        {formData.is_available ? 'ON' : 'OFF'}
+                      </Badge>
                     </div>
                     <Switch
                       id="is_available"
                       checked={formData.is_available}
                       onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
+                      className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-600 scale-125"
                     />
                   </div>
+                  <p className="text-sm text-gray-400 mt-2 ml-0">
+                    {formData.is_available ? "Product is available for purchase" : "Product is not available"}
+                  </p>
+                </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600">
-                    <div className="flex items-center space-x-3">
-                      <Label htmlFor="is_featured" className="text-white font-medium cursor-pointer">
+                {/* Featured Toggle */}
+                <div className="p-4 bg-gray-900/50 rounded-xl border-2 border-gray-700 hover:border-gray-600 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Label htmlFor="is_featured" className="text-white font-semibold text-base cursor-pointer">
                         Featured
                       </Label>
-                      {formData.is_featured && (
-                        <Badge className="bg-amber-500 text-white text-xs">ON</Badge>
-                      )}
-                      {!formData.is_featured && (
-                        <Badge variant="secondary" className="text-xs">OFF</Badge>
-                      )}
+                      <Badge 
+                        className={`text-xs font-bold px-3 py-1 ${
+                          formData.is_featured 
+                            ? 'bg-amber-500 text-black' 
+                            : 'bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        {formData.is_featured ? 'ON' : 'OFF'}
+                      </Badge>
                     </div>
                     <Switch
                       id="is_featured"
                       checked={formData.is_featured}
                       onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                      className="data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-gray-600 scale-125"
                     />
                   </div>
+                  <p className="text-sm text-gray-400 mt-2 ml-0">
+                    {formData.is_featured ? "Product will be highlighted as featured" : "Regular product"}
+                  </p>
+                </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-600">
-                    <div className="flex items-center space-x-3">
-                      <Label htmlFor="is_new" className="text-white font-medium cursor-pointer">
+                {/* New Product Toggle */}
+                <div className="p-4 bg-gray-900/50 rounded-xl border-2 border-gray-700 hover:border-gray-600 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Label htmlFor="is_new" className="text-white font-semibold text-base cursor-pointer">
                         New Product
                       </Label>
-                      {formData.is_new && (
-                        <Badge className="bg-blue-500 text-white text-xs">ON</Badge>
-                      )}
-                      {!formData.is_new && (
-                        <Badge variant="secondary" className="text-xs">OFF</Badge>
-                      )}
+                      <Badge 
+                        className={`text-xs font-bold px-3 py-1 ${
+                          formData.is_new 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        {formData.is_new ? 'ON' : 'OFF'}
+                      </Badge>
                     </div>
                     <Switch
                       id="is_new"
                       checked={formData.is_new}
                       onCheckedChange={(checked) => setFormData({ ...formData, is_new: checked })}
+                      className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-600 scale-125"
                     />
                   </div>
+                  <p className="text-sm text-gray-400 mt-2 ml-0">
+                    {formData.is_new ? "Product will be marked as new arrival" : "Not a new product"}
+                  </p>
                 </div>
               </div>
 
-
               {/* New Until Date */}
               {formData.is_new && (
-                <div>
-                  <Label htmlFor="new_until_date">New Until Date</Label>
+                <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
+                  <Label htmlFor="new_until_date" className="text-blue-300 font-medium">New Until Date</Label>
                   <Input
                     id="new_until_date"
                     type="date"
                     value={formData.new_until_date}
                     onChange={(e) => setFormData({ ...formData, new_until_date: e.target.value })}
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className="bg-gray-700 border-gray-600 text-white mt-2"
                   />
+                  <p className="text-xs text-blue-400 mt-1">Set when this product should no longer be marked as "new"</p>
                 </div>
               )}
 

@@ -25,7 +25,7 @@ const navigation = [
   // { name: "About Section", href: "/admin/about", icon: Info },
   // { name: "Hero Slider", href: "/admin/slider", icon: ImageIcon },
   // { name: "Banners", href: "/admin/banners", icon: MessageSquare },
-  // { name: "Settings", href: "/admin/settings", icon: Settings },
+  { name: "Settings", href: "/admin/settings", icon: Settings },
   { name: "Spinner-Offers", href: "/admin/offer", icon:BadgePercent}
 ]
 

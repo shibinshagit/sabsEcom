@@ -15,6 +15,7 @@ import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { addToWishlistAPI, removeFromWishlistAPI } from '@/lib/store/slices/wishlistSlice'
+
 interface ProductListProps {
   showSpinner?: boolean
   onCloseSpinner?: () => void
@@ -47,44 +48,43 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     } else if (selectedCurrency === 'INR') {
       return product.price_inr && product.price_inr > 0
     }
-    return true 
+    return true
   }
 
   const handleToggleWishlist = async (product: any) => {
-  if (!isAuthenticated) {
-    alert('Please login to add items to wishlist')
-    return
-  }
-
-  try {
-    if (isInWishlist(product.id)) {
-      await dispatch(removeFromWishlistAPI(product.id)).unwrap()
-    } else {
-      const wishlistItem = {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        price_aed: product.price_aed,
-        price_inr: product.price_inr,
-        default_currency: product.default_currency,
-        image_url: product.image_url,
-        category_id: product.category_id,
-        category_name: product.category_name,
-        description: product.description,
-        brand: product.brand,
-        is_available: product.is_available,
-        shop_category: product.shop_category,
-        features: product.features
-      }
-      await dispatch(addToWishlistAPI(wishlistItem)).unwrap()
+    if (!isAuthenticated) {
+      alert('Please login to add items to wishlist')
+      return
     }
-  } catch (error) {
-    console.error('wishlist operation failed:', error)
-    const errorMessage = typeof error === 'string' ? error : 'Unknown error occurred'
-    alert(`Failed to update wishlist: ${errorMessage}`)
-  }
-}
 
+    try {
+      if (isInWishlist(product.id)) {
+        await dispatch(removeFromWishlistAPI(product.id)).unwrap()
+      } else {
+        const wishlistItem = {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          price_aed: product.price_aed,
+          price_inr: product.price_inr,
+          default_currency: product.default_currency,
+          image_url: product.image_url,
+          category_id: product.category_id,
+          category_name: product.category_name,
+          description: product.description,
+          brand: product.brand,
+          is_available: product.is_available,
+          shop_category: product.shop_category,
+          features: product.features
+        }
+        await dispatch(addToWishlistAPI(wishlistItem)).unwrap()
+      }
+    } catch (error) {
+      console.error('wishlist operation failed:', error)
+      const errorMessage = typeof error === 'string' ? error : 'Unknown error occurred'
+      alert(`Failed to update wishlist: ${errorMessage}`)
+    }
+  }
 
   useEffect(() => {
     const initTimer = setTimeout(() => {
@@ -102,6 +102,16 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     }
   }, [dispatch, categoryFromUrl])
 
+  // Add this useEffect to handle search from URL
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("search")
+    if (searchFromUrl) {
+      setSearchTerm(searchFromUrl)
+    } else {
+      setSearchTerm("")
+    }
+  }, [searchParams])
+
   const handleCategoryChange = (categoryId: number | null) => {
     setCategoryTransition(true)
     setTimeout(() => {
@@ -109,7 +119,6 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
       setCategoryTransition(false)
     }, 150)
   }
-
 
   const handleAddToCart = (product: any) => {
     dispatch(addToCart({
@@ -120,7 +129,6 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     }))
   }
 
-
   const shopFilteredItems = items.filter((item: any) => {
     return item.shop_category === shop
   })
@@ -129,17 +137,28 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     return hasSelectedCurrencyPrice(item)
   })
 
+  // Updated filteredItems logic to handle URL search
   const filteredItems = currencyFilteredItems.filter((item) => {
     const matchesCategory = selectedCategory === null || item.category_id === selectedCategory
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase())
+    const searchFromUrl = searchParams.get("search") || ""
+    const searchTermToUse = searchFromUrl || searchTerm
+
+    const matchesSearch = searchTermToUse.length === 0 ||
+      item.name.toLowerCase().includes(searchTermToUse.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchTermToUse.toLowerCase()) ||
+      (item.brand && item.brand.toLowerCase().includes(searchTermToUse.toLowerCase()))
+
     return matchesCategory && matchesSearch
   })
 
   const shouldShowSpinButton = authInitialized && !isAuthenticated && !showSpinner
 
+  // Updated getCurrentCategoryName function
   const getCurrentCategoryName = () => {
+    const searchFromUrl = searchParams.get("search")
+    if (searchFromUrl) {
+      return `Search results for "${searchFromUrl}" in SHOP ${shop} (${selectedCurrency})`
+    }
     if (selectedCategory === null) return `SHOP ${shop} (${selectedCurrency})`
     const category = categories.find((cat) => cat.id === selectedCategory)
     return `Shop ${shop} - ${category?.name || "Products"} (${selectedCurrency})`
@@ -251,7 +270,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         }
                       </p>
                       <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
-                      
+
                       <Button
                         onClick={() => handleAddToCart(item)}
                         className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium"
@@ -330,7 +349,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                           <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">HOT</Badge>
                         )}
                         <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs">{shop}</Badge>
-                        
+
                       </div>
                       <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
                         <div className="flex items-start justify-between mb-2">
@@ -368,7 +387,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                             </div>
                           </div>
                         )}
-                        
+
                         <Button
                           onClick={() => handleAddToCart(item)}
                           className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg"
@@ -391,13 +410,36 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                 ))}
               </div>
             )}
+            {/* Updated no products found section */}
             {filteredItems.length === 0 && !loading && (
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found in Shop {shop}</h3>
-                <p className="text-gray-500">
-                  No products available with {selectedCurrency} pricing. Try switching currency or check the other shop.
-                </p>
+                {searchParams.get("search") ? (
+                  <>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No products found for "{searchParams.get("search")}"
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Try different keywords or browse categories below
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setSearchTerm("")
+                        router.push("/products")
+                      }}
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                    >
+                      Clear Search
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found in Shop {shop}</h3>
+                    <p className="text-gray-500">
+                      No products available with {selectedCurrency} pricing. Try switching currency or check the other shop.
+                    </p>
+                  </>
+                )}
               </div>
             )}
           </div>

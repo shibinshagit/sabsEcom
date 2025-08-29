@@ -265,7 +265,8 @@ export default function ProductPage() {
                     : `Not available in ${selectedCurrency}`
                   }
                 </span>
-                {currencyAvailable && (
+                {/* offer price adding 1.6 % */}
+                {/* {currencyAvailable && (
                   <>
                     <span className="text-lg text-gray-400 line-through">
                       {selectedCurrency === 'AED' && product.price_aed
@@ -277,7 +278,7 @@ export default function ProductPage() {
                     </span>
                     
                   </>
-                )}
+                )} */}
               </div>
               <p className="text-sm text-gray-600">
                 Free shipping • 30-day returns {currencyAvailable && `• Available in ${selectedCurrency}`}

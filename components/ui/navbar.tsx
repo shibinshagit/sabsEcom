@@ -3,8 +3,8 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Menu, X, ShoppingBag, User, LogOut,ShoppingCart, Search, Bell, Heart, Sparkles, Watch, Globe } from "lucide-react"
+import { usePathname, useSearchParams, useRouter } from "next/navigation"
+import { Menu, X, ShoppingBag, User, LogOut, ShoppingCart, Search, Bell, Heart, Sparkles, Watch, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSelector } from "react-redux"
@@ -19,10 +19,8 @@ import { useShop } from "@/lib/contexts/shop-context"
 import LoginModal from "@/components/auth/login-modal"
 import { useUser } from "@clerk/nextjs"
 
-// Base navigation without categories
 const baseNavigation = [
-  { name: "Home", href: "/" },
-  { name: "Products", href: "/products" },
+  { name: "All Products", href: "/products" },
 ]
 
 interface Category {
@@ -39,8 +37,13 @@ export default function Navbar() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [products, setProducts] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
 
   const pathname = usePathname()
+  const router = useRouter()
   const cartItems = useSelector((state: RootState) => state.order.cart)
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const { settings } = useSettings()
@@ -48,27 +51,142 @@ export default function Navbar() {
   const { shop, setShop } = useShop()
   const { user: clerkUser } = useUser()
   const { selectedCurrency, setSelectedCurrency, getCurrencySymbol } = useCurrency()
-
+  const searchParams = useSearchParams()
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
   const wishlistCount = wishlistItems.length
 
   const currentPage = pathname === "/" ? "home" : pathname.split("/")[1] || "home"
 
-  // Fetch categories on component mount
+  // Handle search functionality
+  const handleSearch = async (term: string) => {
+    setSearchTerm(term)
+    
+    if (term.trim().length === 0) {
+      setShowSearchDropdown(false)
+      setSearchResults([])
+      // Update URL to clear search
+      if (pathname === "/products") {
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete('search')
+        router.push(`/products?${params.toString()}`)
+      }
+      return
+    }
+
+    if (term.trim().length < 2) {
+      setShowSearchDropdown(false)
+      return
+    }
+
+    setIsSearching(true)
+    setShowSearchDropdown(true)
+
+    try {
+      // Search in products
+      const response = await fetch(`/api/admin/products`)
+      const allProducts = await response.json()
+      
+      // Filter products by shop and search term
+      const filtered = allProducts.filter((product: any) => {
+        const matchesShop = product.shop_category === shop
+        const matchesSearch = 
+          product.name.toLowerCase().includes(term.toLowerCase()) ||
+          product.description.toLowerCase().includes(term.toLowerCase()) ||
+          (product.brand && product.brand.toLowerCase().includes(term.toLowerCase()))
+        
+        return matchesShop && matchesSearch
+      })
+
+      setSearchResults(filtered.slice(0, 5)) // Show top 5 results
+      
+      // Update URL with search term
+      if (pathname === "/products" || pathname === "/") {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('search', term)
+        if (pathname === "/") {
+          router.push(`/products?${params.toString()}`)
+        } else {
+          router.push(`/products?${params.toString()}`)
+        }
+      }
+    } catch (error) {
+      console.error('Search failed:', error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Handle search result click
+  const handleSearchResultClick = (productId: number) => {
+    setShowSearchDropdown(false)
+    setSearchTerm("")
+    router.push(`/product/${productId}`)
+  }
+
+  // Handle "View all results"
+  const handleViewAllResults = () => {
+    setShowSearchDropdown(false)
+    const params = new URLSearchParams()
+    params.set('search', searchTerm)
+    router.push(`/products?${params.toString()}`)
+  }
+
+  // Close search dropdown when clicking outside
   useEffect(() => {
-    const fetchCategories = async () => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const searchContainer = document.querySelector('.search-container')
+      if (searchContainer && !searchContainer.contains(event.target as Node)) {
+        setShowSearchDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Fetch categories and products on component mount
+  useEffect(() => {
+    const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/categories')
-        const data = await response.json()
-
-        const filteredCategories = shop
-          ? data.filter((cat: Category) => !cat.shop || cat.shop === shop)
-          : data
-
-        setCategories(filteredCategories)
+        
+        // Fetch categories
+        const categoriesResponse = await fetch('/api/categories')
+        const categoriesData = await categoriesResponse.json()
+        
+        // Fetch products to calculate counts
+        const productsResponse = await fetch('/api/admin/products')
+        const productsData = await productsResponse.json()
+        
+        // Filter categories by shop
+        const shopFilteredCategories = shop
+          ? categoriesData.filter((cat: Category) => !cat.shop || cat.shop === shop)
+          : categoriesData
+        
+        // Filter products by shop
+        const shopFilteredProducts = shop
+          ? productsData.filter((product: any) => product.shop_category === shop)
+          : productsData
+        
+        // Calculate product counts per category
+        const productCounts = shopFilteredProducts.reduce((acc: any, product: any) => {
+          const categoryId = product.category_id?.toString()
+          if (categoryId) {
+            acc[categoryId] = (acc[categoryId] || 0) + 1
+          }
+          return acc
+        }, {})
+        
+        // Filter categories to only show those with at least 1 product
+        const categoriesWithProducts = shopFilteredCategories.filter((category: Category) => {
+          const categoryId = category.id?.toString()
+          return productCounts[categoryId] && productCounts[categoryId] > 0
+        })
+        
+        setCategories(categoriesWithProducts)
+        setProducts(shopFilteredProducts)
       } catch (error) {
-        console.error('Error fetching categories:', error)
+        console.error('Error fetching data:', error)
         setCategories([
           { id: 1, name: "Beauty Products", slug: "beauty" },
           { id: 2, name: "Style Accessories", slug: "style" }
@@ -78,19 +196,18 @@ export default function Navbar() {
       }
     }
 
-    fetchCategories()
+    fetchData()
   }, [shop])
 
-  // Build navigation with dynamic categories
+  // Build navigation with filtered categories (only categories with products)
   const navigation = [
-    ...baseNavigation.slice(0, 2),
+    ...baseNavigation,
     ...categories.map(category => ({
       name: category.name,
       href: `/products?category=${category.slug || category.id}`,
       categoryId: category.id,
       isCategory: true
-    })),
-    ...baseNavigation.slice(2)
+    }))
   ]
 
   useEffect(() => {
@@ -135,15 +252,13 @@ export default function Navbar() {
       return
     }
 
-    if (item.name === "Home") {
-      return
-    }
-
-    if (item.name === "Products") {
+    if (item.name === "All Products") {
+      // Force navigation to /products without query parameters
       window.location.href = "/products"
       return
     }
 
+    // Handle category clicks normally
     if ((item as any).isCategory) {
       return
     }
@@ -176,24 +291,20 @@ export default function Navbar() {
     setIsLoginModalOpen(true)
   }
 
-  // Helper function to check if current path matches category
   const isActiveCategoryLink = (item: any) => {
-    if (item.name === "Home") {
-      return pathname === "/"
-    }
-    if (item.name === "Products") {
+    if (item.name === "All Products") {
       if (pathname === "/products") {
-        const urlParams = new URLSearchParams(window.location.search)
-        return !urlParams.get('category')
+        const categoryParam = searchParams.get('category')
+        return !categoryParam
       }
       return false
     }
 
     if (item.isCategory) {
       if (pathname === "/products") {
-        const urlParams = new URLSearchParams(window.location.search)
-        const categoryParam = urlParams.get('category')
-        return categoryParam === (item.href.split('category=')[1] || '')
+        const categoryParam = searchParams.get('category')
+        const itemCategoryParam = item.href.split('category=')[1] || ''
+        return categoryParam === itemCategoryParam
       }
       return false
     }
@@ -240,15 +351,70 @@ export default function Navbar() {
                 </Link>
 
                 {/* Search Bar */}
-                <div className="relative flex-1 max-w-2xl">
+                <div className="relative flex-1 max-w-2xl search-container">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                   <Input
-                    placeholder={shop === "A" ? "Search products..." : "Search for style accessories..."}
+                    placeholder={shop === "A" ? "Search beauty products..." : "Search for style accessories..."}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => handleSearch(e.target.value)}
                     className="pl-12 pr-16 h-12 rounded-full bg-white border-0 text-base shadow-lg"
+                    onFocus={() => searchTerm.length >= 2 && setShowSearchDropdown(true)}
                   />
-                  <ShoppingBag className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-6 h-6 cursor-pointer hover:text-gray-700" />
+                  {isSearching && (
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
+                    </div>
+                  )}
+                  
+                  {/* Search Dropdown */}
+                  {showSearchDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-96 overflow-y-auto">
+                      {searchResults.length > 0 ? (
+                        <>
+                          {searchResults.map((product: any) => (
+                            <div
+                              key={product.id}
+                              onClick={() => handleSearchResultClick(product.id)}
+                              className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                            >
+                              <Image
+                                src={product.image_url || "/placeholder.svg"}
+                                alt={product.name}
+                                width={40}
+                                height={40}
+                                className="rounded-lg object-cover"
+                              />
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900 text-sm">{product.name}</p>
+                                <p className="text-gray-500 text-xs line-clamp-1">{product.description}</p>
+                                <p className="text-orange-600 font-semibold text-sm">
+                                  {selectedCurrency === 'AED' && product.price_aed 
+                                    ? `D ${product.price_aed}`
+                                    : selectedCurrency === 'INR' && product.price_inr
+                                    ? `₹ ${product.price_inr}`
+                                    : `$${product.price}`
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          {searchResults.length >= 5 && (
+                            <div
+                              onClick={handleViewAllResults}
+                              className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium"
+                            >
+                              View all results for "{searchTerm}"
+                            </div>
+                          )}
+                        </>
+                      ) : searchTerm.length >= 2 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          <p>No products found for "{searchTerm}"</p>
+                          <p className="text-sm">Try different keywords</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -266,9 +432,8 @@ export default function Navbar() {
                     <div className="bg-white rounded-lg">
                       <DropdownMenuItem
                         onClick={() => setSelectedCurrency('AED')}
-                        className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${
-                          selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                        }`}
+                        className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          }`}
                       >
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-3">
@@ -288,9 +453,8 @@ export default function Navbar() {
 
                       <DropdownMenuItem
                         onClick={() => setSelectedCurrency('INR')}
-                        className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${
-                          selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
-                        }`}
+                        className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                          }`}
                       >
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-3">
@@ -311,9 +475,11 @@ export default function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                  <ShoppingBag className="w-6 h-6" />
-                </Button>
+                <Link href="/orders">
+                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
+                    <ShoppingBag className="w-6 h-6" />
+                  </Button>
+                </Link>
 
                 <Link href="/wishlist" className="relative group">
                   <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
@@ -404,7 +570,6 @@ export default function Navbar() {
                             </Link>
                           </DropdownMenuItem>
 
-                          
                         </div>
 
                         <div className="border-t border-gray-100 p-2">
@@ -536,9 +701,8 @@ export default function Navbar() {
                     <div className="bg-white rounded-lg">
                       <DropdownMenuItem
                         onClick={() => setSelectedCurrency('AED')}
-                        className={`cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors ${
-                          selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                        }`}
+                        className={`cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors ${selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-blue-600 font-bold text-sm">AED</span>
@@ -548,9 +712,8 @@ export default function Navbar() {
 
                       <DropdownMenuItem
                         onClick={() => setSelectedCurrency('INR')}
-                        className={`cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors ${
-                          selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
-                        }`}
+                        className={`cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors ${selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-green-600 font-bold text-sm">₹</span>
@@ -564,7 +727,7 @@ export default function Navbar() {
                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
                   <Bell className="w-5 h-5" />
                 </Button>
-                
+
                 <Link href="/wishlist" className="relative">
                   <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
                     <Heart className={`w-5 h-5 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
@@ -642,9 +805,9 @@ export default function Navbar() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <Button 
+                  <Button
                     onClick={handleLoginClick}
-                    variant="ghost" 
+                    variant="ghost"
                     className="text-white hover:bg-white/20 rounded-full p-2"
                   >
                     <User className="w-5 h-5" />
@@ -652,18 +815,71 @@ export default function Navbar() {
                 )}
               </div>
             </div>
-            
-            <div className="relative mb-3">
+
+            <div className="relative mb-3 search-container">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
               <Input
                 placeholder={shop === "A" ? "Search beauty products" : "Search style accessories"}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10 pr-12 h-10 rounded-full bg-white border-0 text-sm shadow-lg"
+                onFocus={() => searchTerm.length >= 2 && setShowSearchDropdown(true)}
               />
-              <ShoppingBag className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
+                </div>
+              )}
+              
+              {/* Search Dropdown for Tablet */}
+              {showSearchDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-80 overflow-y-auto">
+                  {searchResults.length > 0 ? (
+                    <>
+                      {searchResults.map((product: any) => (
+                        <div
+                          key={product.id}
+                          onClick={() => handleSearchResultClick(product.id)}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                        >
+                          <Image
+                            src={product.image_url || "/placeholder.svg"}
+                            alt={product.name}
+                            width={35}
+                            height={35}
+                            className="rounded-lg object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900 text-sm">{product.name}</p>
+                            <p className="text-orange-600 font-semibold text-xs">
+                              {selectedCurrency === 'AED' && product.price_aed 
+                                ? `د.إ ${product.price_aed}`
+                                : selectedCurrency === 'INR' && product.price_inr
+                                ? `₹ ${product.price_inr}`
+                                : `$${product.price}`
+                              }
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      {searchResults.length >= 5 && (
+                        <div
+                          onClick={handleViewAllResults}
+                          className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium text-sm"
+                        >
+                          View all results
+                        </div>
+                      )}
+                    </>
+                  ) : searchTerm.length >= 2 ? (
+                    <div className="p-3 text-center text-gray-500">
+                      <p className="text-sm">No products found</p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </div>
-            
+
             <div className="flex overflow-x-auto scrollbar-hide gap-2">
               {loading ? (
                 <div className="flex gap-2">
@@ -712,17 +928,15 @@ export default function Navbar() {
                   <DropdownMenuContent align="end" className="w-40 p-1 border-0 shadow-xl">
                     <DropdownMenuItem
                       onClick={() => setSelectedCurrency('AED')}
-                      className={`cursor-pointer rounded p-2 text-sm ${
-                        selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                      }`}
+                      className={`cursor-pointer rounded p-2 text-sm ${selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        }`}
                     >
                       AED
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setSelectedCurrency('INR')}
-                      className={`cursor-pointer rounded p-2 text-sm ${
-                        selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
-                      }`}
+                      className={`cursor-pointer rounded p-2 text-sm ${selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                        }`}
                     >
                       INR ₹
                     </DropdownMenuItem>
@@ -737,22 +951,67 @@ export default function Navbar() {
                     </span>
                   )}
                 </Link>
-                
+
                 {/* Cart and Profile icons are hidden on mobile - removed from here */}
               </div>
             </div>
-            
-            <div className="relative mb-3">
+
+            <div className="relative mb-3 search-container">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder={shop === "A" ? "Search beauty" : "Search style"}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
                 className="pl-9 pr-10 h-9 rounded-full bg-white border-0 text-sm"
+                onFocus={() => searchTerm.length >= 2 && setShowSearchDropdown(true)}
               />
-              <ShoppingBag className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
+                </div>
+              )}
+              
+              {/* Search Dropdown for Mobile */}
+              {showSearchDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-64 overflow-y-auto">
+                  {searchResults.length > 0 ? (
+                    <>
+                      {searchResults.map((product: any) => (
+                        <div
+                          key={product.id}
+                          onClick={() => handleSearchResultClick(product.id)}
+                          className="flex items-center gap-2 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                        >
+                          <Image
+                            src={product.image_url || "/placeholder.svg"}
+                            alt={product.name}
+                            width={30}
+                            height={30}
+                            className="rounded object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900 text-xs line-clamp-1">{product.name}</p>
+                            <p className="text-orange-600 font-semibold text-xs">
+                              {selectedCurrency === 'AED' && product.price_aed 
+                                ? `د.إ ${product.price_aed}`
+                                : selectedCurrency === 'INR' && product.price_inr
+                                ? `₹ ${product.price_inr}`
+                                : `$${product.price}`
+                              }
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  ) : searchTerm.length >= 2 ? (
+                    <div className="p-3 text-center text-gray-500">
+                      <p className="text-xs">No products found</p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </div>
-            
+
             <div className="flex overflow-x-auto scrollbar-hide gap-2">
               {loading ? (
                 <div className="flex gap-2">
@@ -800,7 +1059,7 @@ export default function Navbar() {
                     </Link>
                   ))
                 )}
-                
+
               </div>
             )}
           </div>

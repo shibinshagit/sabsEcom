@@ -31,36 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { user: clerkUser, isLoaded: clerkLoaded } = useClerkUser()
   const { signOut: clerkSignOut } = useClerkAuth()
 
-  // useEffect(() => {
-  //   if (clerkLoaded && clerkUser) {
-  //     setUser({
-  //       id: clerkUser.id,
-  //       email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || "",
-  //       name: clerkUser.fullName || clerkUser.firstName || "",
-  //       isVerified: true,
-  //       isClerkUser: true,
-  //       createdAt: undefined,
-  //     })
-  //     setLoading(false)
-  //   } else if (clerkLoaded && !clerkUser) {
-  //     fetch("/api/auth/me")
-  //       .then(async (resp) => {
-  //         if (resp.ok) {
-  //           const data = await resp.json()
-  //           setUser(data.user)
-  //         } else {
-  //           setUser(null)
-  //         }
-  //       })
-  //       .catch(() => setUser(null))
-  //       .finally(() => setLoading(false))
-  //   }
-  // }, [clerkUser, clerkLoaded])
-  useEffect(() => {
-  console.log('🔐 Auth effect triggered:', { clerkLoaded, clerkUser: clerkUser?.id })
-  
+  useEffect(() => {  
   if (clerkLoaded && clerkUser) {
-    console.log('✅ Clerk user found:', clerkUser.id)
     setUser({
       id: clerkUser.id,
       email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || "",
@@ -72,14 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
   } else if (clerkLoaded && !clerkUser) {
     console.log('🔍 No Clerk user, checking manual auth...')
-    fetch("/api/auth/me", { credentials: 'include' }) // 👈 Add credentials here too
+    fetch("/api/auth/me", { credentials: 'include' }) 
       .then(async (resp) => {
         if (resp.ok) {
           const data = await resp.json()
-          console.log('✅ Manual auth user found:', data.user?.id)
           setUser(data.user)
         } else {
-          console.log('❌ No manual auth user')
           setUser(null)
         }
       })
