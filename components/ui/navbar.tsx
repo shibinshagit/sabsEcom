@@ -853,7 +853,7 @@ export default function Navbar() {
                             <p className="font-medium text-gray-900 text-sm">{product.name}</p>
                             <p className="text-orange-600 font-semibold text-xs">
                               {selectedCurrency === 'AED' && product.price_aed 
-                                ? `د.إ ${product.price_aed}`
+                                ? `D ${product.price_aed}`
                                 : selectedCurrency === 'INR' && product.price_inr
                                 ? `₹ ${product.price_inr}`
                                 : `$${product.price}`

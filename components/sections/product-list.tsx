@@ -261,14 +261,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                       <p className="text-red-500 font-bold text-sm lg:text-base">
                         {formatPrice(item.price_aed, item.price_inr, item.default_currency)}
                       </p>
-                      <p className="text-gray-400 text-xs line-through">
-                        {selectedCurrency === 'AED' && item.price_aed
-                          ? `D ${(item.price_aed * 1.8).toFixed(2)}`
-                          : selectedCurrency === 'INR' && item.price_inr
-                            ? `₹ ${(item.price_inr * 1.8).toFixed(2)}`
-                            : `${formatPrice(item.price_aed, item.price_inr, item.default_currency)} + 80%`
-                        }
-                      </p>
+                      
                       <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
 
                       <Button
@@ -357,16 +350,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                             <p className="text-red-500 font-bold text-sm lg:text-lg">
                               {formatPrice(item.price_aed, item.price_inr, item.default_currency)}
                             </p>
-                            <p className="text-gray-400 text-xs lg:text-sm line-through">
-                              {selectedCurrency === 'AED' && item.price_aed
-                                ? `D ${(item.price_aed * 1.6).toFixed(2)}`
-                                : selectedCurrency === 'INR' && item.price_inr
-                                  ? `₹ ${(item.price_inr * 1.6).toFixed(2)}`
-                                  : 'Was higher'
-                              }
-                            </p>
+      
                           </div>
-                          <Badge className="bg-red-100 text-red-600 text-xs">-38%</Badge>
                         </div>
                         <h3 className="text-sm lg:text-base font-medium text-gray-900 line-clamp-2 mb-2">{item.name}</h3>
                         {viewMode === "list" && (
