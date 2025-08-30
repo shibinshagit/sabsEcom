@@ -10,6 +10,7 @@ import {
   submitOrder,
   clearCart,
   recalculateTotal,
+  removeInvalidCurrencyItems,
 } from "@/lib/store/slices/orderSlice"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -27,6 +28,12 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { fetchCartFromAPI, saveCartToAPI } from '@/lib/store/slices/orderSlice'
 
+// Declare Razorpay global
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface CouponData {
   code: string
@@ -58,6 +65,23 @@ export default function OrderPage() {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
   const [discountAmount, setDiscountAmount] = useState(0)
 
+  // Razorpay states
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async = true
+    document.body.appendChild(script)
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
+    }
+  }, [])
+
   const hasSelectedCurrencyPrice = (item: any) => {
     if (selectedCurrency === 'AED' && item.price_aed && item.price_aed > 0) {
       return true
@@ -73,7 +97,7 @@ export default function OrderPage() {
     } else if (selectedCurrency === 'INR' && item.price_inr && item.price_inr > 0) {
       return item.price_inr
     }
-    return null 
+    return null
   }
 
   const validCartItems = cart.filter(item => hasSelectedCurrencyPrice(item.menuItem))
@@ -213,11 +237,10 @@ export default function OrderPage() {
 
     // Save to database after change
     if (isAuthenticated && user?.id) {
-      // Get updated cart from state and save
       setTimeout(() => {
         dispatch(saveCartToAPI({
           userId: user.id.toString(),
-          cart: validCartItems, // Use the current cart state
+          cart: validCartItems,
           selectedCurrency
         }))
       }, 500)
@@ -241,6 +264,86 @@ export default function OrderPage() {
       }, 500)
     }
   }
+
+  const clearCartAfterOrder = async () => {
+    try {
+      dispatch(clearCart({ userId: user?.id }))
+
+      if (isAuthenticated && user?.id) {
+        await dispatch(saveCartToAPI({
+          userId: user.id.toString(),
+          cart: [],
+          selectedCurrency
+        })).unwrap()
+      }
+
+      // Clear coupon data
+      if (appliedCoupon) {
+        const usedCoupons = JSON.parse(localStorage.getItem("usedCoupons") || "[]")
+        usedCoupons.push(appliedCoupon.code)
+        localStorage.setItem("usedCoupons", JSON.stringify(usedCoupons))
+        localStorage.removeItem("pendingOffer")
+        localStorage.removeItem("appliedCoupon")
+      }
+
+      console.log("Cart cleared successfully")
+    } catch (error) {
+      console.error("Error clearing cart:", error)
+    }
+  }
+  const submitOrderAfterPayment = async (paymentId?: string) => {
+    const cartTotal = calculateCartTotal()
+    const finalTotal = cartTotal + deliveryFee - discountAmount
+
+    const orderData = {
+      customerName: user?.name || customerInfo.name,
+      customerEmail: user?.email || customerInfo.email,
+      customerPhone: customerInfo.phone,
+      orderType,
+      paymentMethod,
+      paymentId: paymentId,
+      tableNumber: customerInfo.tableNumber,
+      deliveryAddress: customerInfo.deliveryAddress,
+      totalAmount: finalTotal,
+      originalAmount: cartTotal + deliveryFee,
+      discountAmount: discountAmount,
+      couponCode: appliedCoupon?.code,
+      specialInstructions,
+      userId: user?.id,
+      currency: selectedCurrency,
+      items: validCartItems.map((item) => ({
+        menuItemId: item.menuItem.id,
+        menuItemName: item.menuItem.name,
+        quantity: item.quantity,
+        unitPrice: getCurrencySpecificPrice(item.menuItem)?.toString() || "0",
+        specialRequests: item.specialRequests,
+      })),
+    }
+
+    try {
+      console.log("Submitting order:", orderData)
+      const result = await dispatch(submitOrder(orderData)).unwrap()
+
+      console.log("Order submitted successfully:", result)
+
+      await clearCartAfterOrder()
+
+      alert(`Order placed successfully! Order ID: ${result.orderId}`)
+
+      router.push("/orders")
+    } catch (error) {
+      console.error("Failed to submit order:", error)
+
+      let errorMessage = "Failed to place order. Please try again."
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = (error as Error).message
+      }
+
+      alert(errorMessage)
+      throw error
+    }
+  }
+
   const handleSubmitOrder = async () => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
@@ -255,46 +358,93 @@ export default function OrderPage() {
     const cartTotal = calculateCartTotal()
     const finalTotal = cartTotal + deliveryFee - discountAmount
 
-    const orderData = {
-      customerName: user?.name || customerInfo.name,
-      customerEmail: user?.email || customerInfo.email,
-      customerPhone: customerInfo.phone,
-      orderType,
-      paymentMethod, // Include payment method in order data
-      tableNumber: customerInfo.tableNumber,
-      deliveryAddress: customerInfo.deliveryAddress,
-      totalAmount: finalTotal,
-      originalAmount: cartTotal + deliveryFee,
-      discountAmount: discountAmount,
-      couponCode: appliedCoupon?.code,
-      specialInstructions,
-      userId: user?.id,
-      currency: selectedCurrency,
-      items: validCartItems.map((item) => ({
-        menuItemId: item.menuItem.id,
-        menuItemName: item.menuItem.name,
-        quantity: item.quantity,
-        unitPrice: getCurrencySpecificPrice(item.menuItem),
-        specialRequests: item.specialRequests,
-      })),
-    }
+    if (paymentMethod === "upi") {
+      try {
+        setIsProcessingPayment(true)
 
-    try {
-      const result = await dispatch(submitOrder(orderData)).unwrap()
+        // Create Razorpay order
+        const razorpayResponse = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: finalTotal,
+            currency: selectedCurrency,
+            receipt: `order_${Date.now()}`
+          }),
+        })
 
-      if (appliedCoupon) {
-        const usedCoupons = JSON.parse(localStorage.getItem("usedCoupons") || "[]")
-        usedCoupons.push(appliedCoupon.code)
-        localStorage.setItem("usedCoupons", JSON.stringify(usedCoupons))
-        localStorage.removeItem("pendingOffer")
-        localStorage.removeItem("appliedCoupon")
+        if (!razorpayResponse.ok) {
+          throw new Error('Failed to create payment order')
+        }
+
+        const razorpayOrderResult = await razorpayResponse.json()
+
+        // Configure Razorpay options
+        const options = {
+          key: razorpayOrderResult.key,
+          amount: razorpayOrderResult.amount,
+          currency: razorpayOrderResult.currency,
+          name: "SABS online store",
+          description: "Order Payment",
+          order_id: razorpayOrderResult.orderId,
+          handler: async (response: any) => {
+            try {
+              // Verify payment
+              const verificationResponse = await fetch('/api/payment/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              })
+
+              if (!verificationResponse.ok) {
+                throw new Error('Payment verification failed')
+              }
+
+              const verificationResult = await verificationResponse.json()
+
+              if (verificationResult.success) {
+                // Payment successful, now submit the order
+                await submitOrderAfterPayment(verificationResult.paymentId)
+              }
+            } catch (error) {
+              console.error("Payment verification failed:", error)
+              alert("Payment verification failed. Please try again.")
+            } finally {
+              setIsProcessingPayment(false)
+            }
+          },
+          prefill: {
+            name: user?.name || customerInfo.name,
+            email: user?.email || customerInfo.email,
+            contact: customerInfo.phone,
+          },
+          theme: {
+            color: "#F59E0B",
+          },
+          modal: {
+            ondismiss: () => {
+              console.log("Payment cancelled by user")
+              setIsProcessingPayment(false)
+            }
+          }
+        }
+
+        // Open Razorpay checkout
+        const razorpay = new window.Razorpay(options)
+        razorpay.open()
+
+      } catch (error) {
+        console.error("Failed to create payment order:", error)
+        alert("Failed to initiate payment. Please try again.")
+        setIsProcessingPayment(false)
       }
-
-      alert(`Order placed successfully! Order ID: ${result.orderId}`)
-      router.push("/orders")
-    } catch (error) {
-      console.error("Failed to submit order:", error)
-      alert("Failed to place order. Please try again.")
+    } else {
+      // Cash on delivery - use existing flow
+      await submitOrderAfterPayment()
     }
   }
 
@@ -317,10 +467,6 @@ export default function OrderPage() {
     message += `📋 *Order Type:* ${orderType.charAt(0).toUpperCase() + orderType.slice(1)}\n`
     message += `💳 *Payment Method:* ${paymentMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}\n`
     message += `💰 *Currency:* ${selectedCurrency}\n`
-
-    if (orderType === "dine-in" && customerInfo.tableNumber) {
-      message += `🪑 *Table Number:* ${customerInfo.tableNumber}\n`
-    }
 
     if (orderType === "delivery" && customerInfo.deliveryAddress) {
       message += `📍 *Delivery Address:* ${customerInfo.deliveryAddress}\n`
@@ -371,7 +517,7 @@ export default function OrderPage() {
             <ShoppingCart className="w-16 h-16 sm:w-24 sm:h-24 text-gray-300 mx-auto mb-4 sm:mb-6" />
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">Your cart is empty</h1>
             <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base">Add some items from our products to get started!</p>
-            <Button onClick={() => router.push("/menu")} className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 text-sm sm:text-base">
+            <Button onClick={() => router.push("/products")} className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 text-sm sm:text-base">
               BUY NOW!
             </Button>
           </div>
@@ -539,7 +685,10 @@ export default function OrderPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => dispatch(removeFromCart(item.menuItem.id))}
+                          onClick={() => dispatch(removeFromCart({
+                            id: item.menuItem.id,
+                            userId: user?.id
+                          }))}
                           className="text-red-500 hover:text-red-700 p-2"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -551,7 +700,7 @@ export default function OrderPage() {
               </Card>
             )}
 
-            {/* Updated Payment Method Card */}
+            {/* Payment Method Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Payment Method</CardTitle>
@@ -630,21 +779,7 @@ export default function OrderPage() {
                     className="text-sm sm:text-base"
                   />
                 </div>
-                {orderType === "dine-in" && (
-                  <div>
-                    <Label htmlFor="table" className="text-sm sm:text-base">Table Number</Label>
-                    <Input
-                      id="table"
-                      type="number"
-                      value={customerInfo.tableNumber || ""}
-                      onChange={(e) => dispatch(setCustomerInfo({
-                        info: { tableNumber: Number.parseInt(e.target.value) || undefined },
-                        userId: user?.id
-                      }))}
-                      className="text-sm sm:text-base"
-                    />
-                  </div>
-                )}
+
                 {orderType === "delivery" && (
                   <div>
                     <Label htmlFor="address" className="text-sm sm:text-base">Delivery Address *</Label>
@@ -661,12 +796,12 @@ export default function OrderPage() {
                   </div>
                 )}
                 <div>
-                  <Label htmlFor="instructions" className="text-sm sm:text-base">Special Instructions</Label>
+                  <Label htmlFor="instructions" className="text-sm sm:text-base">Your Address</Label>
                   <Textarea
                     id="instructions"
                     value={specialInstructions}
                     onChange={(e) => setSpecialInstructions(e.target.value)}
-                    placeholder="Any special requests or dietary requirements..."
+                    placeholder="Full Address"
                     className="text-sm sm:text-base"
                   />
                 </div>
@@ -798,7 +933,7 @@ export default function OrderPage() {
                       {paymentMethod === "cod" ? (
                         <Button
                           onClick={handleSubmitOrder}
-                          disabled={loading || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
+                          disabled={loading || isProcessingPayment || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
                           className="w-full bg-amber-500 hover:bg-amber-600 text-black text-sm sm:text-base py-2 sm:py-3"
                         >
                           {loading ? "Processing..." : isAuthenticated ? "Place Order" : "Login to Place Order"}
@@ -806,10 +941,12 @@ export default function OrderPage() {
                       ) : (
                         <Button
                           onClick={handleSubmitOrder}
-                          disabled={loading || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
+                          disabled={loading || isProcessingPayment || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
                           className="w-full bg-amber-500 hover:bg-amber-600 text-black text-sm sm:text-base py-2 sm:py-3"
                         >
-                          {loading ? "Processing..." : isAuthenticated ? "Pay Now" : "Login to Pay"}
+                          {isProcessingPayment ? "Processing Payment..." :
+                            loading ? "Processing..." :
+                              isAuthenticated ? `Pay ${formatCurrencyPrice(finalTotal, finalTotal, selectedCurrency)}` : "Login to Pay"}
                         </Button>
                       )}
 

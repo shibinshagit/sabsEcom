@@ -20,6 +20,8 @@ interface OrderState {
   }
   loading: boolean
   error: string | null
+  razorpayOrder: any | null
+  paymentStatus: 'idle' | 'creating' | 'processing' | 'success' | 'failed'
 }
 
 const initialState: OrderState = {
@@ -33,6 +35,8 @@ const initialState: OrderState = {
   },
   loading: false,
   error: null,
+  razorpayOrder: null,
+  paymentStatus: 'idle',
 }
 
 export const fetchCartFromAPI = createAsyncThunk(
@@ -76,14 +80,57 @@ export const saveCartToAPI = createAsyncThunk(
 
       if (!response.ok) {
         const errorData = await response.json()
-        console.error('api Error:', errorData)
+        console.error('API Error:', errorData)
         throw new Error(errorData.error || `HTTP ${response.status}`)
       }
       
       return await response.json()
     } catch (error) {
-      console.error('save cart failed:', error)
+      console.error('Save cart failed:', error)
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to save cart')
+    }
+  }
+)
+
+export const createRazorpayOrder = createAsyncThunk(
+  'order/createRazorpayOrder',
+  async ({ amount, currency }: { amount: number; currency: string }, { rejectWithValue }) => {
+    try {
+      const receipt = `order_${Date.now()}`
+      const response = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, currency, receipt }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment order')
+      }
+
+      return await response.json()
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Payment order creation failed')
+    }
+  }
+)
+
+export const verifyRazorpayPayment = createAsyncThunk(
+  'order/verifyRazorpayPayment',
+  async (paymentData: any, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/payment/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Payment verification failed')
+      }
+
+      return await response.json()
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Payment verification failed')
     }
   }
 )
@@ -115,16 +162,29 @@ const calculateTotal = (cart: CartItem[], selectedCurrency: string) => {
     }, 0)
 }
 
-export const submitOrder = createAsyncThunk("order/submit", async (orderData: any) => {
-  const response = await fetch("/api/orders", {
-    method: "POST",
-    credentials: 'include',
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(orderData),
-  })
-  if (!response.ok) throw new Error("Failed to submit order")
-  return response.json()
-})
+export const submitOrder = createAsyncThunk(
+  "order/submit", 
+  async (orderData: any, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error("Submit order failed:", error)
+      return rejectWithValue(error instanceof Error ? error.message : "Failed to submit order")
+    }
+  }
+)
 
 const orderSlice = createSlice({
   name: "order",
@@ -198,7 +258,7 @@ const orderSlice = createSlice({
       state.customerInfo = { ...state.customerInfo, ...info }
     },
     
-    clearCart: (state) => {
+    clearCart: (state, action: PayloadAction<{ userId?: string | number }>) => {
       state.cart = []
       state.total = 0
       state.error = null
@@ -232,15 +292,39 @@ const orderSlice = createSlice({
 
     builder
       .addCase(saveCartToAPI.pending, (state) => {
-        state.loading = true
+        // Don't set loading to true here to avoid UI interference
         state.error = null
       })
       .addCase(saveCartToAPI.fulfilled, (state) => {
-        state.loading = false
         state.error = null
       })
       .addCase(saveCartToAPI.rejected, (state, action) => {
-        state.loading = false
+        state.error = action.payload as string
+      })
+
+    builder
+      .addCase(createRazorpayOrder.pending, (state) => {
+        state.paymentStatus = 'creating'
+        state.error = null
+      })
+      .addCase(createRazorpayOrder.fulfilled, (state, action) => {
+        state.paymentStatus = 'idle'
+        state.razorpayOrder = action.payload
+      })
+      .addCase(createRazorpayOrder.rejected, (state, action) => {
+        state.paymentStatus = 'failed'
+        state.error = action.payload as string
+      })
+      
+    builder
+      .addCase(verifyRazorpayPayment.pending, (state) => {
+        state.paymentStatus = 'processing'
+      })
+      .addCase(verifyRazorpayPayment.fulfilled, (state) => {
+        state.paymentStatus = 'success'
+      })
+      .addCase(verifyRazorpayPayment.rejected, (state, action) => {
+        state.paymentStatus = 'failed'
         state.error = action.payload as string
       })
 
@@ -251,12 +335,14 @@ const orderSlice = createSlice({
       })
       .addCase(submitOrder.fulfilled, (state) => {
         state.loading = false
-        state.cart = []
-        state.total = 0
+        // Don't clear cart here - let the component handle it after navigation
+        state.paymentStatus = 'idle'
+        state.razorpayOrder = null
+        state.error = null
       })
       .addCase(submitOrder.rejected, (state, action) => {
         state.loading = false
-        state.error = action.error.message || "Failed to submit order"
+        state.error = action.payload as string
       })
   },
 })
