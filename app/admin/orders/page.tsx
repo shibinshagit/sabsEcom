@@ -14,6 +14,7 @@ interface Order {
   customer_email: string
   customer_phone: string
   order_type: string
+  payment_method:string
   total_amount: number
   tax_amount: number
   delivery_fee: number
@@ -274,7 +275,7 @@ export default function OrdersManagement() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        {getPaymentIcon(order.order_type)}
+                        {getPaymentIcon(order.payment_method)}
                         <Badge variant="outline" className="capitalize">
                           {order.payment_method?.toUpperCase() || 'COD'}
                         </Badge>
@@ -336,7 +337,7 @@ export default function OrdersManagement() {
                                   </div>
                                   <div>
                                     <h4 className="font-semibold mb-2">Order Information</h4>
-                                    <p><strong>Payment Type:</strong> {selectedOrder.paymentMethod ?.toUpperCase() || 'COD'}</p>
+                                    <p><strong>Payment Type:</strong> {selectedOrder.payment_method ?.toUpperCase() || 'COD'}</p>
                                     <p><strong>Status:</strong> {selectedOrder.status}</p>
                                     <p><strong>Date:</strong> {new Date(selectedOrder.created_at).toLocaleString()}</p>
                                   </div>

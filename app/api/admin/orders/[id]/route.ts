@@ -6,8 +6,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { status, estimatedCompletionTime } = await request.json()
     const id = parseInt(params.id)
 
-    console.log(`Updating order ${id} to status: ${status}`)
-
     // Validate the order ID
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 })
@@ -48,8 +46,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const order = result[0]
-
-    console.log(`Order ${id} updated successfully to status: ${status}`)
 
     // Format the response
     const formattedOrder = {

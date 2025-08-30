@@ -292,7 +292,6 @@ const orderSlice = createSlice({
 
     builder
       .addCase(saveCartToAPI.pending, (state) => {
-        // Don't set loading to true here to avoid UI interference
         state.error = null
       })
       .addCase(saveCartToAPI.fulfilled, (state) => {
@@ -335,7 +334,6 @@ const orderSlice = createSlice({
       })
       .addCase(submitOrder.fulfilled, (state) => {
         state.loading = false
-        // Don't clear cart here - let the component handle it after navigation
         state.paymentStatus = 'idle'
         state.razorpayOrder = null
         state.error = null

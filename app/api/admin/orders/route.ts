@@ -11,7 +11,7 @@ async function ensureSchema() {
         customer_name VARCHAR(255) NOT NULL,
         customer_email VARCHAR(255),
         customer_phone VARCHAR(20) NOT NULL,
-        order_type VARCHAR(20) DEFAULT 'COD',
+        order_type VARCHAR(20) DEFAULT 'dine-in',
         payment_method VARCHAR(20) DEFAULT 'cod',
         payment_id VARCHAR(255),
         payment_status VARCHAR(20) DEFAULT 'pending',
@@ -29,7 +29,6 @@ async function ensureSchema() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `
-
     await sql`
       CREATE TABLE IF NOT EXISTS order_items (
         id SERIAL PRIMARY KEY,
@@ -67,7 +66,6 @@ async function ensureSchema() {
   }
 }
 
-
 export async function GET() {
   try {
     console.log("Fetching orders for admin...")
@@ -80,7 +78,6 @@ export async function GET() {
       WHERE table_name = 'orders'
       ORDER BY ordinal_position
     `
-    console.log("Available columns in orders table:", tableColumns.map(col => col.column_name))
 
     const orders = await sql`
       SELECT
@@ -88,7 +85,8 @@ export async function GET() {
         o.customer_name,
         o.customer_email,
         o.customer_phone,
-        COALESCE(o.order_type, o.payment_method, 'COD') as order_type,
+        COALESCE(o.order_type, 'dine-in') as order_type,
+        COALESCE(o.payment_method, 'cod') as payment_method,
         o.table_number,
         o.delivery_address,
         COALESCE(o.subtotal, 0) as total_amount,
@@ -119,14 +117,14 @@ export async function GET() {
       ORDER BY o.created_at DESC
     `
 
-    console.log(`Found ${orders.length} orders`)
 
     const formattedOrders = orders.map(order => ({
       id: parseInt(order.id),
       customer_name: order.customer_name,
       customer_email: order.customer_email,
       customer_phone: order.customer_phone,
-      order_type: (order.order_type || 'COD').toUpperCase(),
+      order_type: order.order_type,
+      payment_method: order.payment_method,
       table_number: order.table_number,
       delivery_address: order.delivery_address,
       total_amount: parseFloat(order.total_amount || '0'),
