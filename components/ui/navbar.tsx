@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { Suspense } from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams, useRouter } from "next/navigation"
@@ -30,7 +31,7 @@ interface Category {
   shop?: "A" | "B"
 }
 
-export default function Navbar() {
+function Nav() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -328,7 +329,7 @@ export default function Navbar() {
                     </div>
                   )}
                   <h1 className="text-2xl font-bold text-white">
-                    {shop === "A" ? "SABS ONLINE - BEAUTY" : "SABS ONLINE - STYLE"}
+                    {shop === "A" ? `${settings.restaurant_name} - Beauty` : `${settings.restaurant_name} - Style`}
                   </h1>
                 </Link>
 
@@ -668,7 +669,7 @@ export default function Navbar() {
           <div className="px-4 py-3">
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-xl font-bold text-white">
-                {shop === "A" ? "SABS ONLINE - BEAUTY" : "SABS ONLINE - STYLE"}
+                {shop === "A" ? `${settings.restaurant_name} - Beauty` : `${settings.restaurant_name} - Style`}
               </h1>
               <div className="flex items-center gap-3">
                 {/* Currency Dropdown for Tablet */}
@@ -895,7 +896,26 @@ export default function Navbar() {
               <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className="text-white p-0">
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </Button>
-              <h1 className="text-lg font-bold text-white">{shop === "A" ? "BEAUTY" : "STYLE"}</h1>
+               <Link href="/" className="flex items-center space-x-3 group">
+                  {settings.restaurant_logo ? (
+                    <div className="relative w-10 h-10 transition-transform duration-300 group-hover:scale-110">
+                      <Image
+                        src={settings.restaurant_logo || "/placeholder.svg"}
+                        alt={settings.restaurant_name}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                      <ShoppingBag className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                  <h1 className="text-2xl font-bold text-white">
+                    {shop === "A" ? `${settings.restaurant_name} - Beauty` : `${settings.restaurant_name} - Style`}
+                  </h1>
+                </Link>
+             
               <div className="flex items-center gap-2">
                 {/* Currency for Mobile */}
                 <DropdownMenu>
@@ -1050,5 +1070,13 @@ export default function Navbar() {
 
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </>
+  )
+}
+
+export default function Navbar() {
+  return (
+    <Suspense fallback={<div>Loading navbar...</div>}>
+      <Nav />
+    </Suspense>
   )
 }
