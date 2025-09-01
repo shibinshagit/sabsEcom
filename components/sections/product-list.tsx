@@ -257,7 +257,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-orange-500" />
-                  <h3 className="text-xl font-bold text-gray-900">{`Lightning deals in ${getCurrentCategoryName() === 'shop A' ? 'Beauty' : 'Accessories'}`}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Lightning deals</h3>
                     <span className="text-gray-500">({filteredItems.length} items)</span>
                     
                 </div>
@@ -286,7 +286,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         {index + 1}
                       </div>
                       <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">FLASH</Badge>
-                      <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs">{shop}</Badge>
+       <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs"> {item.features?.[0]
+    ? item.features[0].length > 7
+      ? item.features[0].slice(0, 7) + "..."
+      : item.features[0]
+    : "Assured"}</Badge>
                     </div>
                     <CardContent className="p-3 lg:p-4">
                       <p className="text-red-500 font-bold text-sm lg:text-base">
@@ -324,7 +328,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             <div className="flex items-center justify-between mb-4 lg:mb-6">
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5 text-green-500" />
-                <span className="font-bold text-lg lg:text-xl">Fast Selling Products in {shop === "A" ? "Beauty" : "Accessories"}</span>
+                <span className="font-bold text-lg lg:text-xl">Fast Selling Products</span>
               </div>
               <ChevronDown className="w-5 h-5 text-gray-400" />
             </div>
@@ -372,7 +376,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         {item.is_featured && (
                           <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">HOT</Badge>
                         )}
-                        <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs">{shop}</Badge>
+                        {/* <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs"> {item.features?.[0]
+    ? item.features[0].length > 7
+      ? item.features[0].slice(0, 7) + "..."
+      : item.features[0]
+    : "N/A"}</Badge> */}
 
                       </div>
                       <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
@@ -388,7 +396,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         {viewMode === "list" && (
                           <p className="text-sm text-gray-600 line-clamp-3 mb-3">{item.description}</p>
                         )}
-                        {item.features && item.features.length > 0 && (
+                        {/* {item.features && item.features.length > 0 && (
                           <div className="mb-3">
                             <div className="flex flex-wrap gap-1">
                               {item.features.slice(0, 2).map((feature: string, idx: number) => (
@@ -402,7 +410,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                               ))}
                             </div>
                           </div>
-                        )}
+                        )} */}
 
                         <Button
                           onClick={() => handleAddToCart(item)}

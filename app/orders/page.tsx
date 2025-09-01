@@ -186,7 +186,7 @@ export default function OrdersPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative h-64 bg-black flex items-center justify-center">
+      {/* <section className="relative h-64 bg-black flex items-center justify-center">
         <div className="absolute inset-0">
           <Image
             src="/placeholder.svg?height=400&width=1200"
@@ -199,7 +199,7 @@ export default function OrdersPage() {
           <h1 className="font-playfair text-5xl font-bold text-white mb-4">My Orders</h1>
           <p className="text-xl text-gray-200">Track your order history and current status</p>
         </div>
-      </section>
+      </section> */}
 
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="mb-8">

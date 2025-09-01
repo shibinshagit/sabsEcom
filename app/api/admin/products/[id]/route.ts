@@ -1,27 +1,17 @@
+// app/api/admin/products/[id]/route.ts
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
-import { ensureShopCategoryColumn } from "@/lib/migrations/ensure-shop-category"
-import { ensureCurrencySupport } from "@/lib/migrations/ensure-currency-support"
 
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Ensure shop_category column exists
-    await ensureShopCategoryColumn()
-    // Ensure currency support exists
-    await ensureCurrencySupport()
-    
     const body = await request.json()
     const {
       name,
       description,
-      price, // Keep for backward compatibility
-      price_aed,
-      price_inr,
-      default_currency,
-      image_url,
+      image_urls,
       category_id,
       shop_category,
       is_available,
@@ -39,6 +29,7 @@ export async function PUT(
       color,
       stock_quantity,
       sku,
+      variants
     } = body
 
     // Validate required fields
@@ -49,26 +40,27 @@ export async function PUT(
       )
     }
 
-    // Validate at least one price is provided
-    if (!price_aed && !price_inr && !price) {
+    // Validate variants
+    if (!variants || !Array.isArray(variants) || variants.length === 0) {
       return NextResponse.json(
-        { error: "At least one price (AED or INR) is required" },
+        { error: "At least one variant is required" },
         { status: 400 }
       )
     }
 
-    // Validate default currency
-    if (default_currency && !['AED', 'INR'].includes(default_currency)) {
+    // Validate variant names
+    const hasInvalidVariant = variants.some(v => !v.name?.trim())
+    if (hasInvalidVariant) {
       return NextResponse.json(
-        { error: "Default currency must be either 'AED' or 'INR'" },
+        { error: "All variants must have a name" },
         { status: 400 }
       )
     }
 
     // Validate shop_category
-    if (!shop_category || !['A', 'B'].includes(shop_category)) {
+    if (!shop_category || !['A', 'B', 'Both'].includes(shop_category)) {
       return NextResponse.json(
-        { error: "Shop category is required and must be 'A' or 'B'" },
+        { error: "Shop category is required and must be 'A', 'B', or 'Both'" },
         { status: 400 }
       )
     }
@@ -81,34 +73,23 @@ export async function PUT(
       )
     }
 
-    // Determine default currency if not provided
-    let finalDefaultCurrency = default_currency || 'AED'
-    if (!default_currency) {
-      if (price_aed && !price_inr) finalDefaultCurrency = 'AED'
-      else if (price_inr && !price_aed) finalDefaultCurrency = 'INR'
-    }
+    // Prepare array data for PostgreSQL
+    const imageUrlsArray = Array.isArray(image_urls) ? image_urls : []
+    const featuresArray = Array.isArray(features) ? features : []
 
-    // Handle backward compatibility for price field
-    const finalPriceAed = price_aed || (finalDefaultCurrency === 'AED' ? price : null)
-    const finalPriceInr = price_inr || (finalDefaultCurrency === 'INR' ? price : null)
-    const finalPrice = price || (finalDefaultCurrency === 'AED' ? price_aed : price_inr)
-
+    // Update product - Fixed array handling
     const [product] = await sql`
       UPDATE products SET
         name = ${name},
         description = ${description || ''},
-        price = ${finalPrice},
-        price_aed = ${finalPriceAed},
-        price_inr = ${finalPriceInr},
-        default_currency = ${finalDefaultCurrency},
-        image_url = ${image_url || ''},
+        image_urls = ${imageUrlsArray},
         category_id = ${category_id},
         shop_category = ${shop_category},
         is_available = ${is_available ?? true},
         is_featured = ${is_featured ?? false},
         is_new = ${is_new ?? false},
         new_until_date = ${new_until_date || null},
-        features = ${features || []},
+        features = ${featuresArray},
         specifications_text = ${specifications_text || ''},
         warranty_months = ${warranty_months || 12},
         brand = ${brand || ''},
@@ -128,7 +109,51 @@ export async function PUT(
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    return NextResponse.json(product)
+    // Delete existing variants
+    await sql`DELETE FROM product_variants WHERE product_id = ${params.id};`
+
+    // Insert new variants
+    for (const variant of variants) {
+      await sql`
+        INSERT INTO product_variants (
+          product_id, name, price_aed, price_inr, discount_aed, discount_inr,
+          available_aed, available_inr
+        ) VALUES (
+          ${params.id}, ${variant.name}, ${variant.price_aed || 0}, ${variant.price_inr || 0},
+          ${variant.discount_aed || 0}, ${variant.discount_inr || 0},
+          ${variant.available_aed ?? true}, ${variant.available_inr ?? true}
+        );
+      `
+    }
+
+    // Fetch the complete updated product with variants
+    const [completeProduct] = await sql`
+      SELECT
+        p.*,
+        c.name AS category_name,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', v.id,
+              'name', v.name,
+              'price_aed', v.price_aed,
+              'price_inr', v.price_inr,
+              'discount_aed', v.discount_aed,
+              'discount_inr', v.discount_inr,
+              'available_aed', v.available_aed,
+              'available_inr', v.available_inr
+            ) ORDER BY v.id
+          ) FILTER (WHERE v.id IS NOT NULL),
+          '[]'::json
+        ) AS variants
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN product_variants v ON p.id = v.product_id
+      WHERE p.id = ${params.id}
+      GROUP BY p.id, c.name;
+    `
+
+    return NextResponse.json(completeProduct)
   } catch (error) {
     console.error("Error updating product:", error)
     return NextResponse.json(
@@ -138,7 +163,6 @@ export async function PUT(
   }
 }
 
-// Keep GET and DELETE methods unchanged
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
@@ -152,6 +176,10 @@ export async function DELETE(
       )
     }
 
+    // Delete variants first (cascade should handle this, but being explicit)
+    await sql`DELETE FROM product_variants WHERE product_id = ${params.id};`
+
+    // Delete the product
     const [product] = await sql`
       DELETE FROM products
       WHERE id = ${params.id}
@@ -180,11 +208,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Ensure shop_category column exists
-    await ensureShopCategoryColumn()
-    // Ensure currency support exists
-    await ensureCurrencySupport()
-    
     // Validate product ID
     if (!params.id || isNaN(Number(params.id))) {
       return NextResponse.json(
@@ -196,10 +219,27 @@ export async function GET(
     const [product] = await sql`
       SELECT
         p.*,
-        c.name AS category_name
+        c.name AS category_name,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', v.id,
+              'name', v.name,
+              'price_aed', v.price_aed,
+              'price_inr', v.price_inr,
+              'discount_aed', v.discount_aed,
+              'discount_inr', v.discount_inr,
+              'available_aed', v.available_aed,
+              'available_inr', v.available_inr
+            ) ORDER BY v.id
+          ) FILTER (WHERE v.id IS NOT NULL),
+          '[]'::json
+        ) AS variants
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = ${params.id};
+      LEFT JOIN product_variants v ON p.id = v.product_id
+      WHERE p.id = ${params.id}
+      GROUP BY p.id, c.name;
     `
 
     if (!product) {

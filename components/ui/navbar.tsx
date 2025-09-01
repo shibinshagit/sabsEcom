@@ -912,7 +912,7 @@ function Nav() {
                     </div>
                   )}
                   <h1 className="text-2xl font-bold text-white">
-                    {shop === "A" ? `${settings.restaurant_name} - Beauty` : `${settings.restaurant_name} - Style`}
+                    {shop === "A" ? `Beauty` : `Style`}
                   </h1>
                 </Link>
              
