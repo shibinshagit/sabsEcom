@@ -6,18 +6,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { status, estimatedCompletionTime } = await request.json()
     const id = parseInt(params.id)
 
-    // Validate the order ID
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 })
     }
 
-    // Validate status
     const validStatuses = ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"]
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 })
     }
 
-    // Update the order with proper error handling
     const result = await sql`
       UPDATE orders 
       SET 
@@ -47,7 +44,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     const order = result[0]
 
-    // Format the response
     const formattedOrder = {
       id: parseInt(order.id),
       customer_name: order.customer_name,

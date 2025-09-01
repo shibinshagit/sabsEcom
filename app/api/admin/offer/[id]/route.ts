@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 import { ensureOfferTypeSupport } from "@/lib/migrations/ensure-offer-type";
 
-// PUT - Update an existing offer
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = parseInt(params.id);
@@ -24,7 +23,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       );
     }
 
-    // Validate offer structure
     const invalidOffers = offers.filter((offer: any) => 
       !offer.value || 
       !offer.type || 
@@ -38,7 +36,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       );
     }
 
-    // Validate percentage values (1-100)
     const percentageOffers = offers.filter((offer: any) => offer.type === 'percentage');
     const invalidPercentages = percentageOffers.filter((offer: any) => {
       const value = parseFloat(offer.value);
@@ -52,7 +49,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       );
     }
 
-    // Validate cash values (positive numbers)
     const cashOffers = offers.filter((offer: any) => offer.type === 'cash');
     const invalidCashValues = cashOffers.filter((offer: any) => {
       const value = parseFloat(offer.value);
@@ -68,10 +64,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     console.log("Updating offer with ID:", id, { title, startDate, endDate, offers });
 
-    // Ensure the database schema is up to date
     await ensureOfferTypeSupport();
 
-    // Determine the primary offer type for this offer set
     const hasPercentage = offers.some((offer: any) => offer.type === 'percentage');
     const hasCash = offers.some((offer: any) => offer.type === 'cash');
     const primaryOfferType = hasPercentage && hasCash ? 'mixed' : 
@@ -107,7 +101,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-// GET - Fetch a specific offer by ID
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = parseInt(params.id);
@@ -119,7 +112,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
       );
     }
 
-    // Ensure the database schema is up to date
     await ensureOfferTypeSupport();
 
     const offers = await sql`
@@ -140,7 +132,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-// DELETE - Delete an offer
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = parseInt(params.id);
@@ -151,8 +142,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         { status: 400 }
       );
     }
-
-    // Ensure the database schema is up to date
     await ensureOfferTypeSupport();
 
     const [deleted] = await sql`
