@@ -8,31 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Eye, Clock, CheckCircle, AlertCircle, Package, CreditCard, Smartphone } from "lucide-react"
 
-interface Order {
-  id: number
-  customer_name: string
-  customer_email: string
-  customer_phone: string
-  order_type: string
-  payment_method:string
-  total_amount: number
-  tax_amount: number
-  delivery_fee: number
-  final_total: number
-  status: string
-  special_instructions: string
-  created_at: string
-  updated_at: string
-  items: Array<{
-    id: number
-    menu_item_name: string
-    quantity: number
-    unit_price: number
-    total_price: number
-    special_requests: string
-  }>
-}
-
 export default function OrdersManagement() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,6 +15,34 @@ export default function OrdersManagement() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
   const [updating, setUpdating] = useState<number | null>(null)
+
+
+  interface Order {
+    id: number
+    customer_name: string
+    customer_email: string
+    customer_phone: string
+    order_type: string
+    payment_method: string
+    delivery_address?: string
+    customer_address?: string
+    total_amount: number
+    tax_amount: number
+    delivery_fee: number
+    final_total: number
+    status: string
+    special_instructions: string
+    created_at: string
+    updated_at: string
+    items: Array<{
+      id: number
+      menu_item_name: string
+      quantity: number
+      unit_price: number
+      total_price: number
+      special_requests: string
+    }>
+  }
 
   useEffect(() => {
     fetchOrders()
@@ -49,27 +52,27 @@ export default function OrdersManagement() {
     try {
       setLoading(true)
       setError(null)
-      
+
       console.log("Fetching orders from /api/admin/orders...")
-      
+
       const response = await fetch("/api/admin/orders", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       })
-      
+
       console.log("Response status:", response.status)
-      
+
       if (!response.ok) {
         const errorText = await response.text()
         console.error("API Error:", errorText)
         throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
-      
+
       const data = await response.json()
       console.log("Received orders data:", data)
-      
+
       if (Array.isArray(data)) {
         setOrders(data)
         console.log(`Loaded ${data.length} orders successfully`)
@@ -89,43 +92,45 @@ export default function OrdersManagement() {
     try {
       setUpdating(orderId)
       console.log(`Updating order ${orderId} to status: ${newStatus}`)
-      
+
       const response = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       })
-      
+
       if (response.ok) {
         const updatedOrder = await response.json()
         console.log("Order updated successfully:", updatedOrder)
-        
-        // Update the order in the local state immediately
-        setOrders(prevOrders => 
-          prevOrders.map(order => 
-            order.id === orderId 
-              ? { ...order, status: newStatus, updated_at: new Date().toISOString() }
+
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === orderId
+              ? {
+                ...order,
+                ...updatedOrder,
+                status: newStatus,
+                updated_at: new Date().toISOString()
+              }
               : order
           )
         )
-        
-        // Also update selectedOrder if it's the one being updated
+
         if (selectedOrder?.id === orderId) {
-          setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null)
+          setSelectedOrder(prev => prev ? {
+            ...prev,
+            ...updatedOrder,
+            status: newStatus
+          } : null)
         }
-        
-        // Show success message
-        console.log(`✅ Order #${orderId} status updated to: ${newStatus}`)
       } else {
         const errorData = await response.json()
-        console.error("Failed to update order status:", errorData)
         throw new Error(errorData.error || "Failed to update order status")
       }
     } catch (error) {
       console.error("Failed to update order status:", error)
       setError(error instanceof Error ? error.message : "Failed to update order status")
-      
-      // Show error alert
+
       alert(`Failed to update order status: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setUpdating(null)
@@ -320,7 +325,7 @@ export default function OrdersManagement() {
                               <Eye className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+                          {/* <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
                             <DialogHeader>
                               <DialogTitle>Order #{order.id} Details</DialogTitle>
                             </DialogHeader>
@@ -392,11 +397,108 @@ export default function OrdersManagement() {
                                 )}
                               </div>
                             )}
+                          </DialogContent> */}
+                          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Order #{order.id} Details</DialogTitle>
+                            </DialogHeader>
+                            {selectedOrder && (
+                              <div className="space-y-4 max-h-[80vh] overflow-y-auto">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <h4 className="font-semibold mb-2">Customer Information</h4>
+                                    <p><strong>Name:</strong> {selectedOrder.customer_name}</p>
+                                    <p><strong>Phone:</strong> {selectedOrder.customer_phone}</p>
+                                    {selectedOrder.customer_email && (
+                                      <p><strong>Email:</strong> {selectedOrder.customer_email}</p>
+                                    )}
+
+                                    {/* Customer Address Information */}
+                                    {selectedOrder.customer_address && (
+                                      <div className="mt-3">
+                                        <p><strong>Customer Address:</strong></p>
+                                        <div className="bg-gray-700 p-2 rounded text-sm mt-1 max-w-full break-words">
+                                          {selectedOrder.customer_address}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Delivery Address (only for delivery orders) */}
+                                    {selectedOrder.delivery_address && (
+                                      <div className="mt-3">
+                                        <p><strong>Delivery Address:</strong></p>
+                                        <div className="bg-gray-700 p-2 rounded text-sm mt-1 max-w-full break-words">
+                                          {selectedOrder.delivery_address}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div>
+                                    <h4 className="font-semibold mb-2">Order Information</h4>
+                                    <p><strong>Order Type:</strong> {selectedOrder.order_type}</p>
+                                    <p><strong>Payment Type:</strong> {selectedOrder.payment_method?.toUpperCase() || 'COD'}</p>
+                                    <p><strong>Status:</strong> <span className="capitalize">{selectedOrder.status}</span></p>
+                                    <p><strong>Order Date:</strong> {new Date(selectedOrder.created_at).toLocaleDateString()}</p>
+                                    <p><strong>Order Time:</strong> {new Date(selectedOrder.created_at).toLocaleTimeString()}</p>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <h4 className="font-semibold mb-2">Order Items</h4>
+                                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    {selectedOrder.items?.map((item) => (
+                                      <div key={item.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
+                                        <div className="flex-1">
+                                          <span className="font-medium">{item.menu_item_name}</span>
+                                          <span className="text-gray-400 ml-2">x{item.quantity}</span>
+                                          {item.special_requests && (
+                                            <p className="text-gray-400 text-sm mt-1">{item.special_requests}</p>
+                                          )}
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="font-medium">₹{item.total_price?.toFixed(2) || '0.00'}</span>
+                                          <p className="text-gray-400 text-xs">₹{item.unit_price?.toFixed(2)} each</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="border-t border-gray-600 pt-4">
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                      <span>Subtotal:</span>
+                                      <span>₹{selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
+                                    </div>
+                                    {selectedOrder.tax_amount > 0 && (
+                                      <div className="flex justify-between">
+                                        <span>Tax:</span>
+                                        <span>₹{selectedOrder.tax_amount?.toFixed(2) || '0.00'}</span>
+                                      </div>
+                                    )}
+                                    {selectedOrder.delivery_fee > 0 && (
+                                      <div className="flex justify-between">
+                                        <span>Delivery Fee:</span>
+                                        <span>₹{selectedOrder.delivery_fee?.toFixed(2) || '0.00'}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex justify-between font-bold text-lg border-t border-gray-600 pt-2 mt-2">
+                                    <span>Total Amount:</span>
+                                    <span>₹{selectedOrder.final_total?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                </div>
+
+
+                              </div>
+                            )}
                           </DialogContent>
+
                         </Dialog>
 
-                        <Select 
-                          value={order.status} 
+                        <Select
+                          value={order.status}
                           onValueChange={(value) => updateOrderStatus(order.id, value)}
                           disabled={updating === order.id}
                         >
@@ -422,7 +524,7 @@ export default function OrdersManagement() {
               </TableBody>
             </Table>
           </div>
-          
+
           {filteredOrders.length === 0 && (
             <div className="text-center py-8 text-gray-400">
               No orders found {statusFilter !== "all" && `with status "${statusFilter}"`}

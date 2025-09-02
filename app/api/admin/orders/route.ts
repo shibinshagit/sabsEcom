@@ -72,13 +72,6 @@ export async function GET() {
     
     await ensureSchema()
 
-    const tableColumns = await sql`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_name = 'orders'
-      ORDER BY ordinal_position
-    `
-
     const orders = await sql`
       SELECT
         o.id,
@@ -89,6 +82,7 @@ export async function GET() {
         COALESCE(o.payment_method, 'cod') as payment_method,
         o.table_number,
         o.delivery_address,
+        o.special_instructions as customer_address,
         COALESCE(o.subtotal, 0) as total_amount,
         0 as tax_amount,
         COALESCE(o.delivery_fee, 0) as delivery_fee,
@@ -117,7 +111,6 @@ export async function GET() {
       ORDER BY o.created_at DESC
     `
 
-
     const formattedOrders = orders.map(order => ({
       id: parseInt(order.id),
       customer_name: order.customer_name,
@@ -127,6 +120,7 @@ export async function GET() {
       payment_method: order.payment_method,
       table_number: order.table_number,
       delivery_address: order.delivery_address,
+      customer_address: order.customer_address,
       total_amount: parseFloat(order.total_amount || '0'),
       tax_amount: parseFloat(order.tax_amount || '0'),
       delivery_fee: parseFloat(order.delivery_fee || '0'),
