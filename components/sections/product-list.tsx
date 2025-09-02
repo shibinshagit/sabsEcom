@@ -10,7 +10,7 @@ import { useCurrency } from "@/lib/contexts/currency-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart } from "lucide-react"
+import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -28,6 +28,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const [showFilters, setShowFilters] = useState(false)
   const [categoryTransition, setCategoryTransition] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  
+  // Animation states
+  const [showBlur, setShowBlur] = useState(false)
+  const [animationType, setAnimationType] = useState<'cart' | 'wishlist' | null>(null)
 
   const dispatch = useDispatch<AppDispatch>()
   const { items, categories, selectedCategory, loading } = useSelector((state: RootState) => state.products)
@@ -49,6 +53,18 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
       return product.price_inr && product.price_inr > 0
     }
     return true
+  }
+
+  // Trigger blur animation
+  const triggerBlurAnimation = (type: 'cart' | 'wishlist') => {
+    setAnimationType(type)
+    setShowBlur(true)
+    
+    // Hide animation after 2 seconds
+    setTimeout(() => {
+      setShowBlur(false)
+      setAnimationType(null)
+    }, 2000)
   }
 
   const handleToggleWishlist = async (product: any) => {
@@ -78,6 +94,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
           features: product.features
         }
         await dispatch(addToWishlistAPI(wishlistItem)).unwrap()
+        // Trigger wishlist animation
+        triggerBlurAnimation('wishlist')
       }
     } catch (error) {
       console.error('wishlist operation failed:', error)
@@ -127,6 +145,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
       selectedCurrency,
       userId: user?.id
     }))
+    // Trigger cart animation
+    triggerBlurAnimation('cart')
   }
 
   const shopFilteredItems = items.filter((item: any) => {
@@ -176,47 +196,56 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const newArrivals = filteredItems.filter((item) => item.is_new).slice(0, 12)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Blur Overlay with Animation */}
+      {showBlur && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop blur */}
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300" />
+          
+          {/* Animated Icon */}
+          <div className="relative z-10">
+            {animationType === 'wishlist' && (
+              <div className="animate-in zoom-in duration-500 animate-out zoom-out fade-out delay-1000 duration-1000">
+                <div className="bg-red-500 rounded-full p-8 shadow-2xl animate-bounce">
+                  <Heart 
+                    className="w-16 h-16 text-white fill-white animate-pulse" 
+                  />
+                </div>
+                {/* Floating effect */}
+                <div className="absolute inset-0 bg-red-500 rounded-full p-8 opacity-30 animate-ping" />
+              </div>
+            )}
+            
+            {animationType === 'cart' && (
+              <div className="animate-in zoom-in duration-500 animate-out zoom-out fade-out delay-1000 duration-1000">
+                <div className="bg-orange-500 rounded-full p-8 shadow-2xl animate-bounce">
+                  <ShoppingCart 
+                    className="w-16 h-16 text-white animate-pulse" 
+                  />
+                </div>
+                {/* Floating effect */}
+                <div className="absolute inset-0 bg-orange-500 rounded-full p-8 opacity-30 animate-ping" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div
-        className={`transition-all duration-300 ${categoryTransition ? "opacity-50 scale-95" : "opacity-100 scale-100"}`}
+        className={`transition-all duration-300 ${categoryTransition ? "opacity-50 scale-95" : "opacity-100 scale-100"} ${showBlur ? "blur-sm" : ""}`}
       >
         {/* Desktop Controls */}
         <div className="hidden lg:block px-6 mt-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h3 className="text-xl font-bold text-gray-900">{getCurrentCategoryName()}</h3>
-              <span className="text-gray-500">({filteredItems.length} items)</span>
+              {/* <h3 className="text-xl font-bold text-gray-900">{`Lightning deals in ${getCurrentCategoryName() === 'shop A' ? 'Beauty' : 'Accessories'}`}</h3> */}
+            
               {currencyFilteredItems.length !== shopFilteredItems.length && (
                 <Badge variant="outline" className="text-orange-600 border-orange-300">
                   Filtered by {selectedCurrency} availability
                 </Badge>
               )}
-            </div>
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2"
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                Filters
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid3X3 className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
           </div>
         </div>
@@ -228,9 +257,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-orange-500" />
-                  <span className="font-bold text-lg lg:text-xl">Lightning deals in {getCurrentCategoryName()}</span>
+                  <h3 className="text-xl font-bold text-gray-900">Lightning deals</h3>
+                    <span className="text-gray-500">({filteredItems.length} items)</span>
+                    
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
+                 <ChevronDown className="w-5 h-5 text-gray-400" />
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-10">
                 {lightningDeals.map((item, index) => (
@@ -255,7 +286,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         {index + 1}
                       </div>
                       <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">FLASH</Badge>
-                      <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs">{shop}</Badge>
+       <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs"> {item.features?.[0]
+    ? item.features[0].length > 7
+      ? item.features[0].slice(0, 7) + "..."
+      : item.features[0]
+    : "Assured"}</Badge>
                     </div>
                     <CardContent className="p-3 lg:p-4">
                       <p className="text-red-500 font-bold text-sm lg:text-base">
@@ -266,13 +301,13 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
 
                       <Button
                         onClick={() => handleAddToCart(item)}
-                        className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium"
+                        className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95"
                       >
                         Add to Cart
                       </Button>
                       <Button
                         onClick={() => handleToggleWishlist(item)}
-                        className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium ${isInWishlist(item.id)
+                        className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${isInWishlist(item.id)
                           ? 'bg-red-500 hover:bg-red-600 text-white'
                           : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                           }`}
@@ -293,9 +328,9 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             <div className="flex items-center justify-between mb-4 lg:mb-6">
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5 text-green-500" />
-                <span className="font-bold text-lg lg:text-xl">All Products in SHOP {shop} ({selectedCurrency})</span>
+                <span className="font-bold text-lg lg:text-xl">Fast Selling Products</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
+              <ChevronDown className="w-5 h-5 text-gray-400" />
             </div>
             {loading ? (
               <div
@@ -341,7 +376,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         {item.is_featured && (
                           <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">HOT</Badge>
                         )}
-                        <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs">{shop}</Badge>
+                        {/* <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs"> {item.features?.[0]
+    ? item.features[0].length > 7
+      ? item.features[0].slice(0, 7) + "..."
+      : item.features[0]
+    : "N/A"}</Badge> */}
 
                       </div>
                       <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
@@ -357,7 +396,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         {viewMode === "list" && (
                           <p className="text-sm text-gray-600 line-clamp-3 mb-3">{item.description}</p>
                         )}
-                        {item.features && item.features.length > 0 && (
+                        {/* {item.features && item.features.length > 0 && (
                           <div className="mb-3">
                             <div className="flex flex-wrap gap-1">
                               {item.features.slice(0, 2).map((feature: string, idx: number) => (
@@ -371,18 +410,18 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                               ))}
                             </div>
                           </div>
-                        )}
+                        )} */}
 
                         <Button
                           onClick={() => handleAddToCart(item)}
-                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg"
+                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95"
                           disabled={!item.is_available}
                         >
                           {item.is_available ? "Add to Cart" : "Unavailable"}
                         </Button>
                         <Button
                           onClick={() => handleToggleWishlist(item)}
-                          className={`w-full mt-2 rounded-full py-2 text-sm font-medium ${isInWishlist(item.id)
+                          className={`w-full mt-2 rounded-full py-2 text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${isInWishlist(item.id)
                             ? 'bg-red-500 hover:bg-red-600 text-white'
                             : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                             }`}

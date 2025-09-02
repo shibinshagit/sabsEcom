@@ -1,3 +1,4 @@
+// app/api/admin/products/[id]/route.ts
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 

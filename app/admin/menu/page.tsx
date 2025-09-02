@@ -14,17 +14,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store, DollarSign } from "lucide-react"
 import Image from "next/image"
-import ImageUpload from "@/components/ui/image-upload"
+import MultipleImageUpload from "@/components/ui/image-upload"
 
+interface ProductVariant {
+  id: number
+  name: string // 
+  price_aed: number
+  price_inr: number
+  discount_aed?: number
+  discount_inr?: number
+  available_aed: boolean
+  available_inr: boolean
+}
 interface Product {
   id: number
   name: string
   description: string
-  price: number
-  price_aed?: number
-  price_inr?: number
-  default_currency: 'AED' | 'INR'
-  image_url: string
+  variants: ProductVariant[]
+  image_urls: string[] // Changed from image_url to image_urls array
   category_id: number
   category_name: string
   is_available: boolean
@@ -42,7 +49,7 @@ interface Product {
   color: string
   stock_quantity: number
   sku: string
-  shop_category: string
+  shop_category: "A" | "B" | "Both"
   created_at: string
 }
 
@@ -69,37 +76,47 @@ export default function ProductManagement() {
   const [selectedShop, setSelectedShop] = useState<string>("all")
 
   // Available shops
-  const shops: Shop[] = [
-    { id: "A", name: "Shop A", label: "Shop A" },
-    { id: "B", name: "Shop B", label: "Shop B" }
-  ]
+const shops: Shop[] = [
+  { id: "A", name: "Shop A", label: "Shop A" },
+  { id: "B", name: "Shop B", label: "Shop B" },
+  { id: "Both", name: "Both Shops", label: "Both Shops" }
+];
 
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: 0, // Keep for backward compatibility
-    price_aed: 0,
-    price_inr: 0,
-    default_currency: "AED" as 'AED' | 'INR',
-    image_url: "",
-    category_id: 0,
-    shop_category: "",
-    is_available: true,
-    is_featured: false,
-    is_new: false,
-    new_until_date: "",
-    features: "",
-    specifications_text: "",
-    warranty_months: 12,
-    brand: "",
-    model: "",
-    condition_type: "new",
-    warranty_period: 12,
-    storage_capacity: "",
-    color: "",
-    stock_quantity: 1,
-    sku: "",
-  })
+
+const [formData, setFormData] = useState({
+  name: "",
+  description: "",
+  image_urls: [] as string[], // Changed from image_url to image_urls array
+  category_id: 0,
+  shop_category: "Both" as "A" | "B" | "Both",
+  is_available: true,
+  is_featured: false,
+  is_new: false,
+  new_until_date: "",
+  features: "",
+  specifications_text: "",
+  warranty_months: 12,
+  brand: "",
+  model: "",
+  variants: [
+    {
+      id: Date.now(),
+      name: "",
+      price_aed: 0,
+      price_inr: 0,
+      discount_aed: 0,
+      discount_inr: 0,
+      available_aed: true,
+      available_inr: true,
+    }
+  ],
+  condition_type: "new",
+  warranty_period: 12,
+  storage_capacity: "",
+  color: "",
+  stock_quantity: 1,
+  sku: "",
+})
 
   useEffect(() => {
     fetchProducts()
@@ -140,68 +157,76 @@ export default function ProductManagement() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+// Updated handleSubmit function with better validation
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
 
-    // Validate required fields before submitting
-    if (!formData.name.trim()) {
-      alert("Product name is required")
-      return
-    }
-
-    // Validate at least one price is provided
-    if (!formData.price_aed && !formData.price_inr) {
-      alert("At least one price (AED or INR) is required")
-      return
-    }
-
-    if (!formData.category_id || formData.category_id === 0) {
-      alert("Category is required")
-      return
-    }
-
-    if (!formData.shop_category) {
-      alert("Shop selection is required")
-      return
-    }
-
-    try {
-      const url = editingItem ? `/api/admin/products/${editingItem.id}` : "/api/admin/products"
-      const method = editingItem ? "PUT" : "POST"
-
-      // Generate SKU if not provided
-      const sku = formData.sku || `${formData.shop_category}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
-
-      const payload = {
-        ...formData,
-        sku,
-        features: formData.features
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Request failed")
-      }
-
-      await fetchProducts()
-      setIsDialogOpen(false)
-      resetForm()
-      alert(editingItem ? "Product updated successfully!" : "Product added successfully!")
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error occurred"
-      alert(`Failed to save product: ${message}`)
-      console.error("Failed to save product:", error)
-    }
+  // Validate required fields
+  if (!formData.name.trim()) {
+    alert("Product name is required")
+    return
   }
+
+  if (!formData.category_id || formData.category_id === 0) {
+    alert("Category is required")
+    return
+  }
+
+  if (!formData.shop_category) {
+    alert("Shop selection is required")
+    return
+  }
+
+  // Validate variants
+  if (!formData.variants || formData.variants.length === 0) {
+    alert("At least one variant is required")
+    return
+  }
+
+  // Validate that each variant has a name
+  const hasInvalidVariant = formData.variants.some(variant => !variant.name.trim())
+  if (hasInvalidVariant) {
+    alert("All variants must have a name")
+    return
+  }
+
+  try {
+    const url = editingItem ? `/api/admin/products/${editingItem.id}` : "/api/admin/products"
+    const method = editingItem ? "PUT" : "POST"
+
+    // Generate SKU if not provided
+    const sku = formData.sku || `${formData.shop_category}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+
+    const payload = {
+      ...formData,
+      sku,
+      features: formData.features
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || "Request failed")
+    }
+
+    await fetchProducts()
+    setIsDialogOpen(false)
+    resetForm()
+    alert(editingItem ? "Product updated successfully!" : "Product added successfully!")
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error occurred"
+    alert(`Failed to save product: ${message}`)
+    console.error("Failed to save product:", error)
+  }
+}
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this product?")) return
@@ -223,66 +248,83 @@ export default function ProductManagement() {
     }
   }
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      price: 0,
-      price_aed: 0,
-      price_inr: 0,
-      default_currency: "AED",
-      image_url: "",
-      category_id: 0,
-      shop_category: "",
-      is_available: true,
-      is_featured: false,
-      is_new: false,
-      new_until_date: "",
-      features: "",
-      specifications_text: "",
-      warranty_months: 12,
-      brand: "",
-      model: "",
-      condition_type: "new",
-      warranty_period: 12,
-      storage_capacity: "",
-      color: "",
-      stock_quantity: 1,
-      sku: "",
-    })
-    setEditingItem(null)
-  }
+const resetForm = () => {
+  setFormData({
+    name: "",
+    description: "",
+    image_urls: [], // Changed from image_url to empty array
+    category_id: 0,
+    shop_category: "Both",
+    is_available: true,
+    is_featured: false,
+    is_new: false,
+    new_until_date: "",
+    features: "",
+    specifications_text: "",
+    warranty_months: 12,
+    brand: "",
+    model: "",
+    condition_type: "new",
+    warranty_period: 12,
+    storage_capacity: "",
+    color: "",
+    stock_quantity: 1,
+    sku: "",
+    variants: [
+      {
+        id: Date.now(),
+        name: "",
+        price_aed: 0,
+        price_inr: 0,
+        discount_aed: 0,
+        discount_inr: 0,
+        available_aed: true,
+        available_inr: true,
+      }
+    ]
+  })
+  setEditingItem(null)
+}
 
-  const openEditDialog = (item: Product) => {
-    setEditingItem(item)
-    setFormData({
-      name: item.name,
-      description: item.description || "",
-      price: item.price,
-      price_aed: item.price_aed || 0,
-      price_inr: item.price_inr || 0,
-      default_currency: item.default_currency || "AED",
-      image_url: item.image_url || "",
-      category_id: item.category_id,
-      shop_category: item.shop_category || "",
-      is_available: item.is_available,
-      is_featured: item.is_featured,
-      features: item.features?.join(", ") || "",
-      specifications_text: item.specifications_text || "",
-      warranty_months: item.warranty_months || 12,
-      brand: item.brand || "",
-      model: item.model || "",
-      condition_type: item.condition_type || "new",
-      warranty_period: item.warranty_period || 12,
-      storage_capacity: item.storage_capacity || "",
-      color: item.color || "",
-      stock_quantity: item.stock_quantity || 1,
-      sku: item.sku || "",
-      is_new: item.is_new || false,
-      new_until_date: item.new_until_date || "",
-    })
-    setIsDialogOpen(true)
-  }
+const openEditDialog = (item: Product) => {
+  setEditingItem(item)
+  setFormData({
+    name: item.name,
+    description: item.description || "",
+    image_urls: Array.isArray(item.image_urls) ? item.image_urls : 
+                (item.image_urls ? [item.image_urls as any] : []), // Handle backward compatibility
+    category_id: item.category_id,
+    shop_category: item.shop_category || "Both",
+    is_available: item.is_available,
+    is_featured: item.is_featured,
+    features: item.features?.join(", ") || "",
+    specifications_text: item.specifications_text || "",
+    warranty_months: item.warranty_months || 12,
+    brand: item.brand || "",
+    model: item.model || "",
+    condition_type: item.condition_type || "new",
+    warranty_period: item.warranty_period || 12,
+    storage_capacity: item.storage_capacity || "",
+    color: item.color || "",
+    stock_quantity: item.stock_quantity || 1,
+    sku: item.sku || "",
+    is_new: item.is_new || false,
+    new_until_date: item.new_until_date || "",
+    variants: Array.isArray(item.variants) && item.variants.length > 0 
+    ? item.variants 
+    : [{
+        id: Date.now(),
+        name: "",
+        price_aed: 0,
+        price_inr: 0,
+        discount_aed: 0,
+        discount_inr: 0,
+        available_aed: true,
+        available_inr: true,
+      }]
+  })
+  setIsDialogOpen(true)
+}
 
   const openAddDialog = () => {
     resetForm()
@@ -290,28 +332,50 @@ export default function ProductManagement() {
   }
 
   // Format price display based on currency
-  const formatPrice = (product: Product) => {
-    if (product.price_aed && product.price_inr) {
+// Fixed formatPrice function
+const formatPrice = (product: Product) => {
+  // Get the first variant or fallback
+  const defaultVariant = Array.isArray(product.variants) && product.variants.length > 0
+    ? product.variants[0] // Get first variant instead of returning the array
+    : null;
+
+  if (defaultVariant) {
+    const { price_aed, price_inr } = defaultVariant;
+    // Use product.default_currency if available, fallback to "AED"
+    const defaultCurrency = (product as any).default_currency || "AED";
+
+    if (price_aed && price_inr) {
       return (
         <div className="flex flex-col">
-          <span className={`font-semibold ${product.default_currency === 'AED' ? 'text-cyan-400' : ''}`}>
-            AED {product.price_aed}
-            {product.default_currency === 'AED' && <Badge variant="outline" className="ml-1 text-xs">Default</Badge>}
+          <span className={`font-semibold ${defaultCurrency === 'AED' ? 'text-cyan-400' : ''}`}>
+            AED {price_aed}
+            {defaultCurrency === 'AED' && (
+              <Badge variant="outline" className="ml-1 text-xs">
+                Default
+              </Badge>
+            )}
           </span>
-          <span className={`text-sm text-gray-400 ${product.default_currency === 'INR' ? 'text-cyan-400' : ''}`}>
-            ₹ {product.price_inr}
-            {product.default_currency === 'INR' && <Badge variant="outline" className="ml-1 text-xs">Default</Badge>}
+          <span className={`text-sm text-gray-400 ${defaultCurrency === 'INR' ? 'text-cyan-400' : ''}`}>
+            ₹ {price_inr}
+            {defaultCurrency === 'INR' && (
+              <Badge variant="outline" className="ml-1 text-xs">
+                Default
+              </Badge>
+            )}
           </span>
         </div>
-      )
-    } else if (product.price_aed) {
-      return <span className="font-semibold">AED {product.price_aed}</span>
-    } else if (product.price_inr) {
-      return <span className="font-semibold">₹ {product.price_inr}</span>
-    } else {
-      return <span className="font-semibold">${product.price}</span>
+      );
+    } else if (price_aed) {
+      return <span className="font-semibold">AED {price_aed}</span>;
+    } else if (price_inr) {
+      return <span className="font-semibold">₹ {price_inr}</span>;
     }
   }
+  
+  // Fallback for legacy products or those without variants
+  return <span className="font-semibold text-gray-400">No price set</span>;
+};
+
 
   const filteredItems = products.filter((item) => {
     const matchesSearch =
@@ -394,71 +458,6 @@ export default function ProductManagement() {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="default_currency">Default Currency *</Label>
-                  <Select
-                    value={formData.default_currency}
-                    onValueChange={(value: 'AED' | 'INR') => setFormData({ ...formData, default_currency: value })}
-                    required
-                  >
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
-                      <SelectItem value="AED" className="text-white">
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="w-4 h-4" />
-                          <span>AED (UAE Dirham)</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="INR" className="text-white">
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="w-4 h-4" />
-                          <span>INR (Indian Rupee)</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Currency Price Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price_aed" className="flex items-center">
-                    AED Price
-                    {formData.default_currency === 'AED' && <span className="text-red-400 ml-1">*</span>}
-                    {formData.default_currency === 'AED' && <Badge variant="outline" className="ml-2 text-xs">Primary</Badge>}
-                  </Label>
-                  <Input
-                    id="price_aed"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.price_aed}
-                    onChange={(e) => setFormData({ ...formData, price_aed: Number(e.target.value) })}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="price_inr" className="flex items-center">
-                    INR Price (₹)
-                    {formData.default_currency === 'INR' && <span className="text-red-400 ml-1">*</span>}
-                    {formData.default_currency === 'INR' && <Badge variant="outline" className="ml-2 text-xs">Primary</Badge>}
-                  </Label>
-                  <Input
-                    id="price_inr"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.price_inr}
-                    onChange={(e) => setFormData({ ...formData, price_inr: Number(e.target.value) })}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="0.00"
-                  />
-                </div>
               </div>
 
               {/* Shop and Category Selection */}
@@ -518,13 +517,16 @@ export default function ProductManagement() {
                   rows={3}
                 />
               </div>
+              {/*  */}
 
-              {/* Image Upload */}
-              <ImageUpload
-                value={formData.image_url}
-                onChange={(url) => setFormData({ ...formData, image_url: url })}
-                label="Product Image"
-              />
+<MultipleImageUpload
+  value={formData.image_urls}
+  onChange={(urls) => setFormData({ ...formData, image_urls: urls })}
+  label="Product Images"
+  maxImages={2}
+/>
+
+{/* Updated table cell for images - replace the existing image cell */}
 
               {/* Brand and Model */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -756,6 +758,164 @@ export default function ProductManagement() {
                   <p className="text-xs text-blue-400 mt-1">Set when this product should no longer be marked as "new"</p>
                 </div>
               )}
+
+              {/* Product Variants Section */}
+           <div className="space-y-6">
+  <h4 className="text-xl font-bold text-white">Product Variants</h4>
+
+  {formData.variants.map((variant, idx) => (
+    <div
+      key={idx}
+      className="border border-gray-700 p-5 rounded-xl bg-gray-900/40 shadow-md space-y-6"
+    >
+      {/* Variant Header */}
+      <div className="flex items-center justify-between">
+        <h5 className="text-lg font-semibold text-white">
+          Variant {idx + 1}
+        </h5>
+        <Button
+          type="button"
+          onClick={() => {
+            const variants = formData.variants.filter((_, vIdx) => vIdx !== idx)
+            setFormData({ ...formData, variants })
+          }}
+          className="bg-red-500 hover:bg-red-600"
+        >
+          Remove
+        </Button>
+      </div>
+
+      {/* Variant Name */}
+      <div>
+        <Label>Variant Name *</Label>
+        <Input
+          value={variant.name}
+          onChange={(e) => {
+            const variants = [...formData.variants]
+            variants[idx].name = e.target.value
+            setFormData({ ...formData, variants })
+          }}
+          placeholder="e.g. 60g, 90g"
+          required
+        />
+      </div>
+
+      {/* Price Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* AED Price */}
+        <div>
+          <Label>AED Price</Label>
+          <Input
+            type="number"
+            value={variant.price_aed}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].price_aed = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+
+        {/* AED Discount */}
+        <div>
+          <Label>AED Discount</Label>
+          <Input
+            type="number"
+            value={variant.discount_aed}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].discount_aed = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+
+        {/* AED Available */}
+        <div className="flex items-center gap-3">
+          <Label>Available in AED</Label>
+          <Switch
+            checked={variant.available_aed}
+            onCheckedChange={(checked) => {
+              const variants = [...formData.variants]
+              variants[idx].available_aed = checked
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+      </div>
+
+      {/* INR Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* INR Price */}
+        <div>
+          <Label>INR Price</Label>
+          <Input
+            type="number"
+            value={variant.price_inr}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].price_inr = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+
+        {/* INR Discount */}
+        <div>
+          <Label>INR Discount</Label>
+          <Input
+            type="number"
+            value={variant.discount_inr}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].discount_inr = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+
+        {/* INR Available */}
+        <div className="flex items-center gap-3">
+          <Label>Available in INR</Label>
+          <Switch
+            checked={variant.available_inr}
+            onCheckedChange={(checked) => {
+              const variants = [...formData.variants]
+              variants[idx].available_inr = checked
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  ))}
+
+  {/* Add Variant Button */}
+  <Button
+    type="button"
+    onClick={() =>
+      setFormData({
+        ...formData,
+        variants: [
+          ...formData.variants,
+          {
+            id: Date.now(),
+            name: "",
+            price_aed: 0,
+            price_inr: 0,
+            discount_aed: 0,
+            discount_inr: 0,
+            available_aed: true,
+            available_inr: true,
+          },
+        ],
+      })
+    }
+    className="bg-green-500 hover:bg-green-600 px-6 py-2 rounded-lg"
+  >
+    ➕ Add Variant
+  </Button>
+</div>
 
               {/* Form Actions */}
               <div className="flex space-x-2 pt-4">

@@ -25,8 +25,8 @@ export default function Footer() {
           icon: Heart,
           socialHover: "hover:text-pink-200 hover:scale-110",
           description:
-            "Step into a world of elegance and self-care, where quality, experience, and empowerment come together to redefine your beauty journey.",
-          shopName: "SABS ONLINE - BEAUTY SHOP",
+            "Sabs Online Store story began in 2015 in Dubai. we have created a niche for our customers with our high-quality products and our attention to detail in service.",
+          shopName: "SABS ONLINE",
           category: "Beauty & Cosmetics",
         }
       : {
@@ -40,9 +40,9 @@ export default function Footer() {
           icon: Cpu,
           socialHover: "hover:text-blue-200 hover:scale-110",
           description:
-            "Discover cutting-edge technology and innovation, where advanced engineering, superior quality, and user experience converge to revolutionize your digital lifestyle.",
-          shopName: "SABS ONLINE - TECH SHOP",
-          category: "Technology & Gadgets",
+            "Sabs Online Store story began in 2015 in Dubai. we have created a niche for our customers with our high-quality products and our attention to detail in service.",
+          shopName: "SABS ONLINE",
+          category: "Fashion & Accessories",
         }
 
   const IconComponent = theme.icon
@@ -94,7 +94,7 @@ export default function Footer() {
                 <h3
                   className={`${shop === "A" ? "font-serif" : "font-mono"} text-3xl font-bold ${theme.text} transition-all duration-500`}
                 >
-                  {theme.shopName}
+                  {settings.restaurant_name}
                 </h3>
                 <p
                   className={`${theme.accent} text-lg ${shop === "A" ? "font-script" : "font-mono"} transition-all duration-500`}
@@ -124,29 +124,26 @@ export default function Footer() {
           {/* Quick Links */}
           <div className="space-y-6">
             <h4 className={`font-bold text-xl ${theme.accent} flex items-center transition-all duration-500`}>
-              {shop === "A" ? <Sparkles className="w-5 h-5 mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
-              Quick Links
+              {/* {shop === "A" ? <Sparkles className="w-5 h-5 mr-2" /> : <Zap className="w-5 h-5 mr-2" />} */}
+              Legal
             </h4>
             <ul className="space-y-3">
               <li>
                 <Link href="/" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
-                  Home
+                  Shipping Policy
                 </Link>
               </li>
               <li>
                 <Link href="/products" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
-                  {shop === "A" ? "Beauty Products" : "Tech Products"}
+                  Return & Refund Policy
                 </Link>
               </li>
               <li>
                 <Link href="/#about" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
-                  About Us
+                  Cancellation Policy
                 </Link>
               </li>
               <li>
-                <Link href="/#testimonials" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
-                  Reviews
-                </Link>
               </li>
             </ul>
           </div>
@@ -168,7 +165,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center space-x-4">
                 <Phone className={`w-6 h-6 ${theme.accent} flex-shrink-0`} />
-                <p className={`${theme.text} text-lg`}>+91 777 000 3639</p>
+                <p className={`${theme.text} text-lg`}>+91 {settings.phone}</p>
               </div>
               <div className="flex items-center space-x-4">
                 <Mail className={`w-6 h-6 ${theme.accent} flex-shrink-0`} />
@@ -184,21 +181,20 @@ export default function Footer() {
             <h4
               className={`font-bold text-2xl ${theme.accent} mb-8 flex items-center justify-center transition-all duration-500`}
             >
-              <Clock className="w-6 h-6 mr-3" />
-              {shop === "A" ? "Beauty Consultation Hours" : "Tech Support Hours"}
+       Contact & Opening Hours
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <div className={`${theme.text} text-center`}>
                 <p className="font-semibold text-lg mb-2">Monday - Thursday</p>
-                <p className="text-lg">5:00 PM - 10:00 PM</p>
+                <p className="text-lg">10:00 AM - 6:00 PM</p>
               </div>
               <div className={`${theme.text} text-center`}>
                 <p className="font-semibold text-lg mb-2">Friday - Saturday</p>
-                <p className="text-lg">5:00 PM - 11:00 PM</p>
+                <p className="text-lg">10:00 AM - 1:00 PM</p>
               </div>
               <div className={`${theme.text} text-center`}>
                 <p className="font-semibold text-lg mb-2">Sunday</p>
-                <p className="text-lg">4:00 PM - 9:00 PM</p>
+                <p className="text-lg">10:00 AM - 12:00 PM</p>
               </div>
             </div>
           </div>
