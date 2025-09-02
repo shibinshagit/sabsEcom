@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 import { cookies } from "next/headers"
@@ -36,6 +35,109 @@ async function getAuthenticatedUser() {
   return await getUserFromToken()
 }
 
+async function ensureOrdersTableExists() {
+  try {
+    console.log('Starting database schema setup...')
+    
+    // Check if orders table already exists with correct schema
+    const tableExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'orders'
+      )
+    `
+
+    if (!tableExists[0].exists) {
+      // Create the orders table from scratch
+      await sql`
+        CREATE TABLE orders (
+          id SERIAL PRIMARY KEY,
+          user_id TEXT,
+          clerk_user_id TEXT,
+          customer_name VARCHAR(255) NOT NULL,
+          customer_email VARCHAR(255),
+          customer_phone VARCHAR(20) NOT NULL,
+          order_type VARCHAR(20) DEFAULT 'dine-in',
+          payment_method VARCHAR(20) DEFAULT 'cod',
+          payment_id VARCHAR(255),
+          payment_status VARCHAR(20) DEFAULT 'pending',
+          table_number INTEGER,
+          delivery_address TEXT,
+          subtotal DECIMAL(10,2) DEFAULT 0,
+          delivery_fee DECIMAL(10,2) DEFAULT 0,
+          discount_amount DECIMAL(10,2) DEFAULT 0,
+          total_amount DECIMAL(10,2) NOT NULL,
+          coupon_code VARCHAR(50),
+          currency VARCHAR(3) DEFAULT 'AED',
+          special_instructions TEXT,
+          status VARCHAR(20) DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `
+      console.log('Orders table created successfully')
+    } else {
+      // Add missing columns to existing table if needed
+      const columnsToAdd = [
+        { name: 'user_id', definition: 'TEXT', check: 'user_id' },
+        { name: 'clerk_user_id', definition: 'TEXT', check: 'clerk_user_id' },
+        { name: 'payment_method', definition: 'VARCHAR(20) DEFAULT \'cod\'', check: 'payment_method' },
+        { name: 'payment_id', definition: 'VARCHAR(255)', check: 'payment_id' },
+        { name: 'payment_status', definition: 'VARCHAR(20) DEFAULT \'pending\'', check: 'payment_status' },
+        { name: 'subtotal', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'subtotal' },
+        { name: 'delivery_fee', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'delivery_fee' },
+        { name: 'discount_amount', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'discount_amount' },
+        { name: 'coupon_code', definition: 'VARCHAR(50)', check: 'coupon_code' },
+        { name: 'currency', definition: 'VARCHAR(3) DEFAULT \'AED\'', check: 'currency' }
+      ]
+
+      for (const column of columnsToAdd) {
+        try {
+          const columnExists = await sql`
+            SELECT EXISTS (
+              SELECT 1 FROM information_schema.columns 
+              WHERE table_name = 'orders' AND column_name = ${column.check}
+            )
+          `
+          
+          if (!columnExists[0].exists) {
+            await sql.unsafe(`ALTER TABLE orders ADD COLUMN ${column.name} ${column.definition}`)
+            console.log(`Added column: ${column.name}`)
+          }
+        } catch (colError) {
+          console.log(`Column ${column.name} might already exist:`, colError)
+        }
+      }
+      
+      console.log('Orders table schema updated successfully')
+    }
+  } catch (error) {
+    console.error('Error setting up orders table:', error)
+    throw error // Re-throw to handle properly
+  }
+}
+
+async function ensureOrderItemsTableExists() {
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS order_items (
+        id SERIAL PRIMARY KEY,
+        order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        menu_item_id INTEGER,
+        menu_item_name VARCHAR(255) NOT NULL,
+        quantity INTEGER NOT NULL,
+        unit_price DECIMAL(10,2) NOT NULL,
+        total_price DECIMAL(10,2) NOT NULL,
+        special_requests TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `
+  } catch (error) {
+    console.error('Error creating order_items table:', error)
+    throw error
+  }
+}
+
 // Function to link user accounts by email
 async function findLinkedUser(email: string, isClerkUser: boolean, userId: string | number) {
   try {
@@ -47,7 +149,6 @@ async function findLinkedUser(email: string, isClerkUser: boolean, userId: strin
       return manualUser.length > 0 ? manualUser[0].id : null
     } else {
       // For manual user, find if there's a Clerk user with same email
-      // We'll store this relationship in a new table or use orders to find it
       const clerkOrders = await sql`
         SELECT DISTINCT clerk_user_id FROM orders 
         WHERE customer_email = ${email} AND clerk_user_id IS NOT NULL 
@@ -66,6 +167,9 @@ export async function POST(request: Request) {
     const orderData = await request.json()
     const user = await getAuthenticatedUser()
 
+    console.log('Processing order for user:', user)
+    console.log('Order data received:', orderData)
+
     // Validate required fields
     if (!orderData.customerName || !orderData.customerPhone) {
       return NextResponse.json({ error: "Customer name and phone are required" }, { status: 400 })
@@ -75,95 +179,66 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Order must contain at least one item" }, { status: 400 })
     }
 
-    // Calculate totals (no tax)
-    const subtotal = orderData.totalAmount || 0
+    // Ensure database tables exist with proper schema
+    await ensureOrdersTableExists()
+    await ensureOrderItemsTableExists()
+
+    // Calculate totals
+    const subtotal = orderData.originalAmount - (orderData.orderType === "delivery" ? 3.99 : 0) || 0
     const deliveryFee = orderData.orderType === "delivery" ? 3.99 : 0
-    const finalTotal = subtotal + deliveryFee
+    const discountAmount = orderData.discountAmount || 0
+    const finalTotal = orderData.totalAmount || (subtotal + deliveryFee - discountAmount)
 
-    // Generate confirmation code
-    const confirmationCode = `ORD${Date.now().toString().slice(-6)}`
+    // Determine payment status
+    const paymentStatus = orderData.paymentMethod === 'upi' && orderData.paymentId ? 'paid' : 'pending'
 
-    // Ensure tables exist with updated schema
-    await sql`
-      CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT,
-        clerk_user_id TEXT,
-        customer_name VARCHAR(255) NOT NULL,
-        customer_email VARCHAR(255),
-        customer_phone VARCHAR(20) NOT NULL,
-        order_type VARCHAR(20) DEFAULT 'dine-in',
-        table_number INTEGER,
-        delivery_address TEXT,
-        total_amount DECIMAL(10,2) NOT NULL,
-        delivery_fee DECIMAL(10,2) DEFAULT 0,
-        final_total DECIMAL(10,2) NOT NULL,
-        special_instructions TEXT,
-        status VARCHAR(20) DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `
+    console.log('Inserting order with data:', {
+      user_id: user?.isClerkUser ? null : user?.userId?.toString() || null,
+      clerk_user_id: user?.isClerkUser ? user.userId : null,
+      customer_name: orderData.customerName,
+      payment_method: orderData.paymentMethod || "cod",
+      payment_id: orderData.paymentId || null,
+      payment_status: paymentStatus,
+      currency: orderData.currency || 'AED',
+      total_amount: finalTotal
+    })
 
-    // Add new columns for Clerk support
-    await sql`
-      ALTER TABLE orders
-      ADD COLUMN IF NOT EXISTS clerk_user_id TEXT,
-      ADD COLUMN IF NOT EXISTS delivery_fee DECIMAL(10,2) DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS final_total DECIMAL(10,2) DEFAULT 0
-    `
-
-    // Also modify user_id to TEXT if it was INTEGER
-    try {
-      await sql`
-        ALTER TABLE orders
-        ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT
-      `
-    } catch (e) {
-      // Column might already be TEXT, ignore error
-    }
-
-    await sql`
-      CREATE TABLE IF NOT EXISTS order_items (
-        id SERIAL PRIMARY KEY,
-        order_id INTEGER NOT NULL,
-        menu_item_id INTEGER,
-        menu_item_name VARCHAR(255) NOT NULL,
-        quantity INTEGER NOT NULL,
-        unit_price DECIMAL(10,2) NOT NULL,
-        total_price DECIMAL(10,2) NOT NULL,
-        special_requests TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `
-
-    // Insert order with proper user identification
+    // Insert order with proper user identification and payment details
     const [order] = await sql`
       INSERT INTO orders (
         user_id, clerk_user_id, customer_name, customer_email, customer_phone, 
-        order_type, table_number, delivery_address, 
-        total_amount, delivery_fee, final_total,
-        special_instructions, status
+        order_type, payment_method, payment_id, payment_status,
+        table_number, delivery_address, 
+        subtotal, delivery_fee, discount_amount, total_amount,
+        coupon_code, currency, special_instructions, status
       ) VALUES (
         ${user?.isClerkUser ? null : user?.userId?.toString() || null},
         ${user?.isClerkUser ? user.userId : null},
         ${orderData.customerName}, 
         ${orderData.customerEmail || user?.email || null}, 
         ${orderData.customerPhone},
-        ${orderData.orderType || "dine-in"}, 
+        ${orderData.orderType || "dine-in"},
+        ${orderData.paymentMethod || "cod"},
+        ${orderData.paymentId || null},
+        ${paymentStatus},
         ${orderData.tableNumber || null}, 
         ${orderData.deliveryAddress || null},
         ${subtotal}, 
         ${deliveryFee}, 
+        ${discountAmount},
         ${finalTotal},
+        ${orderData.couponCode || null},
+        ${orderData.currency || 'AED'},
         ${orderData.specialInstructions || null},
         'pending'
       ) RETURNING id
     `
 
+    console.log('Order inserted with ID:', order.id)
+
     // Insert order items
     for (const item of orderData.items) {
-      const totalPrice = item.unitPrice * item.quantity
+      const totalPrice = parseFloat(item.unitPrice) * item.quantity
 
       await sql`
         INSERT INTO order_items (
@@ -174,22 +249,27 @@ export async function POST(request: Request) {
           ${item.menuItemId}, 
           ${item.menuItemName || "Unknown Item"},
           ${item.quantity}, 
-          ${item.unitPrice}, 
+          ${parseFloat(item.unitPrice)}, 
           ${totalPrice},
           ${item.specialRequests || null}
         )
       `
     }
 
+    console.log('Order completed successfully')
+
     return NextResponse.json({
       success: true,
       orderId: order.id,
-      confirmationCode,
-      finalTotal,
+      totalAmount: finalTotal,
+      paymentStatus,
     })
   } catch (error) {
     console.error("Error creating order:", error)
-    return NextResponse.json({ error: "Failed to create order" }, { status: 500 })
+    return NextResponse.json({ 
+      error: "Failed to create order", 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
@@ -204,59 +284,9 @@ export async function GET(request: Request) {
 
     console.log("Authenticated user:", { ...user })
 
-    // Ensure tables exist with updated schema
-    await sql`
-      CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT,
-        clerk_user_id TEXT,
-        customer_name VARCHAR(255) NOT NULL,
-        customer_email VARCHAR(255),
-        customer_phone VARCHAR(20) NOT NULL,
-        order_type VARCHAR(20) DEFAULT 'dine-in',
-        table_number INTEGER,
-        delivery_address TEXT,
-        total_amount DECIMAL(10,2) NOT NULL,
-        delivery_fee DECIMAL(10,2) DEFAULT 0,
-        final_total DECIMAL(10,2) NOT NULL,
-        special_instructions TEXT,
-        status VARCHAR(20) DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `
-
-    // Add new columns for Clerk support
-    await sql`
-      ALTER TABLE orders
-      ADD COLUMN IF NOT EXISTS clerk_user_id TEXT,
-      ADD COLUMN IF NOT EXISTS delivery_fee DECIMAL(10,2) DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS final_total DECIMAL(10,2) DEFAULT 0
-    `
-
-    // Also modify user_id to TEXT if it was INTEGER
-    try {
-      await sql`
-        ALTER TABLE orders
-        ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT
-      `
-    } catch (e) {
-      // Column might already be TEXT, ignore error
-    }
-
-    await sql`
-      CREATE TABLE IF NOT EXISTS order_items (
-        id SERIAL PRIMARY KEY,
-        order_id INTEGER NOT NULL,
-        menu_item_id INTEGER,
-        menu_item_name VARCHAR(255) NOT NULL,
-        quantity INTEGER NOT NULL,
-        unit_price DECIMAL(10,2) NOT NULL,
-        total_price DECIMAL(10,2) NOT NULL,
-        special_requests TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `
+    // Ensure database tables exist with proper schema
+    await ensureOrdersTableExists()
+    await ensureOrderItemsTableExists()
 
     // Find linked user
     const linkedUserId = await findLinkedUser(user.email, user.isClerkUser, user.userId)
@@ -269,16 +299,21 @@ export async function GET(request: Request) {
       orders = await sql`
         SELECT 
           o.*,
-          json_agg(
-            json_build_object(
-              'id', oi.id,
-              'menu_item_id', oi.menu_item_id,
-              'menu_item_name', oi.menu_item_name,
-              'quantity', oi.quantity,
-              'unit_price', oi.unit_price,
-              'total_price', oi.total_price,
-              'special_requests', oi.special_requests
-            ) ORDER BY oi.id
+          COALESCE(
+            json_agg(
+              CASE WHEN oi.id IS NOT NULL THEN
+                json_build_object(
+                  'id', oi.id,
+                  'menu_item_id', oi.menu_item_id,
+                  'menu_item_name', oi.menu_item_name,
+                  'quantity', oi.quantity,
+                  'unit_price', oi.unit_price,
+                  'total_price', oi.total_price,
+                  'special_requests', oi.special_requests
+                )
+              END ORDER BY oi.id
+            ) FILTER (WHERE oi.id IS NOT NULL), 
+            '[]'::json
           ) as items
         FROM orders o
         LEFT JOIN order_items oi ON o.id = oi.order_id
@@ -294,16 +329,21 @@ export async function GET(request: Request) {
       orders = await sql`
         SELECT 
           o.*,
-          json_agg(
-            json_build_object(
-              'id', oi.id,
-              'menu_item_id', oi.menu_item_id,
-              'menu_item_name', oi.menu_item_name,
-              'quantity', oi.quantity,
-              'unit_price', oi.unit_price,
-              'total_price', oi.total_price,
-              'special_requests', oi.special_requests
-            ) ORDER BY oi.id
+          COALESCE(
+            json_agg(
+              CASE WHEN oi.id IS NOT NULL THEN
+                json_build_object(
+                  'id', oi.id,
+                  'menu_item_id', oi.menu_item_id,
+                  'menu_item_name', oi.menu_item_name,
+                  'quantity', oi.quantity,
+                  'unit_price', oi.unit_price,
+                  'total_price', oi.total_price,
+                  'special_requests', oi.special_requests
+                )
+              END ORDER BY oi.id
+            ) FILTER (WHERE oi.id IS NOT NULL), 
+            '[]'::json
           ) as items
         FROM orders o
         LEFT JOIN order_items oi ON o.id = oi.order_id
@@ -317,7 +357,15 @@ export async function GET(request: Request) {
     }
 
     console.log(`Found ${orders.length} orders for user ${user.email}`)
-    return NextResponse.json(orders)
+    
+    // Clean up the orders data to ensure proper structure
+    const cleanOrders = orders.map(order => ({
+      ...order,
+      final_total: order.total_amount, // Ensure final_total is available for the frontend
+      items: Array.isArray(order.items) ? order.items : []
+    }))
+    
+    return NextResponse.json(cleanOrders)
   } catch (error) {
     console.error("Error fetching orders:", error)
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })

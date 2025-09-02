@@ -1,102 +1,96 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 
-/**
- * Ensure the tables required by the admin dashboard exist.
- * Using `IF NOT EXISTS` makes the operation idempotent and safe
- * to run on every request in ephemeral preview deployments.
- */
 async function ensureSchema() {
-  // ---- orders -----------------------------------------------------------
-  await sql`
-    CREATE TABLE IF NOT EXISTS orders (
-      id                     SERIAL PRIMARY KEY,
-      customer_name          VARCHAR(200) NOT NULL,
-      customer_email         VARCHAR(200),
-      customer_phone         VARCHAR(50)  NOT NULL,
-      order_type             VARCHAR(50)  DEFAULT 'dine-in',
-      table_number           INTEGER,
-      delivery_address       TEXT,
-      total_amount           DECIMAL(10,2) NOT NULL,
-      tax_amount             DECIMAL(10,2) DEFAULT 0,
-      delivery_fee           DECIMAL(10,2) DEFAULT 0,
-      final_total            DECIMAL(10,2) NOT NULL,
-      status                 VARCHAR(50)  DEFAULT 'pending',
-      special_instructions   TEXT,
-      estimated_completion_time TIMESTAMP,
-      created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT,
+        clerk_user_id TEXT,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_email VARCHAR(255),
+        customer_phone VARCHAR(20) NOT NULL,
+        order_type VARCHAR(20) DEFAULT 'dine-in',
+        payment_method VARCHAR(20) DEFAULT 'cod',
+        payment_id VARCHAR(255),
+        payment_status VARCHAR(20) DEFAULT 'pending',
+        table_number INTEGER,
+        delivery_address TEXT,
+        subtotal DECIMAL(10,2) DEFAULT 0,
+        delivery_fee DECIMAL(10,2) DEFAULT 0,
+        discount_amount DECIMAL(10,2) DEFAULT 0,
+        total_amount DECIMAL(10,2) NOT NULL,
+        coupon_code VARCHAR(50),
+        currency VARCHAR(3) DEFAULT 'AED',
+        special_instructions TEXT,
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `
+    await sql`
+      CREATE TABLE IF NOT EXISTS order_items (
+        id SERIAL PRIMARY KEY,
+        order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        menu_item_id INTEGER,
+        menu_item_name VARCHAR(255) NOT NULL,
+        quantity INTEGER NOT NULL,
+        unit_price DECIMAL(10,2) NOT NULL,
+        total_price DECIMAL(10,2) NOT NULL,
+        special_requests TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `
 
-  // ---- order_items ------------------------------------------------------
-  await sql`
-    CREATE TABLE IF NOT EXISTS order_items (
-      id              SERIAL PRIMARY KEY,
-      order_id        INTEGER REFERENCES orders(id) ON DELETE CASCADE,
-      menu_item_id    INTEGER,
-      menu_item_name  VARCHAR(200) NOT NULL,
-      quantity        INTEGER NOT NULL,
-      unit_price      DECIMAL(10,2) NOT NULL,
-      total_price     DECIMAL(10,2) NOT NULL,
-      special_requests TEXT,
-      created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `
+    try {
+      const columnExists = await sql`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'orders' AND column_name = 'estimated_completion_time'
+        )
+      `
+      
+      if (!columnExists[0].exists) {
+        await sql`ALTER TABLE orders ADD COLUMN estimated_completion_time TIMESTAMP`
+        console.log("Added estimated_completion_time column")
+      }
+    } catch (error) {
+      console.log("estimated_completion_time column might already exist or error adding:", error)
+    }
 
-  // ---- reservations (needed for relations elsewhere) --------------------
-  await sql`
-    CREATE TABLE IF NOT EXISTS reservations (
-      id                   SERIAL PRIMARY KEY,
-      customer_name        VARCHAR(200) NOT NULL,
-      customer_email       VARCHAR(200),
-      customer_phone       VARCHAR(50) NOT NULL,
-      party_size           INTEGER NOT NULL CHECK (party_size > 0),
-      reservation_date     DATE NOT NULL,
-      reservation_time     TIME NOT NULL,
-      status               VARCHAR(50) DEFAULT 'pending',
-      special_requests     TEXT,
-      table_preference     VARCHAR(100),
-      occasion             VARCHAR(100),
-      dietary_restrictions TEXT,
-      confirmation_code    VARCHAR(20) UNIQUE,
-      created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `
-
-  // ---- customers (optional but useful) ----------------------------------
-  await sql`
-    CREATE TABLE IF NOT EXISTS customers (
-      id                 SERIAL PRIMARY KEY,
-      name               VARCHAR(200) NOT NULL,
-      email              VARCHAR(200) UNIQUE,
-      phone              VARCHAR(50),
-      date_of_birth      DATE,
-      preferences        TEXT,
-      dietary_restrictions TEXT,
-      total_orders       INTEGER DEFAULT 0,
-      total_spent        DECIMAL(10,2) DEFAULT 0,
-      last_visit         TIMESTAMP,
-      created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `
+    console.log("Schema ensured successfully")
+  } catch (error) {
+    console.error("Error ensuring schema:", error)
+    throw error
+  }
 }
 
-/**
- * GET /api/admin/orders
- * Returns all orders with their associated items.
- */
 export async function GET() {
   try {
-    // 1️⃣  Make sure schema is present.
+    console.log("Fetching orders for admin...")
+    
     await ensureSchema()
 
-    // 2️⃣  Fetch orders with aggregated items.
     const orders = await sql`
       SELECT
-        o.*,
+        o.id,
+        o.customer_name,
+        o.customer_email,
+        o.customer_phone,
+        COALESCE(o.order_type, 'dine-in') as order_type,
+        COALESCE(o.payment_method, 'cod') as payment_method,
+        o.table_number,
+        o.delivery_address,
+        o.special_instructions as customer_address,
+        COALESCE(o.subtotal, 0) as total_amount,
+        0 as tax_amount,
+        COALESCE(o.delivery_fee, 0) as delivery_fee,
+        o.total_amount as final_total,
+        o.status,
+        o.special_instructions,
+        o.created_at,
+        o.updated_at,
         COALESCE(
           json_agg(
             json_build_object(
@@ -109,7 +103,7 @@ export async function GET() {
               'special_requests', oi.special_requests
             ) ORDER BY oi.id
           ) FILTER (WHERE oi.id IS NOT NULL),
-          '[]'
+          '[]'::json
         ) AS items
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -117,9 +111,44 @@ export async function GET() {
       ORDER BY o.created_at DESC
     `
 
-    return NextResponse.json(orders)
+    const formattedOrders = orders.map(order => ({
+      id: parseInt(order.id),
+      customer_name: order.customer_name,
+      customer_email: order.customer_email,
+      customer_phone: order.customer_phone,
+      order_type: order.order_type,
+      payment_method: order.payment_method,
+      table_number: order.table_number,
+      delivery_address: order.delivery_address,
+      customer_address: order.customer_address,
+      total_amount: parseFloat(order.total_amount || '0'),
+      tax_amount: parseFloat(order.tax_amount || '0'),
+      delivery_fee: parseFloat(order.delivery_fee || '0'),
+      final_total: parseFloat(order.final_total || '0'),
+      status: order.status,
+      special_instructions: order.special_instructions,
+      created_at: order.created_at,
+      updated_at: order.updated_at,
+      items: Array.isArray(order.items) ? order.items.map((item: any) => ({
+        id: parseInt(item.id || '0'),
+        menu_item_id: parseInt(item.menu_item_id || '0'),
+        menu_item_name: item.menu_item_name,
+        quantity: parseInt(item.quantity || '0'),
+        unit_price: parseFloat(item.unit_price || '0'),
+        total_price: parseFloat(item.total_price || '0'),
+        special_requests: item.special_requests
+      })) : []
+    }))
+
+    return NextResponse.json(formattedOrders, { status: 200 })
   } catch (error) {
     console.error("Error fetching orders:", error)
-    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
+    return NextResponse.json(
+      { 
+        error: "Failed to fetch orders", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      }, 
+      { status: 500 }
+    )
   }
 }

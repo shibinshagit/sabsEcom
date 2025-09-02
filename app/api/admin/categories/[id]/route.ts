@@ -43,7 +43,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   try {
     const id = params.id
 
-    // Check if category has menu items
     const menuItems = await sql`
       SELECT COUNT(*) as count FROM menu_items WHERE category_id = ${id}
     `

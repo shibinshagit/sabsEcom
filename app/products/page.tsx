@@ -1,29 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useDispatch, useSelector } from "react-redux"
-import type { AppDispatch, RootState } from "@/lib/store"
+import { Suspense, useEffect } from "react"
+import { useDispatch } from "react-redux"
+import type { AppDispatch } from "@/lib/store"
 import { fetchProducts, fetchCategories, setSelectedCategory } from "@/lib/store/slices/productSlice"
-
 import { useShop } from "@/lib/contexts/shop-context"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { useSearchParams } from "next/navigation"
-import OfferSection from "@/components/sections/offer-section"
 import NewUserSpinnerSection from "@/components/sections/new-user-spinner-section"
 import Services from "@/components/sections/services"
 import ProductList from "@/components/sections/product-list"
 import { useAuth } from "@/lib/contexts/auth-context"
 
-export default function ProductsPage() {
-
+function ProductsContent() {
   const { isAuthenticated } = useAuth() 
-
   const dispatch = useDispatch<AppDispatch>()
-
   const searchParams = useSearchParams()
   const categoryFromUrl = searchParams.get("category")
-
   const { shop } = useShop();
 
   // Theme colors
@@ -56,13 +50,18 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       <Navbar />
-      <OfferSection />
-      {!isAuthenticated && <NewUserSpinnerSection />}
-      <Services />
       <ProductList />
+       <Services />
       <Footer />
     </div>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div>Loading products...</div>}>
+      <ProductsContent />
+    </Suspense>
   )
 }

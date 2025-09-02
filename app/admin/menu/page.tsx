@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,16 +12,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store } from "lucide-react"
+import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store, DollarSign } from "lucide-react"
 import Image from "next/image"
-import ImageUpload from "@/components/ui/image-upload"
+import MultipleImageUpload from "@/components/ui/image-upload"
 
+interface ProductVariant {
+  id: number
+  name: string // 
+  price_aed: number
+  price_inr: number
+  discount_aed?: number
+  discount_inr?: number
+  available_aed: boolean
+  available_inr: boolean
+}
 interface Product {
   id: number
   name: string
   description: string
-  price: number
-  image_url: string
+  variants: ProductVariant[]
+  image_urls: string[] // Changed from image_url to image_urls array
   category_id: number
   category_name: string
   is_available: boolean
@@ -40,7 +49,7 @@ interface Product {
   color: string
   stock_quantity: number
   sku: string
-  shop_category: string
+  shop_category: "A" | "B" | "Both"
   created_at: string
 }
 
@@ -65,36 +74,49 @@ export default function ProductManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedShop, setSelectedShop] = useState<string>("all")
-  
-  // Available shops
-  const shops: Shop[] = [
-    { id: "A", name: "Shop A", label: "Shop A" },
-    { id: "B", name: "Shop B", label: "Shop B" }
-  ]
 
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: 0,
-    image_url: "",
-    category_id: 0,
-    shop_category: "",
-    is_available: true,
-    is_featured: false,
-    is_new: false,
-    new_until_date: "",
-    features: "",
-    specifications_text: "",
-    warranty_months: 12,
-    brand: "",
-    model: "",
-    condition_type: "new",
-    warranty_period: 12,
-    storage_capacity: "",
-    color: "",
-    stock_quantity: 1,
-    sku: "",
-  })
+  // Available shops
+const shops: Shop[] = [
+  { id: "A", name: "Shop A", label: "Shop A" },
+  { id: "B", name: "Shop B", label: "Shop B" },
+  { id: "Both", name: "Both Shops", label: "Both Shops" }
+];
+
+
+const [formData, setFormData] = useState({
+  name: "",
+  description: "",
+  image_urls: [] as string[], // Changed from image_url to image_urls array
+  category_id: 0,
+  shop_category: "Both" as "A" | "B" | "Both",
+  is_available: true,
+  is_featured: false,
+  is_new: false,
+  new_until_date: "",
+  features: "",
+  specifications_text: "",
+  warranty_months: 12,
+  brand: "",
+  model: "",
+  variants: [
+    {
+      id: Date.now(),
+      name: "",
+      price_aed: 0,
+      price_inr: 0,
+      discount_aed: 0,
+      discount_inr: 0,
+      available_aed: true,
+      available_inr: true,
+    }
+  ],
+  condition_type: "new",
+  warranty_period: 12,
+  storage_capacity: "",
+  color: "",
+  stock_quantity: 1,
+  sku: "",
+})
 
   useEffect(() => {
     fetchProducts()
@@ -135,67 +157,76 @@ export default function ProductManagement() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+// Updated handleSubmit function with better validation
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
 
-    // Validate required fields before submitting
-    if (!formData.name.trim()) {
-      alert("Product name is required")
-      return
-    }
-
-    if (!formData.price || formData.price <= 0) {
-      alert("Valid price is required")
-      return
-    }
-
-    if (!formData.category_id || formData.category_id === 0) {
-      alert("Category is required")
-      return
-    }
-
-    if (!formData.shop_category) {
-      alert("Shop selection is required")
-      return
-    }
-
-    try {
-      const url = editingItem ? `/api/admin/products/${editingItem.id}` : "/api/admin/products"
-      const method = editingItem ? "PUT" : "POST"
-
-      // Generate SKU if not provided
-      const sku = formData.sku || `${formData.shop_category}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
-
-      const payload = {
-        ...formData,
-        sku,
-        features: formData.features
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Request failed")
-      }
-
-      await fetchProducts()
-      setIsDialogOpen(false)
-      resetForm()
-      alert(editingItem ? "Product updated successfully!" : "Product added successfully!")
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error occurred"
-      alert(`Failed to save product: ${message}`)
-      console.error("Failed to save product:", error)
-    }
+  // Validate required fields
+  if (!formData.name.trim()) {
+    alert("Product name is required")
+    return
   }
+
+  if (!formData.category_id || formData.category_id === 0) {
+    alert("Category is required")
+    return
+  }
+
+  if (!formData.shop_category) {
+    alert("Shop selection is required")
+    return
+  }
+
+  // Validate variants
+  if (!formData.variants || formData.variants.length === 0) {
+    alert("At least one variant is required")
+    return
+  }
+
+  // Validate that each variant has a name
+  const hasInvalidVariant = formData.variants.some(variant => !variant.name.trim())
+  if (hasInvalidVariant) {
+    alert("All variants must have a name")
+    return
+  }
+
+  try {
+    const url = editingItem ? `/api/admin/products/${editingItem.id}` : "/api/admin/products"
+    const method = editingItem ? "PUT" : "POST"
+
+    // Generate SKU if not provided
+    const sku = formData.sku || `${formData.shop_category}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+
+    const payload = {
+      ...formData,
+      sku,
+      features: formData.features
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || "Request failed")
+    }
+
+    await fetchProducts()
+    setIsDialogOpen(false)
+    resetForm()
+    alert(editingItem ? "Product updated successfully!" : "Product added successfully!")
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error occurred"
+    alert(`Failed to save product: ${message}`)
+    console.error("Failed to save product:", error)
+  }
+}
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this product?")) return
@@ -217,65 +248,134 @@ export default function ProductManagement() {
     }
   }
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      price: 0,
-      image_url: "",
-      category_id: 0,
-      shop_category: "",
-      is_available: true,
-      is_featured: false,
-      is_new: false,
-      new_until_date: "",
-      features: "",
-      specifications_text: "",
-      warranty_months: 12,
-      brand: "",
-      model: "",
-      condition_type: "new",
-      warranty_period: 12,
-      storage_capacity: "",
-      color: "",
-      stock_quantity: 1,
-      sku: "",
-    })
-    setEditingItem(null)
-  }
+const resetForm = () => {
+  setFormData({
+    name: "",
+    description: "",
+    image_urls: [], // Changed from image_url to empty array
+    category_id: 0,
+    shop_category: "Both",
+    is_available: true,
+    is_featured: false,
+    is_new: false,
+    new_until_date: "",
+    features: "",
+    specifications_text: "",
+    warranty_months: 12,
+    brand: "",
+    model: "",
+    condition_type: "new",
+    warranty_period: 12,
+    storage_capacity: "",
+    color: "",
+    stock_quantity: 1,
+    sku: "",
+    variants: [
+      {
+        id: Date.now(),
+        name: "",
+        price_aed: 0,
+        price_inr: 0,
+        discount_aed: 0,
+        discount_inr: 0,
+        available_aed: true,
+        available_inr: true,
+      }
+    ]
+  })
+  setEditingItem(null)
+}
 
-  const openEditDialog = (item: Product) => {
-    setEditingItem(item)
-    setFormData({
-      name: item.name,
-      description: item.description || "",
-      price: item.price,
-      image_url: item.image_url || "",
-      category_id: item.category_id,
-      shop_category: item.shop_category || "",
-      is_available: item.is_available,
-      is_featured: item.is_featured,
-      features: item.features?.join(", ") || "",
-      specifications_text: item.specifications_text || "",
-      warranty_months: item.warranty_months || 12,
-      brand: item.brand || "",
-      model: item.model || "",
-      condition_type: item.condition_type || "new",
-      warranty_period: item.warranty_period || 12,
-      storage_capacity: item.storage_capacity || "",
-      color: item.color || "",
-      stock_quantity: item.stock_quantity || 1,
-      sku: item.sku || "",
-      is_new: item.is_new || false,
-      new_until_date: item.new_until_date || "",
-    })
-    setIsDialogOpen(true)
-  }
+const openEditDialog = (item: Product) => {
+  setEditingItem(item)
+  setFormData({
+    name: item.name,
+    description: item.description || "",
+    image_urls: Array.isArray(item.image_urls) ? item.image_urls : 
+                (item.image_urls ? [item.image_urls as any] : []), // Handle backward compatibility
+    category_id: item.category_id,
+    shop_category: item.shop_category || "Both",
+    is_available: item.is_available,
+    is_featured: item.is_featured,
+    features: item.features?.join(", ") || "",
+    specifications_text: item.specifications_text || "",
+    warranty_months: item.warranty_months || 12,
+    brand: item.brand || "",
+    model: item.model || "",
+    condition_type: item.condition_type || "new",
+    warranty_period: item.warranty_period || 12,
+    storage_capacity: item.storage_capacity || "",
+    color: item.color || "",
+    stock_quantity: item.stock_quantity || 1,
+    sku: item.sku || "",
+    is_new: item.is_new || false,
+    new_until_date: item.new_until_date || "",
+    variants: Array.isArray(item.variants) && item.variants.length > 0 
+    ? item.variants 
+    : [{
+        id: Date.now(),
+        name: "",
+        price_aed: 0,
+        price_inr: 0,
+        discount_aed: 0,
+        discount_inr: 0,
+        available_aed: true,
+        available_inr: true,
+      }]
+  })
+  setIsDialogOpen(true)
+}
 
   const openAddDialog = () => {
     resetForm()
     setIsDialogOpen(true)
   }
+
+  // Format price display based on currency
+// Fixed formatPrice function
+const formatPrice = (product: Product) => {
+  // Get the first variant or fallback
+  const defaultVariant = Array.isArray(product.variants) && product.variants.length > 0
+    ? product.variants[0] // Get first variant instead of returning the array
+    : null;
+
+  if (defaultVariant) {
+    const { price_aed, price_inr } = defaultVariant;
+    // Use product.default_currency if available, fallback to "AED"
+    const defaultCurrency = (product as any).default_currency || "AED";
+
+    if (price_aed && price_inr) {
+      return (
+        <div className="flex flex-col">
+          <span className={`font-semibold ${defaultCurrency === 'AED' ? 'text-cyan-400' : ''}`}>
+            AED {price_aed}
+            {defaultCurrency === 'AED' && (
+              <Badge variant="outline" className="ml-1 text-xs">
+                Default
+              </Badge>
+            )}
+          </span>
+          <span className={`text-sm text-gray-400 ${defaultCurrency === 'INR' ? 'text-cyan-400' : ''}`}>
+            ₹ {price_inr}
+            {defaultCurrency === 'INR' && (
+              <Badge variant="outline" className="ml-1 text-xs">
+                Default
+              </Badge>
+            )}
+          </span>
+        </div>
+      );
+    } else if (price_aed) {
+      return <span className="font-semibold">AED {price_aed}</span>;
+    } else if (price_inr) {
+      return <span className="font-semibold">₹ {price_inr}</span>;
+    }
+  }
+  
+  // Fallback for legacy products or those without variants
+  return <span className="font-semibold text-gray-400">No price set</span>;
+};
+
 
   const filteredItems = products.filter((item) => {
     const matchesSearch =
@@ -340,11 +440,12 @@ export default function ProductManagement() {
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingItem ? "Edit Product" : "Add New Product"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Product Name *</Label>
@@ -357,65 +458,55 @@ export default function ProductManagement() {
                   />
                 </div>
 
+              </div>
+
+              {/* Shop and Category Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="price">Price ($) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                    className="bg-gray-700 border-gray-600 text-white"
+                  <Label htmlFor="shop_category">Shop *</Label>
+                  <Select
+                    value={formData.shop_category}
+                    onValueChange={(value) => setFormData({ ...formData, shop_category: value })}
                     required
-                  />
+                  >
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select a shop (required)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-700 border-gray-600">
+                      {shops.map((shop) => (
+                        <SelectItem key={shop.id} value={shop.id} className="text-white">
+                          <div className="flex items-center space-x-2">
+                            <Store className="w-4 h-4" />
+                            <span>{shop.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="category">Category *</Label>
+                  <Select
+                    value={formData.category_id.toString()}
+                    onValueChange={(value) => setFormData({ ...formData, category_id: Number(value) })}
+                    required
+                  >
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select a category (required)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-700 border-gray-600">
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()} className="text-white">
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              {/* Shop Selection - Required field */}
-              <div>
-                <Label htmlFor="shop_category">Shop *</Label>
-                <Select
-                  value={formData.shop_category}
-                  onValueChange={(value) => setFormData({ ...formData, shop_category: value })}
-                  required
-                >
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                    <SelectValue placeholder="Select a shop (required)" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
-                    {shops.map((shop) => (
-                      <SelectItem key={shop.id} value={shop.id} className="text-white">
-                        <div className="flex items-center space-x-2">
-                          <Store className="w-4 h-4" />
-                          <span>{shop.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category_id.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, category_id: Number(value) })}
-                  required
-                >
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                    <SelectValue placeholder="Select a category (required)" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()} className="text-white">
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
+              {/* Description */}
               <div>
                 <Label htmlFor="description">Description</Label>
                 <Textarea
@@ -426,13 +517,18 @@ export default function ProductManagement() {
                   rows={3}
                 />
               </div>
+              {/*  */}
 
-              <ImageUpload
-                value={formData.image_url}
-                onChange={(url) => setFormData({ ...formData, image_url: url })}
-                label="Product Image"
-              />
+<MultipleImageUpload
+  value={formData.image_urls}
+  onChange={(urls) => setFormData({ ...formData, image_urls: urls })}
+  label="Product Images"
+  maxImages={2}
+/>
 
+{/* Updated table cell for images - replace the existing image cell */}
+
+              {/* Brand and Model */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="brand">Brand</Label>
@@ -457,6 +553,7 @@ export default function ProductManagement() {
                 </div>
               </div>
 
+              {/* Condition and Color */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="condition_type">Condition</Label>
@@ -487,6 +584,7 @@ export default function ProductManagement() {
                 </div>
               </div>
 
+              {/* Warranty and Stock */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="warranty_months">Expiry (months)</Label>
@@ -513,6 +611,7 @@ export default function ProductManagement() {
                 </div>
               </div>
 
+              {/* SKU */}
               <div>
                 <Label htmlFor="sku">SKU (Leave empty to auto-generate)</Label>
                 <Input
@@ -524,6 +623,7 @@ export default function ProductManagement() {
                 />
               </div>
 
+              {/* Features */}
               <div>
                 <Label htmlFor="features">Features (comma separated)</Label>
                 <Textarea
@@ -536,6 +636,7 @@ export default function ProductManagement() {
                 />
               </div>
 
+              {/* Specifications */}
               <div>
                 <Label htmlFor="specifications_text">Specifications</Label>
                 <Textarea
@@ -548,48 +649,275 @@ export default function ProductManagement() {
                 />
               </div>
 
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_available"
-                    checked={formData.is_available}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
-                  />
-                  <Label htmlFor="is_available">Available</Label>
+              {/* Enhanced Product Settings Toggles */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  Product Settings
+                  <div className="flex-1 border-t border-gray-600 ml-4"></div>
+                </h4>
+                
+                {/* Available Toggle */}
+                <div className="p-4 bg-gray-900/50 rounded-xl border-2 border-gray-700 hover:border-gray-600 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Label htmlFor="is_available" className="text-white font-semibold text-base cursor-pointer">
+                        Available
+                      </Label>
+                      <Badge 
+                        className={`text-xs font-bold px-3 py-1 ${
+                          formData.is_available 
+                            ? 'bg-green-500 text-white' 
+                            : 'bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        {formData.is_available ? 'ON' : 'OFF'}
+                      </Badge>
+                    </div>
+                    <Switch
+                      id="is_available"
+                      checked={formData.is_available}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
+                      className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-600 scale-125"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-400 mt-2 ml-0">
+                    {formData.is_available ? "Product is available for purchase" : "Product is not available"}
+                  </p>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_featured"
-                    checked={formData.is_featured}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
-                  />
-                  <Label htmlFor="is_featured">Featured</Label>
+                {/* Featured Toggle */}
+                <div className="p-4 bg-gray-900/50 rounded-xl border-2 border-gray-700 hover:border-gray-600 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Label htmlFor="is_featured" className="text-white font-semibold text-base cursor-pointer">
+                        Featured
+                      </Label>
+                      <Badge 
+                        className={`text-xs font-bold px-3 py-1 ${
+                          formData.is_featured 
+                            ? 'bg-amber-500 text-black' 
+                            : 'bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        {formData.is_featured ? 'ON' : 'OFF'}
+                      </Badge>
+                    </div>
+                    <Switch
+                      id="is_featured"
+                      checked={formData.is_featured}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                      className="data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-gray-600 scale-125"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-400 mt-2 ml-0">
+                    {formData.is_featured ? "Product will be highlighted as featured" : "Regular product"}
+                  </p>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_new"
-                    checked={formData.is_new}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_new: checked })}
-                  />
-                  <Label htmlFor="is_new">New Product</Label>
+                {/* New Product Toggle */}
+                <div className="p-4 bg-gray-900/50 rounded-xl border-2 border-gray-700 hover:border-gray-600 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Label htmlFor="is_new" className="text-white font-semibold text-base cursor-pointer">
+                        New Product
+                      </Label>
+                      <Badge 
+                        className={`text-xs font-bold px-3 py-1 ${
+                          formData.is_new 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        {formData.is_new ? 'ON' : 'OFF'}
+                      </Badge>
+                    </div>
+                    <Switch
+                      id="is_new"
+                      checked={formData.is_new}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_new: checked })}
+                      className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-600 scale-125"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-400 mt-2 ml-0">
+                    {formData.is_new ? "Product will be marked as new arrival" : "Not a new product"}
+                  </p>
                 </div>
               </div>
 
+              {/* New Until Date */}
               {formData.is_new && (
-                <div>
-                  <Label htmlFor="new_until_date">New Until Date</Label>
+                <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
+                  <Label htmlFor="new_until_date" className="text-blue-300 font-medium">New Until Date</Label>
                   <Input
                     id="new_until_date"
                     type="date"
                     value={formData.new_until_date}
                     onChange={(e) => setFormData({ ...formData, new_until_date: e.target.value })}
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className="bg-gray-700 border-gray-600 text-white mt-2"
                   />
+                  <p className="text-xs text-blue-400 mt-1">Set when this product should no longer be marked as "new"</p>
                 </div>
               )}
 
+              {/* Product Variants Section */}
+           <div className="space-y-6">
+  <h4 className="text-xl font-bold text-white">Product Variants</h4>
+
+  {formData.variants.map((variant, idx) => (
+    <div
+      key={idx}
+      className="border border-gray-700 p-5 rounded-xl bg-gray-900/40 shadow-md space-y-6"
+    >
+      {/* Variant Header */}
+      <div className="flex items-center justify-between">
+        <h5 className="text-lg font-semibold text-white">
+          Variant {idx + 1}
+        </h5>
+        <Button
+          type="button"
+          onClick={() => {
+            const variants = formData.variants.filter((_, vIdx) => vIdx !== idx)
+            setFormData({ ...formData, variants })
+          }}
+          className="bg-red-500 hover:bg-red-600"
+        >
+          Remove
+        </Button>
+      </div>
+
+      {/* Variant Name */}
+      <div>
+        <Label>Variant Name *</Label>
+        <Input
+          value={variant.name}
+          onChange={(e) => {
+            const variants = [...formData.variants]
+            variants[idx].name = e.target.value
+            setFormData({ ...formData, variants })
+          }}
+          placeholder="e.g. 60g, 90g"
+          required
+        />
+      </div>
+
+      {/* Price Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* AED Price */}
+        <div>
+          <Label>AED Price</Label>
+          <Input
+            type="number"
+            value={variant.price_aed}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].price_aed = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+
+        {/* AED Discount */}
+        <div>
+          <Label>AED Discount</Label>
+          <Input
+            type="number"
+            value={variant.discount_aed}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].discount_aed = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+
+        {/* AED Available */}
+        <div className="flex items-center gap-3">
+          <Label>Available in AED</Label>
+          <Switch
+            checked={variant.available_aed}
+            onCheckedChange={(checked) => {
+              const variants = [...formData.variants]
+              variants[idx].available_aed = checked
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+      </div>
+
+      {/* INR Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* INR Price */}
+        <div>
+          <Label>INR Price</Label>
+          <Input
+            type="number"
+            value={variant.price_inr}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].price_inr = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+
+        {/* INR Discount */}
+        <div>
+          <Label>INR Discount</Label>
+          <Input
+            type="number"
+            value={variant.discount_inr}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].discount_inr = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+
+        {/* INR Available */}
+        <div className="flex items-center gap-3">
+          <Label>Available in INR</Label>
+          <Switch
+            checked={variant.available_inr}
+            onCheckedChange={(checked) => {
+              const variants = [...formData.variants]
+              variants[idx].available_inr = checked
+              setFormData({ ...formData, variants })
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  ))}
+
+  {/* Add Variant Button */}
+  <Button
+    type="button"
+    onClick={() =>
+      setFormData({
+        ...formData,
+        variants: [
+          ...formData.variants,
+          {
+            id: Date.now(),
+            name: "",
+            price_aed: 0,
+            price_inr: 0,
+            discount_aed: 0,
+            discount_inr: 0,
+            available_aed: true,
+            available_inr: true,
+          },
+        ],
+      })
+    }
+    className="bg-green-500 hover:bg-green-600 px-6 py-2 rounded-lg"
+  >
+    ➕ Add Variant
+  </Button>
+</div>
+
+              {/* Form Actions */}
               <div className="flex space-x-2 pt-4">
                 <Button
                   type="button"
@@ -722,7 +1050,9 @@ export default function ProductManagement() {
                       <span className="text-gray-300">{item.category_name}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-white font-semibold">${item.price}</span>
+                      <div className="text-white">
+                        {formatPrice(item)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className="text-gray-300">{item.stock_quantity || 0}</span>

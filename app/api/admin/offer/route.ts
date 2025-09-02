@@ -4,10 +4,8 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 import { ensureOfferTypeSupport } from "@/lib/migrations/ensure-offer-type";
 
-// GET - Fetch all offers
 export async function GET() {
   try {
-    // Ensure the database schema is up to date
     await ensureOfferTypeSupport();
 
     const offers = await sql`
@@ -25,7 +23,6 @@ export async function GET() {
   }
 }
 
-// POST - Create a new offer
 export async function POST(request: Request) {
   try {
     const { title, startDate, endDate, offers } = await request.json();
@@ -37,7 +34,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate offer structure
     const invalidOffers = offers.filter((offer: any) => 
       !offer.value || 
       !offer.type || 
@@ -51,7 +47,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate percentage values (1-100)
     const percentageOffers = offers.filter((offer: any) => offer.type === 'percentage');
     const invalidPercentages = percentageOffers.filter((offer: any) => {
       const value = parseFloat(offer.value);
@@ -65,7 +60,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate cash values (positive numbers)
     const cashOffers = offers.filter((offer: any) => offer.type === 'cash');
     const invalidCashValues = cashOffers.filter((offer: any) => {
       const value = parseFloat(offer.value);
@@ -81,10 +75,8 @@ export async function POST(request: Request) {
 
     console.log("Creating offer with data:", { title, startDate, endDate, offers });
 
-    // Ensure the database schema is up to date
     await ensureOfferTypeSupport();
 
-    // Determine the primary offer type for this offer set
     const hasPercentage = offers.some((offer: any) => offer.type === 'percentage');
     const hasCash = offers.some((offer: any) => offer.type === 'cash');
     const primaryOfferType = hasPercentage && hasCash ? 'mixed' : 

@@ -4,7 +4,10 @@ interface Product {
   id: number
   name: string
   description: string
-  price: number
+  price: number // Keep original for backwards compatibility
+  price_aed: number | null
+  price_inr: number | null
+  primary_currency: 'AED' | 'INR'
   image_url: string
   category_id: number
   category_name: string
@@ -23,6 +26,7 @@ interface Product {
   color: string
   stock_quantity: number
   sku: string
+  shop_category: string
   created_at: string
 }
 

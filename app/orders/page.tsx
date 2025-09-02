@@ -10,7 +10,6 @@ import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat } from "lucide
 import Image from "next/image"
 import { useAuth } from "@/lib/contexts/auth-context"
 
-// Utility: safely format numeric or string values coming from the API
 function formatMoney(value: unknown) {
   const num = typeof value === "number" ? value : Number.parseFloat(String(value ?? 0))
   return num.toFixed(2)
@@ -29,6 +28,7 @@ interface Order {
   status: string
   order_type: string
   customer_name: string
+  payment_method:string
   total_amount: number | string
   delivery_fee: number | string
   final_total: number | string
@@ -44,7 +44,6 @@ export default function OrdersPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push("/products")
@@ -63,7 +62,6 @@ export default function OrdersPage() {
       const response = await fetch("/api/orders")
       
       if (response.status === 401) {
-        // User is not authenticated, redirect to login
         router.push("/products")
         return
       }
@@ -161,7 +159,6 @@ export default function OrdersPage() {
     )
   }
 
-  // Don't render if not authenticated (will redirect)
   if (!isAuthenticated) {
     return null
   }
@@ -189,7 +186,7 @@ export default function OrdersPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative h-64 bg-black flex items-center justify-center">
+      {/* <section className="relative h-64 bg-black flex items-center justify-center">
         <div className="absolute inset-0">
           <Image
             src="/placeholder.svg?height=400&width=1200"
@@ -202,7 +199,7 @@ export default function OrdersPage() {
           <h1 className="font-playfair text-5xl font-bold text-white mb-4">My Orders</h1>
           <p className="text-xl text-gray-200">Track your order history and current status</p>
         </div>
-      </section>
+      </section> */}
 
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="mb-8">
@@ -257,7 +254,7 @@ export default function OrdersPage() {
                   </div>
                   <div className="text-sm text-gray-600">
                     <p>
-                      {order.order_type} • Placed on {new Date(order.created_at).toLocaleDateString()} at{" "}
+                      {order.payment_method} • Placed on {new Date(order.created_at).toLocaleDateString()} at{" "}
                       {new Date(order.created_at).toLocaleTimeString([], {
                         hour: "numeric",
                         minute: "2-digit",
