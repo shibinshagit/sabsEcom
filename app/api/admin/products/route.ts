@@ -103,11 +103,17 @@ export async function POST(request: Request) {
     // Generate SKU if not provided
     const finalSku = sku || `${shop_category}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
 
-    // Properly format arrays for PostgreSQL
+    // Prepare arrays - ensure they are proper JavaScript arrays
     const imageUrlsArray = Array.isArray(image_urls) ? image_urls.filter(url => url && url.trim()) : []
-    const featuresArray = Array.isArray(features) ? features.filter(f => f && f.trim()) : []
+    const featuresArray = Array.isArray(features) 
+      ? features.filter(f => f && f.trim()) 
+      : (typeof features === 'string' 
+          ? features.split(',').map(f => f.trim()).filter(Boolean)
+          : [])
 
-    // Create product - Fixed array handling for PostgreSQL
+    console.log('Arrays being inserted:', { imageUrlsArray, featuresArray }) // Debug log
+
+    // Create product with proper handling for mixed column types
     const [product] = await sql`
       INSERT INTO products (
         name, description, image_urls, category_id, shop_category,
@@ -117,14 +123,14 @@ export async function POST(request: Request) {
       ) VALUES (
         ${name}, 
         ${description || ''}, 
-        ${sql.array(imageUrlsArray)}, 
+        ${JSON.stringify(imageUrlsArray)}, 
         ${category_id}, 
         ${shop_category},
         ${is_available ?? true}, 
         ${is_featured ?? false}, 
         ${is_new ?? false}, 
         ${new_until_date || null}, 
-        ${sql.array(featuresArray)}, 
+        ${featuresArray}, 
         ${specifications_text || ''},
         ${warranty_months || 12}, 
         ${brand || ''}, 

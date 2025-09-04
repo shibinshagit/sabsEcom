@@ -992,7 +992,7 @@ const formatPrice = (product: Product) => {
         </CardContent>
       </Card>
 
-      {/* Products Items Table */}
+{/* Enhanced Products Table */}
       <Card className="bg-gray-800/50 border-gray-700">
         <CardHeader>
           <CardTitle className="text-white">Products Items ({filteredItems.length})</CardTitle>
@@ -1002,87 +1002,226 @@ const formatPrice = (product: Product) => {
             <Table>
               <TableHeader>
                 <TableRow className="border-gray-700">
-                  <TableHead className="text-gray-300">Image</TableHead>
-                  <TableHead className="text-gray-300">Name</TableHead>
-                  <TableHead className="text-gray-300">Shop</TableHead>
-                  <TableHead className="text-gray-300">Category</TableHead>
-                  <TableHead className="text-gray-300">Price</TableHead>
-                  <TableHead className="text-gray-300">Stock</TableHead>
-                  <TableHead className="text-gray-300">Status</TableHead>
+                  <TableHead className="text-gray-300">Images</TableHead>
+                  <TableHead className="text-gray-300">Product Details</TableHead>
+                  <TableHead className="text-gray-300">Shop & Category</TableHead>
+                  <TableHead className="text-gray-300">Variants & Pricing</TableHead>
+                  <TableHead className="text-gray-300">Stock & SKU</TableHead>
+                  <TableHead className="text-gray-300">Status & Features</TableHead>
                   <TableHead className="text-gray-300">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredItems.map((item) => (
                   <TableRow key={item.id} className="border-gray-700">
+                    {/* Images Column */}
                     <TableCell>
-                      <div className="relative w-12 h-12 rounded-lg overflow-hidden">
-                        {item.image_url ? (
-                          <Image
-                            src={item.image_url}
-                            alt={item.name}
-                            fill
-                            className="object-cover"
-                          />
+                      <div className="flex flex-col space-y-2">
+                        {item.image_urls && Array.isArray(item.image_urls) && item.image_urls.length > 0 ? (
+                          <div className="flex space-x-1">
+                            {item.image_urls.slice(0, 2).map((url, index) => (
+                              <div key={index} className="relative w-12 h-12 rounded-lg overflow-hidden">
+                                <Image
+                                  src={url}
+                                  alt={`${item.name} ${index + 1}`}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ))}
+                            {item.image_urls.length > 2 && (
+                              <div className="w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center">
+                                <span className="text-xs text-gray-300">+{item.image_urls.length - 2}</span>
+                              </div>
+                            )}
+                          </div>
                         ) : (
-                          <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                          <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
                             <ImageIcon className="w-6 h-6 text-gray-400" />
                           </div>
                         )}
                       </div>
                     </TableCell>
+
+                    {/* Product Details Column */}
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <div>
-                          <span className="text-white font-medium">{item.name}</span>
-                          {item.is_featured && <Star className="w-4 h-4 text-amber-400 inline ml-2" />}
-                          {item.description && <p className="text-gray-400 text-sm line-clamp-1">{item.description}</p>}
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-white font-semibold text-sm">{item.name}</span>
+                          {item.is_featured && <Star className="w-4 h-4 text-amber-400" />}
+                        </div>
+                        
+                        {item.brand && (
+                          <div className="text-xs text-gray-400">
+                            <span className="font-medium">Brand:</span> {item.brand}
+                          </div>
+                        )}
+                        
+                        {item.model && (
+                          <div className="text-xs text-gray-400">
+                            <span className="font-medium">Model:</span> {item.model}
+                          </div>
+                        )}
+                        
+                        {item.color && (
+                          <div className="text-xs text-gray-400">
+                            <span className="font-medium">Color:</span> {item.color}
+                          </div>
+                        )}
+                        
+                        {item.description && (
+                          <p className="text-gray-400 text-xs line-clamp-2 max-w-48">{item.description}</p>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    {/* Shop & Category Column */}
+                    <TableCell>
+                      <div className="space-y-2">
+                        <Badge variant="outline" className="border-cyan-500 text-cyan-400">
+                          <Store className="w-3 h-3 mr-1" />
+                          Shop {item.shop_category}
+                        </Badge>
+                        <div className="text-sm text-gray-300">{item.category_name}</div>
+                        <div className="text-xs text-gray-400">
+                          Condition: <span className="capitalize">{item.condition_type}</span>
                         </div>
                       </div>
                     </TableCell>
+
+                    {/* Variants & Pricing Column */}
                     <TableCell>
-                      <Badge variant="outline" className="border-cyan-500 text-cyan-400">
-                        <Store className="w-3 h-3 mr-1" />
-                        Shop {item.shop_category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-gray-300">{item.category_name}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-white">
-                        {formatPrice(item)}
+                      <div className="space-y-2 max-w-64">
+                        {item.variants && Array.isArray(item.variants) && item.variants.length > 0 ? (
+                          item.variants.map((variant, index) => (
+                            <div key={variant.id || index} className="bg-gray-900/50 rounded-lg p-2 text-xs">
+                              <div className="font-semibold text-white mb-1">{variant.name}</div>
+                              <div className="grid grid-cols-2 gap-1">
+                                {/* AED Pricing */}
+                                {variant.available_aed && variant.price_aed > 0 && (
+                                  <div className="text-cyan-400">
+                                    <div>AED {variant.price_aed}</div>
+                                    {variant.discount_aed > 0 && (
+                                      <div className="text-green-400">-{variant.discount_aed}</div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* INR Pricing */}
+                                {variant.available_inr && variant.price_inr > 0 && (
+                                  <div className="text-orange-400">
+                                    <div>₹{variant.price_inr}</div>
+                                    {variant.discount_inr > 0 && (
+                                      <div className="text-green-400">-₹{variant.discount_inr}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Availability badges */}
+                              <div className="flex space-x-1 mt-1">
+                                {variant.available_aed && (
+                                  <Badge className="bg-cyan-500/20 text-cyan-300 text-xs px-1 py-0">AED</Badge>
+                                )}
+                                {variant.available_inr && (
+                                  <Badge className="bg-orange-500/20 text-orange-300 text-xs px-1 py-0">INR</Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-gray-400 text-xs">No variants</div>
+                        )}
                       </div>
                     </TableCell>
+
+                    {/* Stock & SKU Column */}
                     <TableCell>
-                      <span className="text-gray-300">{item.stock_quantity || 0}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant={item.is_available ? "default" : "secondary"}>
-                          {item.is_available ? "Available" : "Unavailable"}
-                        </Badge>
-                        {item.is_featured && <Badge className="bg-amber-500 text-black">Featured</Badge>}
-                        {item.is_new && <Badge className="bg-green-500 text-white">New</Badge>}
+                      <div className="space-y-2">
+                        <div className="text-sm">
+                          <span className="text-gray-400">Stock:</span>
+                          <span className="text-white ml-1">{item.stock_quantity || 0}</span>
+                        </div>
+                        
+                        {item.sku && (
+                          <div className="text-xs text-gray-400">
+                            <span className="font-medium">SKU:</span>
+                            <div className="font-mono bg-gray-900 px-1 rounded text-xs mt-1 break-all">
+                              {item.sku}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {item.warranty_months && (
+                          <div className="text-xs text-gray-400">
+                            <span className="font-medium">Warranty:</span> {item.warranty_months}m
+                          </div>
+                        )}
                       </div>
                     </TableCell>
+
+                    {/* Status & Features Column */}
                     <TableCell>
-                      <div className="flex space-x-2">
+                      <div className="space-y-2">
+                        {/* Status Badges */}
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={item.is_available ? "default" : "secondary"}>
+                            {item.is_available ? "Available" : "Unavailable"}
+                          </Badge>
+                          {item.is_featured && (
+                            <Badge className="bg-amber-500 text-black">Featured</Badge>
+                          )}
+                          {item.is_new && (
+                            <Badge className="bg-green-500 text-white">New</Badge>
+                          )}
+                        </div>
+
+                        {/* Features */}
+                        {item.features && Array.isArray(item.features) && item.features.length > 0 && (
+                          <div className="text-xs">
+                            <div className="text-gray-400 font-medium mb-1">Features:</div>
+                            <div className="space-y-1">
+                              {item.features.slice(0, 3).map((feature, index) => (
+                                <div key={index} className="text-gray-300 bg-gray-900/30 px-1 rounded">
+                                  • {feature}
+                                </div>
+                              ))}
+                              {item.features.length > 3 && (
+                                <div className="text-gray-500">+{item.features.length - 3} more</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Created Date */}
+                        {item.created_at && (
+                          <div className="text-xs text-gray-500">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    {/* Actions Column */}
+                    <TableCell>
+                      <div className="flex flex-col space-y-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => openEditDialog(item)}
-                          className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
+                          className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 w-full justify-start"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(item.id)}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 w-full justify-start"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
                         </Button>
                       </div>
                     </TableCell>
@@ -1092,7 +1231,15 @@ const formatPrice = (product: Product) => {
             </Table>
             {filteredItems.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-400">No products found matching your criteria.</p>
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center">
+                    <Store className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-lg font-medium">No products found</p>
+                    <p className="text-gray-500 text-sm">Try adjusting your search or filter criteria</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>

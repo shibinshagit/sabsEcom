@@ -47,11 +47,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   }
 
   const hasSelectedCurrencyPrice = (product: any) => {
-    if (selectedCurrency === 'AED') {
-      return product.price_aed && product.price_aed > 0
-    } else if (selectedCurrency === 'INR') {
-      return product.price_inr && product.price_inr > 0
-    }
+    // if (selectedCurrency === 'AED') {
+    //   return product.price_aed && product.price_aed > 0
+    // } else if (selectedCurrency === 'INR') {
+    //   return product.price_inr && product.price_inr > 0
+    // }
     return true
   }
 
@@ -150,7 +150,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   }
 
   const shopFilteredItems = items.filter((item: any) => {
-    return item.shop_category === shop
+    return item.shop_category === shop || item.shop_category === 'Both'
   })
 
   const currencyFilteredItems = shopFilteredItems.filter((item: any) => {
@@ -251,76 +251,134 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         </div>
 
         {/* Lightning Deals Section */}
-        {lightningDeals.length > 0 && (
-          <div className="px-4 lg:px-6 mt-6">
-            <div className="max-w-7xl mx-auto">
+    {lightningDeals.length > 0 && (
+  <div className="px-4 lg:px-6 mt-6">
+    <div className="max-w-7xl mx-auto">
+    
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-orange-500" />
                   <h3 className="text-xl font-bold text-gray-900">Lightning deals</h3>
-                    <span className="text-gray-500">({filteredItems.length} items)</span>
+                    <span className="text-gray-500">({lightningDeals.length} items)</span>
                     
                 </div>
                  <ChevronDown className="w-5 h-5 text-gray-400" />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-10">
-                {lightningDeals.map((item, index) => (
-                  <Card
-                    key={item.id}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
-                  >
-                    <div className="relative">
-                      <Image
-                        key={item.id}
-                        onClick={() => router.push(`/product/${item.id}`)}
-                        src={
-                          item.image_url ||
-                          `/placeholder.svg?height=200&width=200&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
-                        }
-                        alt={item.name}
-                        width={200}
-                        height={200}
-                        className="w-full h-32 lg:h-40 object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
-                      />
-                      <div className="absolute top-2 left-2 bg-red-500 text-white rounded-full w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs lg:text-sm font-bold">
-                        {index + 1}
-                      </div>
-                      <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">FLASH</Badge>
-       <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs"> {item.features?.[0]
-    ? item.features[0].length > 7
-      ? item.features[0].slice(0, 7) + "..."
-      : item.features[0]
-    : "Assured"}</Badge>
-                    </div>
-                    <CardContent className="p-3 lg:p-4">
-                      <p className="text-red-500 font-bold text-sm lg:text-base">
-                        {formatPrice(item.price_aed, item.price_inr, item.default_currency)}
-                      </p>
-                      
-                      <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-10"></div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-10">
+        {lightningDeals.map((item, index) => {
+          // Get the best available variant
+          const availableVariant = item.variants?.find(v => 
+            v.available_aed || v.available_inr
+          ) || item.variants?.[0];
+          
+          // Calculate discount percentage
+          const discountPercent = availableVariant ? 
+            Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100) : 0;
 
-                      <Button
-                        onClick={() => handleAddToCart(item)}
-                        className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95"
-                      >
-                        Add to Cart
-                      </Button>
-                      <Button
-                        onClick={() => handleToggleWishlist(item)}
-                        className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${isInWishlist(item.id)
-                          ? 'bg-red-500 hover:bg-red-600 text-white'
-                          : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                          }`}
-                      >
-                        {isInWishlist(item.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+          return (
+            <Card
+              key={item.id}
+              className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border hover:border-orange-200"
+            >
+              <div className="relative">
+                <Image
+                  key={item.id}
+                  onClick={() => router.push(`/product/${item.id}`)}
+                  src={
+                    item.image_urls?.[0] ||
+                    `/placeholder.svg?height=200&width=200&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
+                  }
+                  alt={item.name || "Product"}
+                  width={200}
+                  height={200}
+                  className="w-full h-32 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer"
+                />
+                
+                {/* Ranking Badge */}
+                <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs lg:text-sm font-bold shadow-lg">
+                  #{index + 1}
+                </div>
+
+                {/* TOP SELLING Badge - only show if featured */}
+                {item.is_featured && (
+                  <Badge className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full shadow-lg animate-pulse font-semibold">
+                    ⭐ TOP SELLING
+                  </Badge>
+                )}
+
+                {/* NEW Badge */}
+                {/* {item.is_new && (
+                  <Badge className="absolute top-11 right-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+                    NEW
+                  </Badge>
+                )} */}
+
+                {/* Feature Badge */}
+                <Badge className="absolute bottom-2 left-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+                  {item.features?.[0]
+                    ? item.features[0].length > 7
+                      ? item.features[0].slice(0, 7) + "..."
+                      : item.features[0]
+                    : "Assured"}
+                </Badge>
+
+                {/* Discount Percentage Badge */}
+                {discountPercent > 0 && (
+                  <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
+                    -{discountPercent}%
+                  </Badge>
+                )}
               </div>
-            </div>
-          </div>
-        )}
+
+              <CardContent className="p-3 lg:p-4">
+                {/* Enhanced Price Section */}
+                <div className="mb-2">
+                  {availableVariant && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-red-500 font-bold text-sm lg:text-base">
+                        {formatPrice(availableVariant.discount_aed, availableVariant.discount_inr, 'AED')}
+                      </span>
+                      {discountPercent > 0 && (
+                        <span className="text-gray-500 text-xs line-through">
+                          {formatPrice(availableVariant.price_aed, availableVariant.price_inr, 'AED')}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
+
+                <Button
+                  onClick={() => handleAddToCart(item)}
+                  className="w-full mt-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
+                >
+                  Add to Cart
+                </Button>
+                
+                <Button
+                  onClick={() => handleToggleWishlist(item)}
+                  className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
+                    isInWishlist(item.id)
+                      ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-md'
+                      : 'bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <Heart className={`w-3 h-3 ${isInWishlist(item.id) ? 'fill-current' : ''}`} />
+                    {isInWishlist(item.id) ? 'Saved' : 'Save'}
+                  </div>
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Main Products Grid */}
         <div className="px-4 lg:px-6 mt-6 pb-8">
@@ -351,87 +409,145 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                 className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
                   }`}
               >
-                {filteredItems.map((item) => (
-                  <div key={item.id} className="cursor-pointer">
-                    <Card
-                      className={`bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group ${viewMode === "list" ? "flex" : ""
-                        }`}
-                    >
-                      <div className={`relative ${viewMode === "list" ? "w-48 flex-shrink-0" : ""}`}>
-                        <Image
-                          onClick={() => router.push(`/product/${item.id}`)}
-                          src={
-                            item.image_url ||
-                            `/placeholder.svg?height=200&width=200&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
-                          }
-                          alt={item.name}
-                          width={200}
-                          height={200}
-                          className={`object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer ${viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
-                            }`}
-                        />
-                        {item.is_new && (
-                          <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs">NEW</Badge>
-                        )}
-                        {item.is_featured && (
-                          <Badge className="absolute top-2 right-2 bg-orange-500 text-white text-xs">HOT</Badge>
-                        )}
-                        {/* <Badge className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs"> {item.features?.[0]
-    ? item.features[0].length > 7
-      ? item.features[0].slice(0, 7) + "..."
-      : item.features[0]
-    : "N/A"}</Badge> */}
+             {filteredItems.map((item) => {
+  // Get the best available variant
+  const availableVariant =
+    item.variants?.find(
+      (v) => v.available_aed || v.available_inr
+    ) || item.variants?.[0];
 
-                      </div>
-                      <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <p className="text-red-500 font-bold text-sm lg:text-lg">
-                              {formatPrice(item.price_aed, item.price_inr, item.default_currency)}
-                            </p>
-      
-                          </div>
-                        </div>
-                        <h3 className="text-sm lg:text-base font-medium text-gray-900 line-clamp-2 mb-2">{item.name}</h3>
-                        {viewMode === "list" && (
-                          <p className="text-sm text-gray-600 line-clamp-3 mb-3">{item.description}</p>
-                        )}
-                        {/* {item.features && item.features.length > 0 && (
-                          <div className="mb-3">
-                            <div className="flex flex-wrap gap-1">
-                              {item.features.slice(0, 2).map((feature: string, idx: number) => (
-                                <Badge
-                                  key={idx}
-                                  variant="secondary"
-                                  className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"
-                                >
-                                  {feature}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )} */}
+  // Calculate discount percentage
+  const priceAED = availableVariant?.price_aed || item.min_price_aed || 0;
+  const discountAED = availableVariant?.discount_aed || priceAED;
+  const priceINR = availableVariant?.price_inr || item.min_price_inr || 0;
+  const discountINR = availableVariant?.discount_inr || priceINR;
 
-                        <Button
-                          onClick={() => handleAddToCart(item)}
-                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95"
-                          disabled={!item.is_available}
-                        >
-                          {item.is_available ? "Add to Cart" : "Unavailable"}
-                        </Button>
-                        <Button
-                          onClick={() => handleToggleWishlist(item)}
-                          className={`w-full mt-2 rounded-full py-2 text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${isInWishlist(item.id)
-                            ? 'bg-red-500 hover:bg-red-600 text-white'
-                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                            }`}
-                        >
-                          {isInWishlist(item.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                ))}
+  let discountPercent = 0;
+  if (priceAED && discountAED && priceAED > discountAED) {
+    discountPercent = Math.round(((priceAED - discountAED) / priceAED) * 100);
+  } else if (priceINR && discountINR && priceINR > discountINR) {
+    discountPercent = Math.round(((priceINR - discountINR) / priceINR) * 100);
+  }
+
+  // Condition label mapping
+  const conditionLabel =
+    item.condition_type === "new"
+      ? "Master"
+      : item.condition_type === "used"
+      ? "First Copy"
+      : item.condition_type === "refurbished"
+      ? "2nd Copy"
+      : item.condition_type || "";
+
+  return (
+    <div key={item.id} className="cursor-pointer">
+      <Card
+        className={`bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group ${
+          viewMode === "list" ? "flex" : ""
+        }`}
+      >
+        <div
+          className={`relative ${
+            viewMode === "list" ? "w-48 flex-shrink-0" : ""
+          }`}
+        >
+          <Image
+            onClick={() => router.push(`/product/${item.id}`)}
+            src={
+              item.image_urls?.[0] ||
+              `/placeholder.svg?height=200&width=200&query=${
+                encodeURIComponent(item.name) || "/placeholder.svg"
+              }`
+            }
+            alt={item.name}
+            width={200}
+            height={200}
+            className={`object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer ${
+              viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
+            }`}
+          />
+
+          {item.is_new && (
+            <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+              NEW
+            </Badge>
+          )}
+
+          {item.condition_type && (
+            <Badge className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded capitalize">
+              {conditionLabel}
+            </Badge>
+          )}
+        </div>
+
+        <CardContent
+          className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            {/* Price */}
+            <p className="text-red-500 font-bold text-sm lg:text-lg">
+              {availableVariant
+                ? formatPrice(
+                    discountAED,
+                    discountINR,
+                    "AED"
+                  )
+                : formatPrice(
+                    item.min_price_aed,
+                    item.min_price_inr,
+                    item.default_currency || "AED"
+                  )}
+            </p>
+
+            {/* Discount Percentage */}
+            {discountPercent > 0 && (
+              <span className="text-green-600 font-semibold text-xs lg:text-sm">
+                {discountPercent}% OFF
+              </span>
+            )}
+          </div>
+
+          {/* Truncated Product Name */}
+          <h3 className="text-sm lg:text-base font-medium text-gray-900 line-clamp-2 mb-2">
+            {item.name.length > 15 ? item.name.slice(0, 17) + "..." : item.name}
+          </h3>
+
+          {viewMode === "list" && (
+            <p className="text-sm text-gray-600 line-clamp-3 mb-3">
+              {item.description}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              onClick={() => handleAddToCart(item)}
+              className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95"
+              disabled={!item.is_available}
+            >
+              {item.is_available ? "Add to Cart" : "Unavailable"}
+            </Button>
+
+            <Button
+              onClick={() => handleToggleWishlist(item)}
+              className={`px-3 lg:px-4 rounded-full py-2 text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
+                isInWishlist(item.id)
+                  ? "bg-red-500 hover:bg-red-600 text-white"
+                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+              }`}
+            >
+              <Heart
+                className={`w-4 h-4 ${
+                  isInWishlist(item.id) ? "fill-current" : ""
+                }`}
+              />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+})}
+
               </div>
             )}
             {/* Updated no products found section */}

@@ -73,16 +73,22 @@ export async function PUT(
       )
     }
 
-    // Prepare array data for PostgreSQL
-    const imageUrlsArray = Array.isArray(image_urls) ? image_urls : []
-    const featuresArray = Array.isArray(features) ? features : []
+    // Prepare arrays - ensure they are proper JavaScript arrays
+    const imageUrlsArray = Array.isArray(image_urls) ? image_urls.filter(url => url && url.trim()) : []
+    const featuresArray = Array.isArray(features) 
+      ? features.filter(f => f && f.trim()) 
+      : (typeof features === 'string' 
+          ? features.split(',').map(f => f.trim()).filter(Boolean)
+          : [])
 
-    // Update product - Fixed array handling
+    console.log('Arrays being updated:', { imageUrlsArray, featuresArray }) // Debug log
+
+    // Update product with proper handling for mixed column types
     const [product] = await sql`
       UPDATE products SET
         name = ${name},
         description = ${description || ''},
-        image_urls = ${imageUrlsArray},
+        image_urls = ${JSON.stringify(imageUrlsArray)},
         category_id = ${category_id},
         shop_category = ${shop_category},
         is_available = ${is_available ?? true},
