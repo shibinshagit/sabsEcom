@@ -36,7 +36,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const dispatch = useDispatch<AppDispatch>()
   const { items, categories, selectedCategory, loading } = useSelector((state: RootState) => state.products)
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
-  const { selectedCurrency, formatPrice } = useCurrency()
+  const { selectedCurrency, formatPrice, formatPriceWithSmallDecimals } = useCurrency()
   const searchParams = useSearchParams()
   const categoryFromUrl = searchParams.get("category")
   const { shop } = useShop()
@@ -334,20 +334,45 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
 
               <CardContent className="p-3 lg:p-4">
                 {/* Enhanced Price Section */}
-                <div className="mb-2">
-                  {availableVariant && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-red-500 font-bold text-sm lg:text-base">
-                        {formatPrice(availableVariant.discount_aed, availableVariant.discount_inr, 'AED')}
-                      </span>
-                      {discountPercent > 0 && (
-                        <span className="text-gray-500 text-xs line-through">
-                          {formatPrice(availableVariant.price_aed, availableVariant.price_inr, 'AED')}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+               <div className="mb-2">
+  {availableVariant && (
+    <div className="flex items-center gap-2 flex-wrap">
+      {(
+        // Check currency availability
+        (selectedCurrency === "AED" && !availableVariant.available_aed) ||
+        (selectedCurrency === "INR" && !availableVariant.available_inr)
+      ) ? (
+        // Show "Not Available" in red if unavailable
+        <span className="text-red-600 font-bold text-sm lg:text-base">
+          Not Available
+        </span>
+      ) : (
+        <>
+          {/* Discounted Price with smaller decimal */}
+          <span className="text-red-500 font-bold text-sm lg:text-base">
+            {formatPriceWithSmallDecimals(
+              availableVariant.discount_aed,
+              availableVariant.discount_inr,
+              "AED"
+            )}
+          </span>
+
+          {/* Original Price if discount is available */}
+          {discountPercent > 0 && (
+            <span className="text-gray-500 text-xs line-through">
+              {formatPriceWithSmallDecimals(
+                availableVariant.price_aed,
+                availableVariant.price_inr,
+                "AED"
+              )}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  )}
+</div>
+
                 
                 <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
 
@@ -429,15 +454,26 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     discountPercent = Math.round(((priceINR - discountINR) / priceINR) * 100);
   }
 
-  // Condition label mapping
-  const conditionLabel =
-    item.condition_type === "new"
-      ? "Master"
-      : item.condition_type === "used"
-      ? "First Copy"
-      : item.condition_type === "refurbished"
-      ? "2nd Copy"
-      : item.condition_type || "";
+// Condition label mapping
+const conditionLabels = {
+  master: "Master",
+  "first-copy": "1st Copy",
+  "second-copy": "2nd Copy",
+  hot: "Hot",
+  sale: "Sale"
+};
+
+// Badge background color mapping
+const conditionColors = {
+  master: "bg-green-600",
+  "first-copy": "bg-yellow-600",
+  "second-copy": "bg-purple-600",
+  hot: "bg-red-600",
+  sale: "bg-blue-600"
+};
+
+const conditionLabel = conditionLabels[item.condition_type] || "";
+const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
 
   return (
     <div key={item.id} className="cursor-pointer">
@@ -473,11 +509,14 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             </Badge>
           )}
 
-          {item.condition_type && (
-            <Badge className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded capitalize">
-              {conditionLabel}
-            </Badge>
-          )}
+          {item.condition_type && item.condition_type !== "none" && (
+  <Badge
+    className={`absolute top-2 right-2 ${badgeColor} text-white text-xs px-2 py-1 rounded capitalize`}
+  >
+    {conditionLabel}
+  </Badge>
+)}
+
         </div>
 
         <CardContent
@@ -486,17 +525,42 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
           <div className="flex items-center justify-between mb-2">
             {/* Price */}
             <p className="text-red-500 font-bold text-sm lg:text-lg">
-              {availableVariant
-                ? formatPrice(
-                    discountAED,
-                    discountINR,
-                    "AED"
-                  )
-                : formatPrice(
-                    item.min_price_aed,
-                    item.min_price_inr,
-                    item.default_currency || "AED"
-                  )}
+             {availableVariant && (
+    <div className="flex items-center gap-2 flex-wrap">
+      {(
+        // Check currency availability
+        (selectedCurrency === "AED" && !availableVariant.available_aed) ||
+        (selectedCurrency === "INR" && !availableVariant.available_inr)
+      ) ? (
+        // Show "Not Available" in red if unavailable
+        <span className="text-red-600 font-bold text-sm lg:text-base">
+          Not Available
+        </span>
+      ) : (
+        <>
+          {/* Discounted Price with smaller decimal */}
+          <span className="text-red-500 font-bold text-sm lg:text-base">
+            {formatPriceWithSmallDecimals(
+              availableVariant.discount_aed,
+              availableVariant.discount_inr,
+              "AED"
+            )}
+          </span>
+
+          {/* Original Price if discount is available */}
+          {discountPercent > 0 && (
+            <span className="text-gray-500 text-xs line-through">
+              {formatPriceWithSmallDecimals(
+                availableVariant.price_aed,
+                availableVariant.price_inr,
+                "AED"
+              )}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  )}
             </p>
 
             {/* Discount Percentage */}
@@ -518,30 +582,37 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             </p>
           )}
 
-          <div className="flex gap-2">
-            <Button
-              onClick={() => handleAddToCart(item)}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95"
-              disabled={!item.is_available}
-            >
-              {item.is_available ? "Add to Cart" : "Unavailable"}
-            </Button>
 
-            <Button
-              onClick={() => handleToggleWishlist(item)}
-              className={`px-3 lg:px-4 rounded-full py-2 text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
-                isInWishlist(item.id)
-                  ? "bg-red-500 hover:bg-red-600 text-white"
-                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-              }`}
-            >
-              <Heart
-                className={`w-4 h-4 ${
-                  isInWishlist(item.id) ? "fill-current" : ""
-                }`}
-              />
-            </Button>
-          </div>
+<div className="flex gap-2">
+  <Button
+    onClick={() => handleAddToCart(item)}
+    className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+    disabled={!item.is_available}
+  >
+    {item.is_available ? (
+      <>
+        <ShoppingCart className="w-4 h-4" />
+        Cart
+      </>
+    ) : (
+      "Unavailable"
+    )}
+  </Button>
+
+  <Button
+    onClick={() => handleToggleWishlist(item)}
+    className={`px-3 lg:px-4 rounded-full py-2 text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
+      isInWishlist(item.id)
+        ? "bg-red-500 hover:bg-red-600 text-white"
+        : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+    }`}
+  >
+    <Heart
+      className={`w-4 h-4 ${isInWishlist(item.id) ? "fill-current" : ""}`}
+    />
+  </Button>
+</div>
+
         </CardContent>
       </Card>
     </div>

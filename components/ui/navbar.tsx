@@ -28,7 +28,7 @@ interface Category {
   id: string | number
   name: string
   slug?: string
-  shop?: "A" | "B"
+  shop?: "A" | "B" | "Both"
 }
 
 function Nav() {
@@ -148,13 +148,17 @@ function Nav() {
         const productsResponse = await fetch('/api/admin/products')
         const productsData = await productsResponse.json()
         
-        const shopFilteredCategories = shop
-          ? categoriesData.filter((cat: Category) => !cat.shop || cat.shop === shop)
-          : categoriesData
+      const shopFilteredCategories = shop
+  ? categoriesData.filter((cat: Category) => 
+      !cat.shop || cat.shop === shop || cat.shop === "Both"
+    )
+  : categoriesData
         
-        const shopFilteredProducts = shop
-          ? productsData.filter((product: any) => product.shop_category === shop)
-          : productsData
+       const shopFilteredProducts = shop
+  ? productsData.filter((product: any) => 
+      product.shop_category === shop || product.shop_category === "Both"
+    )
+  : productsData
         
         const productCounts = shopFilteredProducts.reduce((acc: any, product: any) => {
           const categoryId = product.category_id?.toString()

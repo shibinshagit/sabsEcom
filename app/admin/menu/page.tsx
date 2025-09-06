@@ -110,7 +110,7 @@ const [formData, setFormData] = useState({
       available_inr: true,
     }
   ],
-  condition_type: "new",
+  condition_type: "none",
   warranty_period: 12,
   storage_capacity: "",
   color: "",
@@ -264,7 +264,7 @@ const resetForm = () => {
     warranty_months: 12,
     brand: "",
     model: "",
-    condition_type: "new",
+    condition_type: "none",
     warranty_period: 12,
     storage_capacity: "",
     color: "",
@@ -302,7 +302,7 @@ const openEditDialog = (item: Product) => {
     warranty_months: item.warranty_months || 12,
     brand: item.brand || "",
     model: item.model || "",
-    condition_type: item.condition_type || "new",
+    condition_type: item.condition_type || "none",
     warranty_period: item.warranty_period || 12,
     storage_capacity: item.storage_capacity || "",
     color: item.color || "",
@@ -565,9 +565,12 @@ const formatPrice = (product: Product) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-700 border-gray-600">
-                      <SelectItem value="new" className="text-white">New</SelectItem>
-                      <SelectItem value="used" className="text-white">Used</SelectItem>
-                      <SelectItem value="refurbished" className="text-white">Refurbished</SelectItem>
+                      <SelectItem value="none" className="text-white">None</SelectItem>
+                      <SelectItem value="master" className="text-white">Master</SelectItem>
+                      <SelectItem value="first-copy" className="text-white">1st Copy</SelectItem>
+                      <SelectItem value="second-copy" className="text-white">2nd Copy</SelectItem>
+                      <SelectItem value="hot" className="text-white">Hot</SelectItem>
+                      <SelectItem value="sale" className="text-white">Sale</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
