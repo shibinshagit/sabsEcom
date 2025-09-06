@@ -351,20 +351,24 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
           {/* Discounted Price with smaller decimal */}
           <span className="text-red-500 font-bold text-sm lg:text-base">
             {formatPriceWithSmallDecimals(
-              availableVariant.discount_aed,
-              availableVariant.discount_inr,
-              "AED"
-            )}
+    availableVariant.discount_aed,
+    availableVariant.discount_inr,
+    "AED",
+    true,             // show symbol
+    "#ef4444"    // ✅ color applied
+  )}
           </span>
 
           {/* Original Price if discount is available */}
           {discountPercent > 0 && (
             <span className="text-gray-500 text-xs line-through">
-              {formatPriceWithSmallDecimals(
-                availableVariant.price_aed,
-                availableVariant.price_inr,
-                "AED"
-              )}
+             {formatPriceWithSmallDecimals(
+    availableVariant.price_aed,
+    availableVariant.price_inr,
+    "AED",
+    true,           
+    "#6B7280"  
+  )}
             </span>
           )}
         </>
@@ -543,7 +547,9 @@ const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
             {formatPriceWithSmallDecimals(
               availableVariant.discount_aed,
               availableVariant.discount_inr,
-              "AED"
+              "AED",
+              true,             // show symbol
+              "#ef4444"    // ✅ color applied
             )}
           </span>
 
@@ -553,7 +559,9 @@ const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
               {formatPriceWithSmallDecimals(
                 availableVariant.price_aed,
                 availableVariant.price_inr,
-                "AED"
+                "AED",
+                false,          
+                "#6B7280"
               )}
             </span>
           )}
