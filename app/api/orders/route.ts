@@ -1,3 +1,4 @@
+// app/api/orders/route.ts
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 import { cookies } from "next/headers"
@@ -57,7 +58,7 @@ async function ensureOrdersTableExists() {
           customer_name VARCHAR(255) NOT NULL,
           customer_email VARCHAR(255),
           customer_phone VARCHAR(20) NOT NULL,
-          order_type VARCHAR(20) DEFAULT 'dine-in',
+          order_type VARCHAR(20) DEFAULT 'delivery',
           payment_method VARCHAR(20) DEFAULT 'cod',
           payment_id VARCHAR(255),
           payment_status VARCHAR(20) DEFAULT 'pending',
@@ -65,8 +66,10 @@ async function ensureOrdersTableExists() {
           delivery_address TEXT,
           subtotal DECIMAL(10,2) DEFAULT 0,
           delivery_fee DECIMAL(10,2) DEFAULT 0,
+          tax_amount DECIMAL(10,2) DEFAULT 0,
           discount_amount DECIMAL(10,2) DEFAULT 0,
           total_amount DECIMAL(10,2) NOT NULL,
+          final_total DECIMAL(10,2) NOT NULL,
           coupon_code VARCHAR(50),
           currency VARCHAR(3) DEFAULT 'AED',
           special_instructions TEXT,
@@ -86,6 +89,7 @@ async function ensureOrdersTableExists() {
         { name: 'payment_status', definition: 'VARCHAR(20) DEFAULT \'pending\'', check: 'payment_status' },
         { name: 'subtotal', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'subtotal' },
         { name: 'delivery_fee', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'delivery_fee' },
+        { name: 'tax_amount', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'tax_amount' },
         { name: 'discount_amount', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'discount_amount' },
         { name: 'coupon_code', definition: 'VARCHAR(50)', check: 'coupon_code' },
         { name: 'currency', definition: 'VARCHAR(3) DEFAULT \'AED\'', check: 'currency' }
@@ -113,25 +117,76 @@ async function ensureOrdersTableExists() {
     }
   } catch (error) {
     console.error('Error setting up orders table:', error)
-    throw error // Re-throw to handle properly
+    throw error
   }
 }
 
 async function ensureOrderItemsTableExists() {
   try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS order_items (
-        id SERIAL PRIMARY KEY,
-        order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-        menu_item_id INTEGER,
-        menu_item_name VARCHAR(255) NOT NULL,
-        quantity INTEGER NOT NULL,
-        unit_price DECIMAL(10,2) NOT NULL,
-        total_price DECIMAL(10,2) NOT NULL,
-        special_requests TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    // Check if order_items table exists
+    const tableExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'order_items'
       )
     `
+
+    if (!tableExists[0].exists) {
+      await sql`
+        CREATE TABLE order_items (
+          id SERIAL PRIMARY KEY,
+          order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+          menu_item_id INTEGER,
+          variant_id INTEGER,
+          menu_item_name VARCHAR(255) NOT NULL,
+          variant_name VARCHAR(255),
+          quantity INTEGER NOT NULL,
+          unit_price DECIMAL(10,2) NOT NULL,
+          original_price DECIMAL(10,2),
+          total_price DECIMAL(10,2) NOT NULL,
+          currency VARCHAR(3) DEFAULT 'AED',
+          special_requests TEXT,
+          product_image_url TEXT,
+          brand VARCHAR(100),
+          model VARCHAR(100),
+          color VARCHAR(50),
+          storage_capacity VARCHAR(50),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `
+      console.log('Order items table created successfully')
+    } else {
+      // Add missing columns to existing table if needed
+      const columnsToAdd = [
+        { name: 'variant_id', definition: 'INTEGER', check: 'variant_id' },
+        { name: 'variant_name', definition: 'VARCHAR(255)', check: 'variant_name' },
+        { name: 'original_price', definition: 'DECIMAL(10,2)', check: 'original_price' },
+        { name: 'currency', definition: 'VARCHAR(3) DEFAULT \'AED\'', check: 'currency' },
+        { name: 'product_image_url', definition: 'TEXT', check: 'product_image_url' },
+        { name: 'brand', definition: 'VARCHAR(100)', check: 'brand' },
+        { name: 'model', definition: 'VARCHAR(100)', check: 'model' },
+        { name: 'color', definition: 'VARCHAR(50)', check: 'color' },
+        { name: 'storage_capacity', definition: 'VARCHAR(50)', check: 'storage_capacity' }
+      ]
+
+      for (const column of columnsToAdd) {
+        try {
+          const columnExists = await sql`
+            SELECT EXISTS (
+              SELECT 1 FROM information_schema.columns 
+              WHERE table_name = 'order_items' AND column_name = ${column.check}
+            )
+          `
+          
+          if (!columnExists[0].exists) {
+            await sql.unsafe(`ALTER TABLE order_items ADD COLUMN ${column.name} ${column.definition}`)
+            console.log(`Added column: ${column.name}`)
+          }
+        } catch (colError) {
+          console.log(`Column ${column.name} might already exist:`, colError)
+        }
+      }
+    }
   } catch (error) {
     console.error('Error creating order_items table:', error)
     throw error
@@ -162,6 +217,23 @@ async function findLinkedUser(email: string, isClerkUser: boolean, userId: strin
   }
 }
 
+// Helper function to get currency-specific pricing
+function getCurrencySpecificPrice(item: any, currency: string) {
+  if (currency === 'AED') {
+    return {
+      unitPrice: item.discount_aed > 0 ? item.discount_aed : (item.price_aed || item.price || 0),
+      originalPrice: item.price_aed || item.price || 0,
+      available: item.available_aed !== false
+    }
+  } else {
+    return {
+      unitPrice: item.discount_inr > 0 ? item.discount_inr : (item.price_inr || item.price || 0),
+      originalPrice: item.price_inr || item.price || 0,
+      available: item.available_inr !== false
+    }
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const orderData = await request.json()
@@ -183,33 +255,39 @@ export async function POST(request: Request) {
     await ensureOrdersTableExists()
     await ensureOrderItemsTableExists()
 
-    // Calculate totals
-    const subtotal = orderData.originalAmount - (orderData.orderType === "delivery" ? 3.99 : 0) || 0
-    const deliveryFee = orderData.orderType === "delivery" ? 3.99 : 0
+    // Calculate delivery fee based on currency and order type
+    const deliveryFee = orderData.orderType === "delivery" ? 
+      (orderData.currency === "AED" ? 10 : 100) : 0
+
+    // Calculate totals properly
+    const subtotal = orderData.originalAmount - deliveryFee || 0
+    const taxAmount = 0 // Set tax amount as needed
     const discountAmount = orderData.discountAmount || 0
-    const finalTotal = orderData.totalAmount || (subtotal + deliveryFee - discountAmount)
+    const totalAmount = subtotal + deliveryFee + taxAmount - discountAmount
+    const finalTotal = orderData.totalAmount || totalAmount
 
     // Determine payment status
     const paymentStatus = orderData.paymentMethod === 'upi' && orderData.paymentId ? 'paid' : 'pending'
 
-    console.log('Inserting order with data:', {
-      user_id: user?.isClerkUser ? null : user?.userId?.toString() || null,
-      clerk_user_id: user?.isClerkUser ? user.userId : null,
-      customer_name: orderData.customerName,
-      payment_method: orderData.paymentMethod || "cod",
-      payment_id: orderData.paymentId || null,
+    console.log('Inserting order with calculated totals:', {
+      subtotal,
+      delivery_fee: deliveryFee,
+      tax_amount: taxAmount,
+      discount_amount: discountAmount,
+      total_amount: totalAmount,
+      final_total: finalTotal,
       payment_status: paymentStatus,
-      currency: orderData.currency || 'AED',
-      total_amount: finalTotal
+      currency: orderData.currency || 'AED'
     })
 
-    // Insert order with proper user identification and payment details
+    // Insert order with ALL required columns including final_total
     const [order] = await sql`
       INSERT INTO orders (
         user_id, clerk_user_id, customer_name, customer_email, customer_phone, 
         order_type, payment_method, payment_id, payment_status,
         table_number, delivery_address, 
-        subtotal, delivery_fee, discount_amount, total_amount,
+        subtotal, delivery_fee, tax_amount, discount_amount, 
+        total_amount, final_total,
         coupon_code, currency, special_instructions, status
       ) VALUES (
         ${user?.isClerkUser ? null : user?.userId?.toString() || null},
@@ -217,7 +295,7 @@ export async function POST(request: Request) {
         ${orderData.customerName}, 
         ${orderData.customerEmail || user?.email || null}, 
         ${orderData.customerPhone},
-        ${orderData.orderType || "dine-in"},
+        ${orderData.orderType || "delivery"},
         ${orderData.paymentMethod || "cod"},
         ${orderData.paymentId || null},
         ${paymentStatus},
@@ -225,7 +303,9 @@ export async function POST(request: Request) {
         ${orderData.deliveryAddress || null},
         ${subtotal}, 
         ${deliveryFee}, 
+        ${taxAmount},
         ${discountAmount},
+        ${totalAmount},
         ${finalTotal},
         ${orderData.couponCode || null},
         ${orderData.currency || 'AED'},
@@ -236,22 +316,39 @@ export async function POST(request: Request) {
 
     console.log('Order inserted with ID:', order.id)
 
-    // Insert order items
+    // Insert order items with variant support
     for (const item of orderData.items) {
-      const totalPrice = parseFloat(item.unitPrice) * item.quantity
+      // Parse variant information from item name if it contains ' - '
+      const itemName = item.menuItemName || "Unknown Item"
+      const variantName = item.variantName || null
+      
+      // Get currency-specific pricing
+      const pricing = getCurrencySpecificPrice(item, orderData.currency || 'AED')
+      const unitPrice = parseFloat(item.unitPrice) || pricing.unitPrice
+      const totalPrice = unitPrice * item.quantity
 
       await sql`
         INSERT INTO order_items (
-          order_id, menu_item_id, menu_item_name, 
-          quantity, unit_price, total_price, special_requests
+          order_id, menu_item_id, variant_id, menu_item_name, variant_name,
+          quantity, unit_price, original_price, total_price, currency,
+          special_requests, product_image_url, brand, model, color, storage_capacity
         ) VALUES (
           ${order.id}, 
           ${item.menuItemId}, 
-          ${item.menuItemName || "Unknown Item"},
+          ${item.variantId || null},
+          ${itemName},
+          ${variantName},
           ${item.quantity}, 
-          ${parseFloat(item.unitPrice)}, 
+          ${unitPrice}, 
+          ${pricing.originalPrice || unitPrice},
           ${totalPrice},
-          ${item.specialRequests || null}
+          ${orderData.currency || 'AED'},
+          ${item.specialRequests || null},
+          ${item.productImageUrl || null},
+          ${item.brand || null},
+          ${item.model || null},
+          ${item.color || null},
+          ${item.storageCapacity || null}
         )
       `
     }
@@ -263,6 +360,7 @@ export async function POST(request: Request) {
       orderId: order.id,
       totalAmount: finalTotal,
       paymentStatus,
+      currency: orderData.currency || 'AED'
     })
   } catch (error) {
     console.error("Error creating order:", error)
@@ -305,11 +403,20 @@ export async function GET(request: Request) {
                 json_build_object(
                   'id', oi.id,
                   'menu_item_id', oi.menu_item_id,
+                  'variant_id', oi.variant_id,
                   'menu_item_name', oi.menu_item_name,
+                  'variant_name', oi.variant_name,
                   'quantity', oi.quantity,
                   'unit_price', oi.unit_price,
+                  'original_price', oi.original_price,
                   'total_price', oi.total_price,
-                  'special_requests', oi.special_requests
+                  'currency', oi.currency,
+                  'special_requests', oi.special_requests,
+                  'product_image_url', oi.product_image_url,
+                  'brand', oi.brand,
+                  'model', oi.model,
+                  'color', oi.color,
+                  'storage_capacity', oi.storage_capacity
                 )
               END ORDER BY oi.id
             ) FILTER (WHERE oi.id IS NOT NULL), 
@@ -335,11 +442,20 @@ export async function GET(request: Request) {
                 json_build_object(
                   'id', oi.id,
                   'menu_item_id', oi.menu_item_id,
+                  'variant_id', oi.variant_id,
                   'menu_item_name', oi.menu_item_name,
+                  'variant_name', oi.variant_name,
                   'quantity', oi.quantity,
                   'unit_price', oi.unit_price,
+                  'original_price', oi.original_price,
                   'total_price', oi.total_price,
-                  'special_requests', oi.special_requests
+                  'currency', oi.currency,
+                  'special_requests', oi.special_requests,
+                  'product_image_url', oi.product_image_url,
+                  'brand', oi.brand,
+                  'model', oi.model,
+                  'color', oi.color,
+                  'storage_capacity', oi.storage_capacity
                 )
               END ORDER BY oi.id
             ) FILTER (WHERE oi.id IS NOT NULL), 
@@ -361,7 +477,8 @@ export async function GET(request: Request) {
     // Clean up the orders data to ensure proper structure
     const cleanOrders = orders.map(order => ({
       ...order,
-      final_total: order.total_amount, // Ensure final_total is available for the frontend
+      // Ensure final_total is available for the frontend - use existing final_total or fallback to total_amount
+      final_total: order.final_total || order.total_amount,
       items: Array.isArray(order.items) ? order.items : []
     }))
     

@@ -109,7 +109,7 @@ export default function OrderPage() {
 
   useEffect(() => {
     if (invalidCartItems.length > 0) {
-      toast.error(`${invalidCartItems.length} item(s) are not available in ${selectedCurrency}`, {
+      toast.error(`${invalidCartItems.length} item(s) are not available in ${selectedCurrency === 'AED' ? "UAE" : "India"}`, {
         position: 'top-center'
       })
     }
@@ -323,7 +323,9 @@ export default function OrderPage() {
       toast.error(`No items available for ${selectedCurrency}. Please add items or switch currency.`, { position: 'top-center' })
       return
     }
-    if (!customerInfo.name || !customerInfo.phone || (orderType === "delivery" && !customerInfo.deliveryAddress)) {
+    if (!customerInfo.phone || (orderType === "delivery" && !customerInfo.deliveryAddress)) {
+      console.log(customerInfo.name, customerInfo.phone, customerInfo.deliveryAddress)
+      console.log('issue here')
       toast.error('Please fill in all required customer information', { position: 'top-center' })
       return
     }
@@ -334,7 +336,7 @@ export default function OrderPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: (calculateCartTotal() + deliveryFee - discountAmount) * 100, // Convert to paise for INR
+            amount: (calculateCartTotal() + deliveryFee - discountAmount) , // Convert to paise for INR
             currency: selectedCurrency,
             receipt: `order_${Date.now()}`
           }),
@@ -455,7 +457,7 @@ export default function OrderPage() {
     toast.success('Order sent via WhatsApp', { position: 'top-center' })
   }
 
-  const deliveryFee = orderType === "delivery" ? 3.99 : 0
+  const deliveryFee = orderType === "delivery" && selectedCurrency === "AED" ? 10 : 100
   const cartTotal = calculateCartTotal()
   const subtotalWithDelivery = cartTotal + deliveryFee
   const finalTotal = subtotalWithDelivery - discountAmount
@@ -490,7 +492,7 @@ export default function OrderPage() {
         <div className="flex items-center justify-between mb-6 sm:mb-8 flex-wrap gap-4">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Your Order</h1>
           <div className="text-sm text-gray-600">
-            Currency: <span className="font-semibold text-gray-900">{selectedCurrency}</span>
+            Region: <span className="font-semibold text-gray-900">{selectedCurrency === 'AED' ? "UAE" : "India"}</span>
           </div>
         </div>
 
@@ -504,7 +506,7 @@ export default function OrderPage() {
                     Currency Availability Notice
                   </h3>
                   <p className="text-sm sm:text-base text-orange-700 mb-3">
-                    {invalidCartItems.length} item(s) in your cart are not available in {selectedCurrency}.
+                    {invalidCartItems.length} item(s) in your cart are not available in {selectedCurrency === 'AED' ? "UAE" : "India"}.
                   </p>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {invalidCartItems.map((item) => (
@@ -643,7 +645,7 @@ export default function OrderPage() {
                         <div className="flex-1">
                           <h3 className="font-semibold text-base sm:text-lg text-gray-600">{itemName}</h3>
                           <p className="text-sm text-gray-500">
-                            Not available in {selectedCurrency}
+                            Not available in {selectedCurrency === 'AED' ? "UAE" : "India"}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -665,7 +667,7 @@ export default function OrderPage() {
               </Card>
             )}
 
-            <Card className="border-0 shadow-lg rounded-2xl bg-white">
+            {/* <Card className="border-0 shadow-lg rounded-2xl bg-white">
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Order Type</CardTitle>
               </CardHeader>
@@ -689,29 +691,38 @@ export default function OrderPage() {
                   </div>
                 </RadioGroup>
               </CardContent>
-            </Card>
+            </Card> */}
 
-            <Card className="border-0 shadow-lg rounded-2xl bg-white">
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Payment Method</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={setPaymentMethod}
-                  className="grid grid-cols-1 gap-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="upi" id="upi" />
-                    <Label htmlFor="upi" className="text-sm sm:text-base cursor-pointer">UPI Payment</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="cod" id="cod" />
-                    <Label htmlFor="cod" className="text-sm sm:text-base cursor-pointer">Cash on Delivery</Label>
-                  </div>
-                </RadioGroup>
-              </CardContent>
-            </Card>
+            {selectedCurrency === "AED" && (
+  <Card className="border-0 shadow-lg rounded-2xl bg-white">
+    <CardHeader>
+      <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+        Payment Method
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <RadioGroup
+        value={paymentMethod}
+        onValueChange={setPaymentMethod}
+        className="grid grid-cols-1 gap-4"
+      >
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="upi" id="upi" />
+          <Label htmlFor="upi" className="text-sm sm:text-base cursor-pointer">
+            UPI Payment
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem value="cod" id="cod" />
+          <Label htmlFor="cod" className="text-sm sm:text-base cursor-pointer">
+            Cash on Delivery
+          </Label>
+        </div>
+      </RadioGroup>
+    </CardContent>
+  </Card>
+)}
+
 
             <Card className="border-0 shadow-lg rounded-2xl bg-white">
               <CardHeader>
@@ -773,7 +784,7 @@ export default function OrderPage() {
                     />
                   </div>
                 )}
-                <div>
+                {/* <div>
                   <Label htmlFor="instructions" className="text-sm sm:text-base">Special Instructions</Label>
                   <Textarea
                     id="instructions"
@@ -782,7 +793,7 @@ export default function OrderPage() {
                     placeholder="Any special requests or instructions"
                     className="text-sm sm:text-base rounded-lg"
                   />
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           </div>
@@ -924,15 +935,19 @@ export default function OrderPage() {
                         </Button>
                       ) : (
                         <Button
-                          onClick={handleSubmitOrder}
-                          disabled={loading || isProcessingPayment || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
-                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-sm sm:text-base py-3 rounded-xl shadow-lg transform hover:scale-105 transition-all"
-                          aria-label="Pay now"
-                        >
-                          {isProcessingPayment ? "Processing Payment..." :
-                            loading ? "Processing..." :
-                              isAuthenticated ? `Pay ${formatPriceWithSmallDecimals(finalTotal, finalTotal, selectedCurrency, true, '#fff')}` : "Login to Pay"}
-                        </Button>
+  onClick={handleSubmitOrder}
+  disabled={loading || isProcessingPayment || (!isAuthenticated && !customerInfo.name) || !customerInfo.phone || validCartItems.length === 0}
+  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-sm sm:text-base py-3 rounded-xl shadow-lg transform hover:scale-105 transition-all"
+  aria-label="Pay now"
+>
+  {isProcessingPayment ? "Processing Payment..." :
+    loading ? "Processing..." :
+      isAuthenticated ? (
+        <>
+          Pay {formatPriceWithSmallDecimals(finalTotal, finalTotal, 'AED', true, '#fff')}
+        </>
+      ) : "Login to Pay"}
+</Button>
                       )}
 
                       <div className="relative">

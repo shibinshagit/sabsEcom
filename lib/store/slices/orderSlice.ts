@@ -28,7 +28,7 @@ interface OrderState {
 const initialState: OrderState = {
   cart: [],
   total: 0,
-  orderType: "dine-in",
+  orderType: "delivery",
   customerInfo: {
     name: "",
     email: "",
