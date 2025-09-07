@@ -9,6 +9,7 @@ import { addToWishlistAPI, removeFromWishlistAPI } from '@/lib/store/slices/wish
 import { useCurrency } from "@/lib/contexts/currency-context"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { Button } from "@/components/ui/button"
+import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe, AlertCircle, Plus, Minus, Truck, Shield, RotateCcw, Award, Zap, ChevronRight, Eye, Sparkles } from "lucide-react"
@@ -18,6 +19,7 @@ import Footer from "@/components/ui/footer"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import toast from 'react-hot-toast'
+import LoginModal from "@/components/auth/login-modal"
 
 interface Variant {
   id: number
@@ -67,6 +69,7 @@ export default function ProductPage() {
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
 
   const [product, setProduct] = useState<Product | null>(null)
+  const { openModal } = useLoginModal()
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -96,7 +99,7 @@ export default function ProductPage() {
   const handleToggleWishlist = async (product: Product) => {
     if (!isAuthenticated) {
       // toast.error('Please login to add items to wishlist')
-      router.push('/login')
+      openModal()
       return
     }
     try {
@@ -158,7 +161,7 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
-      router.push('/login')
+      openModal()
       return
     }
     if (product && selectedVariant && hasSelectedCurrencyPrice(selectedVariant)) {

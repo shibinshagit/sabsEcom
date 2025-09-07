@@ -8,6 +8,7 @@ import { addToCart } from "@/lib/store/slices/orderSlice"
 import { useShop } from "@/lib/contexts/shop-context"
 import { useCurrency } from "@/lib/contexts/currency-context"
 import { Button } from "@/components/ui/button"
+import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart } from "lucide-react"
@@ -24,6 +25,7 @@ interface ProductListProps {
 export default function ProductList({ showSpinner = false, onCloseSpinner }: ProductListProps) {
   const { user, isAuthenticated } = useAuth()
   const [authInitialized, setAuthInitialized] = useState(false)
+  const { openModal } = useLoginModal()
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [showFilters, setShowFilters] = useState(false)
   const [categoryTransition, setCategoryTransition] = useState(false)
@@ -70,7 +72,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const handleToggleWishlist = async (product: any) => {
     if (!isAuthenticated) {
       // alert('Please login to add items to wishlist')
-      router.push('/login')
+      openModal()
       return
     }
 
@@ -141,7 +143,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
 
   const handleAddToCart = (product: any) => {
     if (!isAuthenticated) {
-      router.push('/login')
+      openModal()
       return
     }
     dispatch(addToCart({
@@ -663,5 +665,6 @@ const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
         </div>
       </div>
     </div>
+    
   )
 }

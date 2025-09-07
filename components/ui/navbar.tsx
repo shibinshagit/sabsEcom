@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSelector } from "react-redux"
 import { useSettings } from "@/lib/contexts/settings-context"
+import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { useAuth } from "@/lib/contexts/auth-context"
 import { useCurrency } from "@/lib/contexts/currency-context"
 import type { RootState } from "@/lib/store"
@@ -35,7 +36,7 @@ function Nav() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const { isOpen: isLoginModalOpen, openModal, closeModal } = useLoginModal()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [products, setProducts] = useState<any[]>([])
@@ -275,7 +276,7 @@ function Nav() {
   }
 
   const handleLoginClick = () => {
-    setIsLoginModalOpen(true)
+    openModal()
   }
 
   const isActiveCategoryLink = (item: any) => {
@@ -1072,7 +1073,7 @@ function Nav() {
         </div>
       </nav>
 
-      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+      <LoginModal isOpen={isLoginModalOpen} onClose={closeModal} />
     </>
   )
 }
