@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe, AlertCircle, Plus, Minus, Truck, Shield, RotateCcw, Award, Zap, ChevronRight, Eye, Sparkles } from "lucide-react"
+import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe, AlertCircle, Plus, Minus, Truck, Shield, RotateCcw, Award, Zap, ChevronRight, Eye, Sparkles, Verified } from "lucide-react"
 import Image from "next/image"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
@@ -621,13 +621,18 @@ const conditionColors = {
                       <span className="text-gray-600">Doorstep Delivery</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <RotateCcw className="w-4 h-4 text-blue-500" />
-                      <span className="text-gray-600">30-day Returns</span>
+                      <Verified className="w-4 h-4 text-blue-500" />
+                      <span className="text-gray-600">Sabs Verified</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Shield className="w-4 h-4 text-purple-500" />
-                      <span className="text-gray-600">{product.warranty_months} Months Warranty</span>
-                    </div>
+  <Shield className="w-4 h-4 text-purple-500" />
+  {product.warranty_months && product.warranty_months !== "0" ? (
+    <span className="text-gray-600">{product.warranty_months} Months Warranty</span>
+  ) : (
+    <span className="text-green-600 font-medium">Quality Assured</span>
+  )}
+</div>
+
                   </div>
                 </div>
               </Card>
@@ -728,7 +733,9 @@ const conditionColors = {
                         value: selectedVariant
                             ? selectedVariant.available_aed ? 'UAE' : '' + (selectedVariant.available_inr ? 'India' : '') : 'N/A'
                       },
-                      { label: "Warranty", value: `${product.warranty_months} months` },
+                      ...(product.warranty_months && product.warranty_months !== "0"
+                        ? [{ label: "Warranty", value: `${product.warranty_months} months` }]
+                        : []),
                       { label: "Stock", value: `${product.stock_quantity} available` },
                       // ...(product.sku ? [{ label: "SKU", value: product.sku }] : [])
                     ].map((spec, index) => (

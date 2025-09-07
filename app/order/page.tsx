@@ -17,7 +17,7 @@ import { useAuth } from "@/lib/contexts/auth-context"
 import { useCurrency } from "@/lib/contexts/currency-context"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
-import LoginModal from "@/components/auth/login-modal"
+import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -53,8 +53,9 @@ export default function OrderPage() {
   const { cart, total, orderType, customerInfo, loading } = useSelector((state: RootState) => state.order)
   const { isAuthenticated, user } = useAuth()
   const { selectedCurrency, formatPriceWithSmallDecimals } = useCurrency()
+   const { openModal } = useLoginModal()
   const [specialInstructions, setSpecialInstructions] = useState("")
-  const [showLoginModal, setShowLoginModal] = useState(false)
+  
   const [couponCode, setCouponCode] = useState("")
   const [isCouponFieldOpen, setIsCouponFieldOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("upi")
@@ -314,7 +315,7 @@ export default function OrderPage() {
 
   const handleSubmitOrder = async () => {
     if (!isAuthenticated) {
-      setShowLoginModal(true)
+      openModal()
       toast.error('Please login to place an order', { position: 'top-center' })
       return
     }
@@ -986,12 +987,6 @@ export default function OrderPage() {
         </div>
       </div>
 
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        title="Login"
-        description="Please login to continue with us."
-      />
       <Footer />
     </div>
   )

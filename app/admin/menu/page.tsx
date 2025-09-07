@@ -95,7 +95,7 @@ const [formData, setFormData] = useState({
   new_until_date: "",
   features: "",
   specifications_text: "",
-  warranty_months: 12,
+  warranty_months: 0,
   brand: "",
   model: "",
   variants: [
@@ -111,7 +111,7 @@ const [formData, setFormData] = useState({
     }
   ],
   condition_type: "none",
-  warranty_period: 12,
+  warranty_period: 0,
   storage_capacity: "",
   color: "",
   stock_quantity: 0,
@@ -261,11 +261,11 @@ const resetForm = () => {
     new_until_date: "",
     features: "",
     specifications_text: "",
-    warranty_months: 12,
+    warranty_months: 0,
     brand: "",
     model: "",
     condition_type: "none",
-    warranty_period: 12,
+    warranty_period: 0,
     storage_capacity: "",
     color: "",
     stock_quantity: 0,
@@ -299,11 +299,11 @@ const openEditDialog = (item: Product) => {
     is_featured: item.is_featured,
     features: item.features?.join(", ") || "",
     specifications_text: item.specifications_text || "",
-    warranty_months: item.warranty_months || 12,
+    warranty_months: item.warranty_months || 0,
     brand: item.brand || "",
     model: item.model || "",
     condition_type: item.condition_type || "none",
-    warranty_period: item.warranty_period || 12,
+    warranty_period: item.warranty_period || 0,
     storage_capacity: item.storage_capacity || "",
     color: item.color || "",
     stock_quantity: item.stock_quantity || 0,
@@ -615,7 +615,7 @@ const formatPrice = (product: Product) => {
               </div>
 
               {/* SKU */}
-              <div>
+              {/* <div>
                 <Label htmlFor="sku">SKU (Leave empty to auto-generate)</Label>
                 <Input
                   id="sku"
@@ -624,7 +624,7 @@ const formatPrice = (product: Product) => {
                   className="bg-gray-700 border-gray-600 text-white"
                   placeholder="Auto-generated if empty"
                 />
-              </div>
+              </div> */}
 
               {/* Features */}
               <div>
