@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/ui/navbar"
+import { useLoginModal } from '@/lib/stores/useLoginModal'
 import Footer from "@/components/ui/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -43,10 +44,11 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null)
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
+  const { openModal } = useLoginModal()
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push("/products")
+      openModal()
     }
   }, [isAuthenticated, authLoading, router])
 

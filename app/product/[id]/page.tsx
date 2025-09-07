@@ -289,52 +289,139 @@ const conditionColors = {
       <Navbar />
 
       {/* Blur Overlay with Animation */}
-      {showBlur && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300" />
-          <div className="relative z-10">
-            {animationType === 'wishlist' && (
-              <div className="animate-in zoom-in duration-500 animate-out zoom-out fade-out delay-1500 duration-1000">
-                <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-full p-8 shadow-2xl animate-bounce">
-                  <Heart className="w-20 h-20 text-white fill-white animate-pulse" />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-pink-600 rounded-full p-8 opacity-30 animate-ping" />
-                <div className="text-center mt-4">
-                  <p className="text-white font-semibold text-lg bg-black/50 rounded-full px-4 py-2 backdrop-blur-sm">
-                    {isInWishlist(product.id) ? 'Removed from Wishlist!' : 'Added to Wishlist!'} ❤️
-                  </p>
-                </div>
-              </div>
-            )}
-            {animationType === 'cart' && (
-              <div className="animate-in zoom-in duration-500 animate-out zoom-out fade-out delay-1500 duration-1000">
-                <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-full p-8 shadow-2xl animate-bounce">
-                  <ShoppingCart className="w-20 h-20 text-white animate-pulse" />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600 rounded-full p-8 opacity-30 animate-ping" />
-                <div className="text-center mt-4">
-                  <p className="text-white font-semibold text-lg bg-black/50 rounded-full px-4 py-2 backdrop-blur-sm">
-                    Added to Cart! 🛒
-                  </p>
-                </div>
-              </div>
-            )}
-            {animationType === 'buy' && (
-              <div className="animate-in zoom-in duration-500 animate-out zoom-out fade-out delay-1000 duration-1000">
-                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-8 shadow-2xl animate-bounce">
-                  <Zap className="w-20 h-20 text-white animate-pulse" />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-8 opacity-30 animate-ping" />
-                <div className="text-center mt-4">
-                  <p className="text-white font-semibold text-lg bg-black/50 rounded-full px-4 py-2 backdrop-blur-sm">
-                    Processing Order... ⚡
-                  </p>
-                </div>
-              </div>
-            )}
+     {showBlur && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    {/* Enhanced backdrop with gradient and subtle animation */}
+    <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-slate-900/40 to-black/30 backdrop-blur-md animate-in fade-in duration-500" />
+    
+    <div className="relative z-10">
+      {animationType === 'wishlist' && (
+        <div className="animate-in zoom-in-50 duration-700 animate-out zoom-out-95 fade-out delay-2000 duration-800">
+          {/* Main icon container with enhanced styling */}
+          <div className="relative">
+            <div className="bg-gradient-to-br from-rose-500 via-pink-600 to-red-600 rounded-3xl p-10 shadow-2xl animate-bounce transform hover:scale-105 transition-transform duration-300">
+              <Heart className="w-24 h-24 text-white fill-white animate-pulse drop-shadow-lg" />
+              {/* Sparkle effects */}
+              <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping opacity-75" />
+              <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white rounded-full animate-pulse" />
+            </div>
+            {/* Enhanced ring effects */}
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-500 via-pink-600 to-red-600 rounded-3xl opacity-20 animate-ping scale-110" />
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-500 via-pink-600 to-red-600 rounded-3xl opacity-10 animate-ping scale-125 animation-delay-200" />
+          </div>
+          
+          {/* Enhanced message styling */}
+          <div className="text-center mt-6 animate-in slide-in-from-bottom-4 duration-500 delay-300">
+            <div className="inline-block bg-gradient-to-r from-black/70 to-gray-900/70 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/20 shadow-xl">
+              <p className="text-white font-bold text-xl tracking-wide">
+                {isInWishlist(product.id) ? '💔 Removed from Wishlist' : '❤️ Added to Wishlist'}
+              </p>
+              <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-pink-500 to-transparent mt-2 animate-pulse" />
+            </div>
           </div>
         </div>
       )}
+
+      {animationType === 'cart' && (
+        <div className="animate-in zoom-in-50 duration-700 animate-out zoom-out-95 fade-out delay-2000 duration-800">
+          <div className="relative">
+            <div className="bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 rounded-3xl p-10 shadow-2xl animate-bounce transform hover:scale-105 transition-transform duration-300">
+              <ShoppingCart className="w-24 h-24 text-white animate-pulse drop-shadow-lg" />
+              {/* Shopping effect dots */}
+              <div className="absolute top-3 right-3 w-3 h-3 bg-green-400 rounded-full animate-bounce animation-delay-100" />
+              <div className="absolute top-6 right-6 w-2 h-2 bg-blue-400 rounded-full animate-bounce animation-delay-300" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 rounded-3xl opacity-20 animate-ping scale-110" />
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 rounded-3xl opacity-10 animate-ping scale-125 animation-delay-200" />
+          </div>
+          
+          <div className="text-center mt-6 animate-in slide-in-from-bottom-4 duration-500 delay-300">
+            <div className="inline-block bg-gradient-to-r from-black/70 to-gray-900/70 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/20 shadow-xl">
+              <p className="text-white font-bold text-xl tracking-wide">
+                🛒 Added to Cart Successfully!
+              </p>
+              <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-orange-500 to-transparent mt-2 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {animationType === 'buy' && (
+        <div className="animate-in zoom-in-50 duration-700 animate-out zoom-out-95 fade-out delay-1800 duration-800">
+          <div className="relative">
+            <div className="bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 rounded-3xl p-10 shadow-2xl animate-bounce transform hover:scale-105 transition-transform duration-300">
+              <Zap className="w-24 h-24 text-white animate-pulse drop-shadow-lg" />
+              {/* Lightning effect */}
+              <div className="absolute inset-0 bg-yellow-400/30 rounded-3xl animate-ping opacity-50" />
+              <div className="absolute top-2 left-2 w-2 h-8 bg-yellow-300 rounded-full animate-pulse transform rotate-12" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 rounded-3xl opacity-20 animate-ping scale-110" />
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 rounded-3xl opacity-10 animate-ping scale-125 animation-delay-200" />
+          </div>
+          
+          <div className="text-center mt-6 animate-in slide-in-from-bottom-4 duration-500 delay-300">
+            <div className="inline-block bg-gradient-to-r from-black/70 to-gray-900/70 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/20 shadow-xl">
+              <p className="text-white font-bold text-xl tracking-wide">
+                ⚡ Processing Your Order...
+              </p>
+              <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-green-500 to-transparent mt-2 animate-pulse" />
+              {/* Progress indicator */}
+              <div className="mt-3 w-32 h-1 bg-gray-700 rounded-full mx-auto overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse" style={{width: '100%', animation: 'progress 1.5s ease-in-out'}} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Enhanced floating particles */}
+    <div className="absolute inset-0 pointer-events-none">
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-1 h-1 bg-white/40 rounded-full animate-float"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${i * 0.2}s`,
+            animationDuration: `${3 + Math.random() * 2}s`
+          }}
+        />
+      ))}
+    </div>
+  </div>
+)}
+
+<style jsx>{`
+  @keyframes progress {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+  
+  @keyframes float {
+    0%, 100% { 
+      transform: translateY(0px) rotate(0deg);
+      opacity: 0.4;
+    }
+    50% { 
+      transform: translateY(-20px) rotate(180deg);
+      opacity: 0.8;
+    }
+  }
+  
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+`}</style>
 
       <div className={`transition-all duration-300 ${showBlur ? "blur-sm" : ""}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
