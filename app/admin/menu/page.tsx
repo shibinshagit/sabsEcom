@@ -114,7 +114,7 @@ const [formData, setFormData] = useState({
   warranty_period: 12,
   storage_capacity: "",
   color: "",
-  stock_quantity: 1,
+  stock_quantity: 0,
   sku: "",
 })
 
@@ -268,7 +268,7 @@ const resetForm = () => {
     warranty_period: 12,
     storage_capacity: "",
     color: "",
-    stock_quantity: 1,
+    stock_quantity: 0,
     sku: "",
     variants: [
       {
@@ -306,7 +306,7 @@ const openEditDialog = (item: Product) => {
     warranty_period: item.warranty_period || 12,
     storage_capacity: item.storage_capacity || "",
     color: item.color || "",
-    stock_quantity: item.stock_quantity || 1,
+    stock_quantity: item.stock_quantity || 0,
     sku: item.sku || "",
     is_new: item.is_new || false,
     new_until_date: item.new_until_date || "",

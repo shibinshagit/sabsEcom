@@ -1,3 +1,4 @@
+// @/lib/store/slices/orderSlice.ts
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import type { MenuItem } from "@/lib/database"
 

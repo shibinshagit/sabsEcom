@@ -625,7 +625,7 @@ function Nav() {
                       key={item.name}
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
-                      className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                      className={`rounded-full px-6 py-2 font-semibold transition-all duration-200  ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
                         ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
                         : "text-white hover:bg-white/20"
                         }`}
@@ -1032,7 +1032,7 @@ function Nav() {
                     onClick={(e) => handleNavClick(item, e)}
                     className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
                       ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
-                      : "text-gray-700"
+                      : "text-white hover:bg-white/20"
                       }`}
                   >
                     {item.name}
@@ -1058,7 +1058,7 @@ function Nav() {
                       onClick={(e) => handleNavClick(item, e)}
                       className={`block px-3 py-2 text-base font-medium transition-colors rounded-lg ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
                         ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
-                        : `text-gray-700`
+                        : `text-white hover:bg-white/20 text-gray-700`
                         }`}
                     >
                       {item.name}

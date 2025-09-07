@@ -139,7 +139,7 @@ export async function POST(request: Request) {
         ${warranty_period || 12}, 
         ${storage_capacity || ''}, 
         ${color || ''}, 
-        ${stock_quantity || 1}, 
+        ${stock_quantity || 0}, 
         ${finalSku}
       )
       RETURNING *;
