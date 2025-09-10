@@ -129,21 +129,24 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3">
               <li>
-                <Link href="/" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
+                <Link href="/shipping-policy" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
                   Shipping Policy
                 </Link>
               </li>
               <li>
-                <Link href="/products" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
+                <Link href="/return-refund-policy" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
                   Return & Refund Policy
                 </Link>
               </li>
               <li>
-                <Link href="/#about" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
+                <Link href="/cancellation-policy" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
                   Cancellation Policy
                 </Link>
               </li>
               <li>
+                <Link href="/privacy-policy" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
+                  Privacy Policy
+                </Link>
               </li>
             </ul>
           </div>
@@ -207,10 +210,10 @@ export default function Footer() {
               <IconComponent className="w-5 h-5 mr-2" />© {currentYear} {theme.shopName}. All rights reserved.
             </p>
             <div className="flex space-x-8 mt-6 md:mt-0">
-              <Link href="/privacy" className={`${theme.text} ${theme.hover} text-lg transition-colors`}>
+              <Link href="/privacy-policy" className={`${theme.text} ${theme.hover} text-lg transition-colors`}>
                 Privacy Policy
               </Link>
-              <Link href="/terms" className={`${theme.text} ${theme.hover} text-lg transition-colors`}>
+              <Link href="/terms-of-service" className={`${theme.text} ${theme.hover} text-lg transition-colors`}>
                 Terms of Service
               </Link>
             </div>

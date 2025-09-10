@@ -16,6 +16,7 @@ import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { addToWishlistAPI, removeFromWishlistAPI } from '@/lib/store/slices/wishlistSlice'
+import SearchFilters from "@/components/ui/search-filters"
 
 interface ProductListProps {
   showSpinner?: boolean
@@ -164,18 +165,62 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     return hasSelectedCurrencyPrice(item)
   })
 
-  // Updated filteredItems logic to handle URL search
-  const filteredItems = currencyFilteredItems.filter((item) => {
-    const matchesCategory = selectedCategory === null || item.category_id === selectedCategory
-    const searchFromUrl = searchParams.get("search") || ""
-    const searchTermToUse = searchFromUrl || searchTerm
+  // State for search results
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearchActive, setIsSearchActive] = useState(false)
+  const [currentSearchQuery, setCurrentSearchQuery] = useState("")
+  const [searchSortBy, setSearchSortBy] = useState("relevance")
 
-    const matchesSearch = searchTermToUse.length === 0 ||
-      item.name.toLowerCase().includes(searchTermToUse.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTermToUse.toLowerCase()) ||
-      (item.brand && item.brand.toLowerCase().includes(searchTermToUse.toLowerCase()))
+  // Use search API when there's a search term
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("search")
+    if (searchFromUrl && searchFromUrl.trim().length >= 2) {
+      setIsSearchActive(true)
+      setCurrentSearchQuery(searchFromUrl.trim())
+      fetchSearchResults(searchFromUrl.trim(), searchSortBy)
+    } else {
+      setIsSearchActive(false)
+      setSearchResults([])
+      setCurrentSearchQuery("")
+    }
+  }, [searchParams, shop, selectedCurrency, selectedCategory, searchSortBy])
 
-    return matchesCategory && matchesSearch
+  const fetchSearchResults = async (query: string, sort: string = 'relevance') => {
+    try {
+      const searchUrl = new URL('/api/products/search', window.location.origin)
+      searchUrl.searchParams.set('q', query)
+      searchUrl.searchParams.set('shop', shop)
+      searchUrl.searchParams.set('currency', selectedCurrency)
+      if (selectedCategory) {
+        searchUrl.searchParams.set('category', selectedCategory.toString())
+      }
+      searchUrl.searchParams.set('limit', '50')
+      searchUrl.searchParams.set('sort', sort)
+
+      const response = await fetch(searchUrl.toString())
+      const searchData = await response.json()
+      
+      setSearchResults(searchData.items || [])
+    } catch (error) {
+      console.error('Search failed:', error)
+      setSearchResults([])
+    }
+  }
+
+  const handleSortChange = (newSort: string) => {
+    setSearchSortBy(newSort)
+    if (currentSearchQuery) {
+      fetchSearchResults(currentSearchQuery, newSort)
+    }
+  }
+
+  const handleClearSearch = () => {
+    router.push('/products')
+  }
+
+  // Updated filteredItems logic
+  const filteredItems = isSearchActive ? searchResults : currencyFilteredItems.filter((item) => {
+    return selectedCategory === null || item.category_id === selectedCategory
   })
 
   const shouldShowSpinButton = authInitialized && !isAuthenticated && !showSpinner
@@ -204,6 +249,16 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
 
   return (
     <div className="min-h-screen bg-gray-50 relative">
+      {/* Search Filters */}
+      <SearchFilters
+        isSearchActive={isSearchActive}
+        searchQuery={currentSearchQuery}
+        totalResults={filteredItems.length}
+        sortBy={searchSortBy}
+        onSortChange={handleSortChange}
+        onClearSearch={handleClearSearch}
+      />
+
       {/* Blur Overlay with Animation */}
       {showBlur && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">

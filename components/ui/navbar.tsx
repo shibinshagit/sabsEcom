@@ -43,6 +43,8 @@ function Nav() {
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [searchSuggestions, setSearchSuggestions] = useState([])
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
   const pathname = usePathname()
   const router = useRouter()
@@ -62,9 +64,15 @@ function Nav() {
   const handleSearch = async (term: string) => {
     setSearchTerm(term)
     
+    // Clear previous debounce timer
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer)
+    }
+    
     if (term.trim().length === 0) {
       setShowSearchDropdown(false)
       setSearchResults([])
+      setSearchSuggestions([])
       if (pathname === "/products") {
         const params = new URLSearchParams(searchParams.toString())
         params.delete('search')
@@ -81,35 +89,41 @@ function Nav() {
     setIsSearching(true)
     setShowSearchDropdown(true)
 
-    try {
-      const response = await fetch(`/api/admin/products`)
-      const allProducts = await response.json()
-            const filtered = allProducts.filter((product: any) => {
-        const matchesShop = product.shop_category === shop
-        const matchesSearch = 
-          product.name.toLowerCase().includes(term.toLowerCase()) ||
-          product.description.toLowerCase().includes(term.toLowerCase()) ||
-          (product.brand && product.brand.toLowerCase().includes(term.toLowerCase()))
-        
-        return matchesShop && matchesSearch
-      })
+    // Debounce search requests
+    const timer = setTimeout(async () => {
+      try {
+        const searchUrl = new URL('/api/products/search', window.location.origin)
+        searchUrl.searchParams.set('q', term.trim())
+        searchUrl.searchParams.set('shop', shop)
+        searchUrl.searchParams.set('currency', selectedCurrency)
+        searchUrl.searchParams.set('limit', '8') // Show 8 results in dropdown
 
-      setSearchResults(filtered.slice(0, 5))
-      
-      if (pathname === "/products" || pathname === "/") {
-        const params = new URLSearchParams(searchParams.toString())
-        params.set('search', term)
-        if (pathname === "/") {
-          router.push(`/products?${params.toString()}`)
-        } else {
-          router.push(`/products?${params.toString()}`)
+        const response = await fetch(searchUrl.toString())
+        const searchData = await response.json()
+        
+        setSearchResults(searchData.items || [])
+        setSearchSuggestions(searchData.suggestions || [])
+        
+        // Update URL for products page
+        if (pathname === "/products" || pathname === "/") {
+          const params = new URLSearchParams(searchParams.toString())
+          params.set('search', term)
+          if (pathname === "/") {
+            router.push(`/products?${params.toString()}`)
+          } else {
+            router.push(`/products?${params.toString()}`)
+          }
         }
+      } catch (error) {
+        console.error('Search failed:', error)
+        setSearchResults([])
+        setSearchSuggestions([])
+      } finally {
+        setIsSearching(false)
       }
-    } catch (error) {
-      console.error('Search failed:', error)
-    } finally {
-      setIsSearching(false)
-    }
+    }, 300) // 300ms debounce
+
+    setSearchDebounceTimer(timer)
   }
 
   const handleSearchResultClick = (productId: number) => {
@@ -359,6 +373,11 @@ function Nav() {
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-96 overflow-y-auto">
                       {searchResults.length > 0 ? (
                         <>
+                          {/* Results Header */}
+                          <div className="px-3 py-2 bg-gray-50 border-b text-xs font-medium text-gray-600">
+                            Found {searchResults.length} product{searchResults.length > 1 ? 's' : ''} in Shop {shop}
+                          </div>
+                          
                           {searchResults.map((product: any) => (
                             <div
                               key={product.id}
@@ -366,39 +385,76 @@ function Nav() {
                               className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
                             >
                               <Image
-                                src={product.image_url || "/placeholder.svg"}
+                                src={product.image_urls?.[0] || "/placeholder.svg"}
                                 alt={product.name}
                                 width={40}
                                 height={40}
                                 className="rounded-lg object-cover"
                               />
                               <div className="flex-1">
-                                <p className="font-medium text-gray-900 text-sm">{product.name}</p>
-                                <p className="text-gray-500 text-xs line-clamp-1">{product.description}</p>
-                                <p className="text-orange-600 font-semibold text-sm">
-                                  {selectedCurrency === 'AED' && product.price_aed 
-                                    ? `D ${product.price_aed}`
-                                    : selectedCurrency === 'INR' && product.price_inr
-                                    ? `₹ ${product.price_inr}`
-                                    : `$${product.price}`
-                                  }
-                                </p>
+                                <p className="font-medium text-gray-900 text-sm line-clamp-1">{product.name}</p>
+                                {product.brand && (
+                                  <p className="text-xs text-gray-500">{product.brand}</p>
+                                )}
+                                {product.search_matches && product.search_matches.length > 0 && (
+                                  <p className="text-xs text-blue-600">
+                                    Match: {product.search_matches[0].field}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-2 mt-1">
+                                  {product.display_price ? (
+                                    <>
+                                      <p className="text-orange-600 font-semibold text-sm">
+                                        {product.display_price.symbol} {product.display_price.price}
+                                      </p>
+                                      {product.has_discount && (
+                                        <span className="text-xs text-green-600">
+                                          {Math.round(((product.display_price.original_price - product.display_price.price) / product.display_price.original_price) * 100)}% OFF
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <p className="text-gray-500 text-sm">Price unavailable</p>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}
-                          {searchResults.length >= 5 && (
-                            <div
-                              onClick={handleViewAllResults}
-                              className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium"
-                            >
-                              View all results for "{searchTerm}"
-                            </div>
-                          )}
+                          
+                          {/* View All Results */}
+                          <div
+                            onClick={handleViewAllResults}
+                            className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium border-t"
+                          >
+                            View all results for "{searchTerm}"
+                          </div>
                         </>
                       ) : searchTerm.length >= 2 ? (
                         <div className="p-4 text-center text-gray-500">
-                          <p>No products found for "{searchTerm}"</p>
-                          <p className="text-sm">Try different keywords</p>
+                          <div className="text-4xl mb-2">🔍</div>
+                          <p className="font-medium">No products found for "{searchTerm}"</p>
+                          <p className="text-sm mt-1">Try different keywords or check spelling</p>
+                          
+                          {/* Show suggestions if available */}
+                          {searchSuggestions.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs text-gray-400 mb-2">Did you mean:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {searchSuggestions.map((suggestion, index) => (
+                                  <button
+                                    key={index}
+                                    onClick={() => {
+                                      setSearchTerm(suggestion)
+                                      handleSearch(suggestion)
+                                    }}
+                                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors"
+                                  >
+                                    {suggestion}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : null}
                     </div>
@@ -824,6 +880,9 @@ function Nav() {
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-80 overflow-y-auto">
                   {searchResults.length > 0 ? (
                     <>
+                      <div className="px-3 py-2 bg-gray-50 border-b text-xs font-medium text-gray-600">
+                        {searchResults.length} result{searchResults.length > 1 ? 's' : ''}
+                      </div>
                       {searchResults.map((product: any) => (
                         <div
                           key={product.id}
@@ -831,37 +890,50 @@ function Nav() {
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
                         >
                           <Image
-                            src={product.image_url || "/placeholder.svg"}
+                            src={product.image_urls?.[0] || "/placeholder.svg"}
                             alt={product.name}
                             width={35}
                             height={35}
                             className="rounded-lg object-cover"
                           />
                           <div className="flex-1">
-                            <p className="font-medium text-gray-900 text-sm">{product.name}</p>
-                            <p className="text-orange-600 font-semibold text-xs">
-                              {selectedCurrency === 'AED' && product.price_aed 
-                                ? `D ${product.price_aed}`
-                                : selectedCurrency === 'INR' && product.price_inr
-                                ? `₹ ${product.price_inr}`
-                                : `$${product.price}`
-                              }
-                            </p>
+                            <p className="font-medium text-gray-900 text-sm line-clamp-1">{product.name}</p>
+                            {product.display_price ? (
+                              <p className="text-orange-600 font-semibold text-xs">
+                                {product.display_price.symbol} {product.display_price.price}
+                              </p>
+                            ) : (
+                              <p className="text-gray-500 text-xs">Price unavailable</p>
+                            )}
                           </div>
                         </div>
                       ))}
-                      {searchResults.length >= 5 && (
-                        <div
-                          onClick={handleViewAllResults}
-                          className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium text-sm"
-                        >
-                          View all results
-                        </div>
-                      )}
+                      <div
+                        onClick={handleViewAllResults}
+                        className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium text-sm border-t"
+                      >
+                        View all results
+                      </div>
                     </>
                   ) : searchTerm.length >= 2 ? (
                     <div className="p-3 text-center text-gray-500">
                       <p className="text-sm">No products found</p>
+                      {searchSuggestions.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {searchSuggestions.map((suggestion, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setSearchTerm(suggestion)
+                                handleSearch(suggestion)
+                              }}
+                              className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -983,6 +1055,9 @@ function Nav() {
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-64 overflow-y-auto">
                   {searchResults.length > 0 ? (
                     <>
+                      <div className="px-3 py-2 bg-gray-50 border-b text-xs font-medium text-gray-600">
+                        {searchResults.length} found
+                      </div>
                       {searchResults.map((product: any) => (
                         <div
                           key={product.id}
@@ -990,7 +1065,7 @@ function Nav() {
                           className="flex items-center gap-2 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
                         >
                           <Image
-                            src={product.image_url || "/placeholder.svg"}
+                            src={product.image_urls?.[0] || "/placeholder.svg"}
                             alt={product.name}
                             width={30}
                             height={30}
@@ -998,14 +1073,13 @@ function Nav() {
                           />
                           <div className="flex-1">
                             <p className="font-medium text-gray-900 text-xs line-clamp-1">{product.name}</p>
-                            <p className="text-orange-600 font-semibold text-xs">
-                              {selectedCurrency === 'AED' && product.price_aed 
-                                ? `د.إ ${product.price_aed}`
-                                : selectedCurrency === 'INR' && product.price_inr
-                                ? `₹ ${product.price_inr}`
-                                : `$${product.price}`
-                              }
-                            </p>
+                            {product.display_price ? (
+                              <p className="text-orange-600 font-semibold text-xs">
+                                {product.display_price.symbol} {product.display_price.price}
+                              </p>
+                            ) : (
+                              <p className="text-gray-500 text-xs">Unavailable</p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1013,6 +1087,22 @@ function Nav() {
                   ) : searchTerm.length >= 2 ? (
                     <div className="p-3 text-center text-gray-500">
                       <p className="text-xs">No products found</p>
+                      {searchSuggestions.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {searchSuggestions.slice(0, 2).map((suggestion, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setSearchTerm(suggestion)
+                                handleSearch(suggestion)
+                              }}
+                              className="block w-full px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
+                            >
+                              Try "{suggestion}"
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : null}
                 </div>

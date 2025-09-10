@@ -641,13 +641,13 @@ const formatPrice = (product: Product) => {
 
               {/* Specifications */}
               <div>
-                <Label htmlFor="specifications_text">Specifications</Label>
+                <Label htmlFor="specifications_text">Hashtags</Label>
                 <Textarea
                   id="specifications_text"
                   value={formData.specifications_text}
                   onChange={(e) => setFormData({ ...formData, specifications_text: e.target.value })}
                   className="bg-gray-700 border-gray-600 text-white"
-                  placeholder="Technical specifications"
+                  placeholder="Put hash tags coma separated. "
                   rows={3}
                 />
               </div>
