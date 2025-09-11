@@ -123,11 +123,11 @@ export async function PUT(
       await sql`
         INSERT INTO product_variants (
           product_id, name, price_aed, price_inr, discount_aed, discount_inr,
-          available_aed, available_inr
+          available_aed, available_inr, stock_quantity
         ) VALUES (
           ${params.id}, ${variant.name}, ${variant.price_aed || 0}, ${variant.price_inr || 0},
           ${variant.discount_aed || 0}, ${variant.discount_inr || 0},
-          ${variant.available_aed ?? true}, ${variant.available_inr ?? true}
+          ${variant.available_aed ?? true}, ${variant.available_inr ?? true}, ${variant.stock_quantity || 0}
         );
       `
     }
@@ -147,7 +147,8 @@ export async function PUT(
               'discount_aed', v.discount_aed,
               'discount_inr', v.discount_inr,
               'available_aed', v.available_aed,
-              'available_inr', v.available_inr
+              'available_inr', v.available_inr,
+              'stock_quantity', v.stock_quantity
             ) ORDER BY v.id
           ) FILTER (WHERE v.id IS NOT NULL),
           '[]'::json
@@ -236,7 +237,8 @@ export async function GET(
               'discount_aed', v.discount_aed,
               'discount_inr', v.discount_inr,
               'available_aed', v.available_aed,
-              'available_inr', v.available_inr
+              'available_inr', v.available_inr,
+              'stock_quantity', v.stock_quantity
             ) ORDER BY v.id
           ) FILTER (WHERE v.id IS NOT NULL),
           '[]'::json

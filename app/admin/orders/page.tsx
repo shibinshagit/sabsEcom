@@ -24,6 +24,8 @@ export default function OrdersManagement() {
     customer_phone: string
     order_type: string
     payment_method: string
+    payment_status: string
+    payment_id?: string
     delivery_address?: string
     customer_address?: string
     total_amount: number
@@ -32,11 +34,16 @@ export default function OrdersManagement() {
     final_total: number
     status: string
     special_instructions: string
+    currency: string
+    coupon_code?: string
+    discount_amount: number
     created_at: string
     updated_at: string
     items: Array<{
       id: number
       menu_item_name: string
+      variant_id?: number
+      variant_name?: string
       quantity: number
       unit_price: number
       total_price: number
@@ -93,10 +100,17 @@ export default function OrdersManagement() {
       setUpdating(orderId)
       console.log(`Updating order ${orderId} to status: ${newStatus}`)
 
+      // Find the order to get item details for stock reduction
+      const order = orders.find(o => o.id === orderId)
+      
       const response = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ 
+          status: newStatus,
+          reduce_stock: newStatus === 'confirmed', // Reduce stock when order is confirmed
+          order_items: order?.items
+        }),
       })
 
       if (response.ok) {
@@ -143,13 +157,15 @@ export default function OrdersManagement() {
         return <Clock className="w-4 h-4" />
       case "confirmed":
         return <CheckCircle className="w-4 h-4" />
-      case "preparing":
+      case "packed":
         return <Package className="w-4 h-4" />
-      case "ready":
+      case "dispatched":
+        return <Package className="w-4 h-4" />
+      case "out for delivery":
+        return <Package className="w-4 h-4" />
+      case "delivered":
         return <CheckCircle className="w-4 h-4" />
-      case "completed":
-        return <CheckCircle className="w-4 h-4" />
-      case "cancelled":
+      case "cancel":
         return <AlertCircle className="w-4 h-4" />
       default:
         return <Clock className="w-4 h-4" />
@@ -162,13 +178,15 @@ export default function OrdersManagement() {
         return "bg-yellow-500"
       case "confirmed":
         return "bg-blue-500"
-      case "preparing":
+      case "packed":
+        return "bg-purple-500"
+      case "dispatched":
         return "bg-orange-500"
-      case "ready":
+      case "out for delivery":
+        return "bg-indigo-500"
+      case "delivered":
         return "bg-green-500"
-      case "completed":
-        return "bg-green-600"
-      case "cancelled":
+      case "cancel":
         return "bg-red-500"
       default:
         return "bg-gray-500"
@@ -238,10 +256,11 @@ export default function OrdersManagement() {
               <SelectItem value="all" className="text-white">All Orders</SelectItem>
               <SelectItem value="pending" className="text-white">Pending</SelectItem>
               <SelectItem value="confirmed" className="text-white">Confirmed</SelectItem>
-              <SelectItem value="preparing" className="text-white">Preparing</SelectItem>
-              <SelectItem value="ready" className="text-white">Ready</SelectItem>
-              <SelectItem value="completed" className="text-white">Completed</SelectItem>
-              <SelectItem value="cancelled" className="text-white">Cancelled</SelectItem>
+              <SelectItem value="packed" className="text-white">Packed</SelectItem>
+              <SelectItem value="dispatched" className="text-white">Dispatched</SelectItem>
+              <SelectItem value="out for delivery" className="text-white">Out for Delivery</SelectItem>
+              <SelectItem value="delivered" className="text-white">Delivered</SelectItem>
+              <SelectItem value="cancel" className="text-white">Cancelled</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -259,7 +278,7 @@ export default function OrdersManagement() {
                 <TableRow className="border-gray-700">
                   <TableHead className="text-gray-300">Order ID</TableHead>
                   <TableHead className="text-gray-300">Customer</TableHead>
-                  <TableHead className="text-gray-300">Payment Type</TableHead>
+                  <TableHead className="text-gray-300">Payment</TableHead>
                   <TableHead className="text-gray-300">Total</TableHead>
                   <TableHead className="text-gray-300">Status</TableHead>
                   <TableHead className="text-gray-300">Date</TableHead>
@@ -279,19 +298,35 @@ export default function OrdersManagement() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {getPaymentIcon(order.payment_method)}
-                        <Badge variant="outline" className="capitalize">
-                          {order.payment_method?.toUpperCase() || 'COD'}
-                        </Badge>
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center space-x-2">
+                          {getPaymentIcon(order.payment_method)}
+                          <Badge variant="outline" className="capitalize text-xs text-white">
+                            {order.payment_method?.toUpperCase() || 'COD'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className={`w-2 h-2 rounded-full ${
+                            order.payment_status === 'completed' ? 'bg-green-500' : 
+                            order.payment_status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
+                          }`}></div>
+                          <span className="text-xs text-white capitalize text-white">
+                            {order.payment_status || 'pending'}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-white">
-                        <span className="font-semibold text-lg">₹{order.final_total?.toFixed(2) || '0.00'}</span>
+                        <span className="font-semibold text-lg">{order.currency === 'AED' ? 'AED' : '₹'} {order.final_total?.toFixed(2) || '0.00'}</span>
                         {order.total_amount !== order.final_total && (
                           <p className="text-gray-400 text-xs">
-                            Subtotal: ₹{order.total_amount?.toFixed(2) || '0.00'}
+                            Subtotal: {order.currency === 'AED' ? 'AED' : '₹'} {order.total_amount?.toFixed(2) || '0.00'}
+                          </p>
+                        )}
+                        {order.discount_amount > 0 && (
+                          <p className="text-green-400 text-xs">
+                            Saved: {order.currency === 'AED' ? 'AED' : '₹'} {order.discount_amount?.toFixed(2)}
                           </p>
                         )}
                       </div>
@@ -299,7 +334,7 @@ export default function OrdersManagement() {
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <div className={`w-2 h-2 rounded-full ${getStatusColor(order.status)}`}></div>
-                        <Badge variant="outline" className="capitalize">
+                        <Badge variant="outline" className="capitalize text-white">
                           {order.status}
                         </Badge>
                       </div>
@@ -364,11 +399,69 @@ export default function OrdersManagement() {
 
                                   <div>
                                     <h4 className="font-semibold mb-2">Order Information</h4>
-                                    <p><strong>Order Type:</strong> {selectedOrder.order_type}</p>
-                                    <p><strong>Payment Type:</strong> {selectedOrder.payment_method?.toUpperCase() || 'COD'}</p>
+                                    <p><strong>Order Type:</strong> <span className="capitalize">{selectedOrder.order_type}</span></p>
+                                    <p><strong>Currency:</strong> {selectedOrder.currency || 'INR'}</p>
                                     <p><strong>Status:</strong> <span className="capitalize">{selectedOrder.status}</span></p>
                                     <p><strong>Order Date:</strong> {new Date(selectedOrder.created_at).toLocaleDateString()}</p>
                                     <p><strong>Order Time:</strong> {new Date(selectedOrder.created_at).toLocaleTimeString()}</p>
+                                    
+                                    <div className="mt-3">
+                                      <h5 className="font-semibold mb-1">Payment Details</h5>
+                                      <div className="bg-gray-700/50 p-3 rounded border border-gray-600">
+                                        <p><strong>Method:</strong> {selectedOrder.payment_method?.toUpperCase() || 'COD'}</p>
+                                        <p><strong>Status:</strong> <span className={`capitalize ${
+                                          selectedOrder.payment_status === 'completed' ? 'text-green-400' : 
+                                          selectedOrder.payment_status === 'failed' ? 'text-red-400' : 'text-yellow-400'
+                                        }`}>{selectedOrder.payment_status || 'pending'}</span></p>
+                                        
+                                        {/* Razorpay Details for Bank Reconciliation */}
+                                        {(selectedOrder.razorpay_order_id || selectedOrder.razorpay_payment_id) && (
+                                          <div className="mt-3 pt-3 border-t border-gray-600">
+                                            <h6 className="font-medium text-cyan-400 mb-2">🏦 Bank Reconciliation Details</h6>
+                                            {selectedOrder.razorpay_order_id && (
+                                              <p className="text-sm mb-1"><strong>Razorpay Order ID:</strong> <span className="font-mono text-cyan-300">{selectedOrder.razorpay_order_id}</span></p>
+                                            )}
+                                            {selectedOrder.razorpay_payment_id && (
+                                              <p className="text-sm mb-1"><strong>Razorpay Payment ID:</strong> <span className="font-mono text-cyan-300">{selectedOrder.razorpay_payment_id}</span></p>
+                                            )}
+                                            {selectedOrder.bank_reference_num && (
+                                              <p className="text-sm mb-1"><strong>Bank Reference:</strong> <span className="font-mono text-yellow-300">{selectedOrder.bank_reference_num}</span></p>
+                                            )}
+                                            {selectedOrder.bank_transaction_id && (
+                                              <p className="text-sm mb-1"><strong>Bank Transaction ID:</strong> <span className="font-mono text-yellow-300">{selectedOrder.bank_transaction_id}</span></p>
+                                            )}
+                                            {selectedOrder.payment_method_type && (
+                                              <p className="text-sm mb-1"><strong>Payment Type:</strong> <span className="capitalize">{selectedOrder.payment_method_type}</span></p>
+                                            )}
+                                            {selectedOrder.payment_bank && (
+                                              <p className="text-sm mb-1"><strong>Bank:</strong> {selectedOrder.payment_bank}</p>
+                                            )}
+                                            {selectedOrder.payment_vpa && (
+                                              <p className="text-sm mb-1"><strong>UPI ID:</strong> <span className="font-mono">{selectedOrder.payment_vpa}</span></p>
+                                            )}
+                                            {selectedOrder.payment_wallet && (
+                                              <p className="text-sm mb-1"><strong>Wallet:</strong> {selectedOrder.payment_wallet}</p>
+                                            )}
+                                            {selectedOrder.payment_amount && (
+                                              <p className="text-sm mb-1"><strong>Payment Amount:</strong> ₹{(selectedOrder.payment_amount / 100).toFixed(2)}</p>
+                                            )}
+                                            {selectedOrder.payment_fee && (
+                                              <p className="text-sm mb-1"><strong>Processing Fee:</strong> ₹{(selectedOrder.payment_fee / 100).toFixed(2)}</p>
+                                            )}
+                                            {selectedOrder.payment_created_at && (
+                                              <p className="text-sm mb-1"><strong>Payment Time:</strong> {new Date(selectedOrder.payment_created_at).toLocaleString()}</p>
+                                            )}
+                                            {selectedOrder.razorpay_signature && (
+                                              <p className="text-sm mt-2"><strong>Signature:</strong> <span className="font-mono text-xs text-gray-400 break-all">{selectedOrder.razorpay_signature.substring(0, 40)}...</span></p>
+                                            )}
+                                          </div>
+                                        )}
+                                        
+                                        {selectedOrder.payment_method?.toLowerCase() !== 'cod' && !selectedOrder.razorpay_order_id && (
+                                          <p className="text-sm text-gray-400 mt-2">No payment gateway details available</p>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
 
@@ -376,17 +469,29 @@ export default function OrdersManagement() {
                                   <h4 className="font-semibold mb-2">Order Items</h4>
                                   <div className="space-y-2 max-h-40 overflow-y-auto">
                                     {selectedOrder.items?.map((item) => (
-                                      <div key={item.id} className="flex justify-between items-center p-2 bg-gray-700 rounded">
+                                      <div key={item.id} className="flex justify-between items-center p-3 bg-gray-700 rounded border border-gray-600">
                                         <div className="flex-1">
-                                          <span className="font-medium">{item.menu_item_name}</span>
-                                          <span className="text-gray-400 ml-2">x{item.quantity}</span>
+                                          <div className="flex items-center space-x-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                            <span className="font-medium text-white">{item.menu_item_name}</span>
+                                          </div>
+                                          {item.variant_name && item.variant_name !== 'Default' && (
+                                            <p className="text-cyan-400 text-sm mt-1 ml-4">
+                                              <strong>Variant:</strong> {item.variant_name}
+                                            </p>
+                                          )}
+                                          <p className="text-yellow-400 text-sm mt-1 ml-4">
+                                            <strong>Quantity:</strong> {item.quantity} {item.quantity > 1 ? 'pieces' : 'piece'}
+                                          </p>
                                           {item.special_requests && (
-                                            <p className="text-gray-400 text-sm mt-1">{item.special_requests}</p>
+                                            <p className="text-gray-400 text-sm mt-1 ml-4">
+                                              <strong>Note:</strong> {item.special_requests}
+                                            </p>
                                           )}
                                         </div>
                                         <div className="text-right">
-                                          <span className="font-medium">₹{item.total_price?.toFixed(2) || '0.00'}</span>
-                                          <p className="text-gray-400 text-xs">₹{item.unit_price?.toFixed(2)} each</p>
+                                          <span className="font-semibold text-lg text-white">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {item.total_price?.toFixed(2) || '0.00'}</span>
+                                          <p className="text-gray-400 text-xs">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {item.unit_price?.toFixed(2)} each</p>
                                         </div>
                                       </div>
                                     ))}
@@ -397,24 +502,30 @@ export default function OrdersManagement() {
                                   <div className="space-y-2">
                                     <div className="flex justify-between">
                                       <span>Subtotal:</span>
-                                      <span>₹{selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
+                                      <span>{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
                                     </div>
                                     {selectedOrder.tax_amount > 0 && (
                                       <div className="flex justify-between">
                                         <span>Tax:</span>
-                                        <span>₹{selectedOrder.tax_amount?.toFixed(2) || '0.00'}</span>
+                                        <span>{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.tax_amount?.toFixed(2) || '0.00'}</span>
                                       </div>
                                     )}
                                     {selectedOrder.delivery_fee > 0 && (
                                       <div className="flex justify-between">
                                         <span>Delivery Fee:</span>
-                                        <span>₹{selectedOrder.delivery_fee?.toFixed(2) || '0.00'}</span>
+                                        <span>{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.delivery_fee?.toFixed(2) || '0.00'}</span>
+                                      </div>
+                                    )}
+                                    {selectedOrder.discount_amount > 0 && (
+                                      <div className="flex justify-between text-green-400">
+                                        <span>Discount ({selectedOrder.coupon_code}):</span>
+                                        <span>-{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.discount_amount?.toFixed(2) || '0.00'}</span>
                                       </div>
                                     )}
                                   </div>
                                   <div className="flex justify-between font-bold text-lg border-t border-gray-600 pt-2 mt-2">
                                     <span>Total Amount:</span>
-                                    <span>₹{selectedOrder.final_total?.toFixed(2) || '0.00'}</span>
+                                    <span>{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.final_total?.toFixed(2) || '0.00'}</span>
                                   </div>
                                 </div>
 
@@ -436,10 +547,11 @@ export default function OrdersManagement() {
                           <SelectContent className="bg-gray-700 border-gray-600">
                             <SelectItem value="pending" className="text-white">Pending</SelectItem>
                             <SelectItem value="confirmed" className="text-white">Confirmed</SelectItem>
-                            <SelectItem value="preparing" className="text-white">Preparing</SelectItem>
-                            <SelectItem value="ready" className="text-white">Ready</SelectItem>
-                            <SelectItem value="completed" className="text-white">Completed</SelectItem>
-                            <SelectItem value="cancelled" className="text-white">Cancelled</SelectItem>
+                            <SelectItem value="packed" className="text-white">Packed</SelectItem>
+                            <SelectItem value="dispatched" className="text-white">Dispatched</SelectItem>
+                            <SelectItem value="out for delivery" className="text-white">Out for Delivery</SelectItem>
+                            <SelectItem value="delivered" className="text-white">Delivered</SelectItem>
+                            <SelectItem value="cancel" className="text-white">Cancel</SelectItem>
                           </SelectContent>
                         </Select>
                         {updating === order.id && (

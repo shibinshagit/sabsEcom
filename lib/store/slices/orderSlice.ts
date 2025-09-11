@@ -1,11 +1,13 @@
 // @/lib/store/slices/orderSlice.ts
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
-import type { MenuItem } from "@/lib/database"
+import type { MenuItem, Variant, CartItem as CartItemType } from "@/lib/database"
 
 interface CartItem {
   menuItem: MenuItem
   quantity: number
   specialRequests?: string
+  variant_id?: number
+  selected_variant?: Variant
 }
 
 interface OrderState {
@@ -136,7 +138,18 @@ export const verifyRazorpayPayment = createAsyncThunk(
   }
 )
 
-const hasValidCurrencyPrice = (item: MenuItem, currency: string): boolean => {
+const hasValidCurrencyPrice = (item: MenuItem, currency: string, variant?: Variant): boolean => {
+  // If variant is provided, check variant prices
+  if (variant) {
+    if (currency === 'AED' && variant.available_aed && variant.price_aed > 0) {
+      return true
+    } else if (currency === 'INR' && variant.available_inr && variant.price_inr > 0) {
+      return true
+    }
+    return false
+  }
+  
+  // Fallback to product-level prices for backward compatibility
   if (currency === 'AED' && item.price_aed && item.price_aed > 0) {
     return true
   } else if (currency === 'INR' && item.price_inr && item.price_inr > 0) {
@@ -145,7 +158,19 @@ const hasValidCurrencyPrice = (item: MenuItem, currency: string): boolean => {
   return false
 }
 
-const getCurrencyPrice = (item: MenuItem, currency: string): number => {
+const getCurrencyPrice = (item: MenuItem, currency: string, variant?: Variant): number => {
+  // If variant is provided, use variant prices (with discount applied)
+  if (variant) {
+    if (currency === 'AED' && variant.available_aed && variant.price_aed > 0) {
+      const discount = variant.discount_aed || 0
+      return Math.max(0, variant.price_aed - discount)
+    } else if (currency === 'INR' && variant.available_inr && variant.price_inr > 0) {
+      const discount = variant.discount_inr || 0
+      return Math.max(0, variant.price_inr - discount)
+    }
+  }
+  
+  // Fallback to product-level prices for backward compatibility
   if (currency === 'AED' && item.price_aed && item.price_aed > 0) {
     return item.price_aed
   } else if (currency === 'INR' && item.price_inr && item.price_inr > 0) {
@@ -156,9 +181,9 @@ const getCurrencyPrice = (item: MenuItem, currency: string): number => {
 
 const calculateTotal = (cart: CartItem[], selectedCurrency: string) => {
   return cart
-    .filter(item => hasValidCurrencyPrice(item.menuItem, selectedCurrency))
+    .filter(item => hasValidCurrencyPrice(item.menuItem, selectedCurrency, item.selected_variant))
     .reduce((sum, item) => {
-      const price = getCurrencyPrice(item.menuItem, selectedCurrency)
+      const price = getCurrencyPrice(item.menuItem, selectedCurrency, item.selected_variant)
       return sum + price * item.quantity
     }, 0)
 }
@@ -197,9 +222,15 @@ const orderSlice = createSlice({
       specialRequests?: string; 
       selectedCurrency?: string;
       userId?: string | number;
+      variant_id?: number;
+      selected_variant?: Variant;
     }>) => {
-      const { menuItem, quantity, specialRequests, selectedCurrency, userId } = action.payload
-      const existingItem = state.cart.find((item) => item.menuItem.id === menuItem.id)
+      const { menuItem, quantity, specialRequests, selectedCurrency, userId, variant_id, selected_variant } = action.payload
+      // For variant-based products, check both product id and variant id
+      const existingItem = state.cart.find((item) => 
+        item.menuItem.id === menuItem.id && 
+        (variant_id ? item.variant_id === variant_id : !item.variant_id)
+      )
       
       if (existingItem) {
         existingItem.quantity += quantity
@@ -207,7 +238,9 @@ const orderSlice = createSlice({
         state.cart.push({
           menuItem,
           quantity,
-          specialRequests
+          specialRequests,
+          variant_id,
+          selected_variant
         })
       }
       
@@ -270,7 +303,7 @@ const orderSlice = createSlice({
       userId?: string | number;
     }>) => {
       const { selectedCurrency } = action.payload
-      state.cart = state.cart.filter(item => hasValidCurrencyPrice(item.menuItem, selectedCurrency))
+      state.cart = state.cart.filter(item => hasValidCurrencyPrice(item.menuItem, selectedCurrency, item.selected_variant))
       state.total = calculateTotal(state.cart, selectedCurrency)
     },
   },

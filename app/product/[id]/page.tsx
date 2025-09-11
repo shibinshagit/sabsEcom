@@ -30,6 +30,7 @@ interface Variant {
   discount_inr: number
   available_aed: boolean
   available_inr: boolean
+  stock_quantity: number
 }
 
 interface Product {
@@ -94,6 +95,22 @@ export default function ProductPage() {
 
   const hasSelectedCurrencyPrice = (variant: Variant) => {
     return selectedCurrency === 'AED' ? variant.available_aed : variant.available_inr
+  }
+
+  const isVariantAvailable = (variant: Variant) => {
+    return hasSelectedCurrencyPrice(variant) && variant.stock_quantity > 0
+  }
+
+  const getStockMessage = (variant: Variant) => {
+    if (variant.stock_quantity === 0) {
+      return 'Out of Stock'
+    } else if (!hasSelectedCurrencyPrice(variant)) {
+      return `Not available in ${selectedCurrency === 'INR' ? 'India' : 'UAE'}`
+    } else if (variant.stock_quantity <= 5) {
+      return `Only ${variant.stock_quantity} left`
+    } else {
+      return `${variant.stock_quantity} in stock`
+    }
   }
 
   const handleToggleWishlist = async (product: Product) => {
@@ -166,38 +183,57 @@ export default function ProductPage() {
     }
     if (product && selectedVariant && hasSelectedCurrencyPrice(selectedVariant)) {
       dispatch(addToCart({
-        menuItem: { ...product, ...selectedVariant },
+        menuItem: product,
         quantity,
         selectedCurrency,
-        userId: user?.id
+        userId: user?.id,
+        variant_id: selectedVariant.id,
+        selected_variant: selectedVariant
       }))
       triggerBlurAnimation('cart')
       toast.success('Added to cart')
+    } else if (!hasSelectedCurrencyPrice(selectedVariant)) {
+      toast.error(`This product is not available in ${selectedCurrency === 'INR' ? 'India' : 'UAE'}`)
+    } else if ((selectedVariant?.stock_quantity ?? 0) === 0) {
+      toast.error('This variant is currently out of stock')
     } else {
-      toast.error(`Product not available in ${selectedCurrency}`)
+      toast.error('Unable to add to cart. Please try again.')
     }
   }
 
   const handleBuyNow = () => {
     if (product && selectedVariant && hasSelectedCurrencyPrice(selectedVariant)) {
       dispatch(addToCart({
-        menuItem: { ...product, ...selectedVariant },
+        menuItem: product,
         quantity,
         selectedCurrency,
-        userId: user?.id
+        userId: user?.id,
+        variant_id: selectedVariant.id,
+        selected_variant: selectedVariant
       }))
       triggerBlurAnimation('buy')
       setTimeout(() => {
         router.push('/order')
       }, 1500)
+    } else if (!hasSelectedCurrencyPrice(selectedVariant)) {
+      toast.error(`This product is not available in ${selectedCurrency === 'INR' ? 'India' : 'UAE'}`)
+    } else if ((selectedVariant?.stock_quantity ?? 0) === 0) {
+      toast.error('This variant is currently out of stock')
     } else {
-      toast.error(`Product not available in ${selectedCurrency}`)
+      toast.error('Unable to process order. Please try again.')
     }
   }
 
   const handleVariantChange = (variant: Variant) => {
     setSelectedVariant(variant)
     setQuantity(1) // Reset quantity when variant changes
+    
+    // Show a toast if variant has low stock or is out of stock
+    if (variant.stock_quantity === 0) {
+      toast.error('This variant is out of stock')
+    } else if (variant.stock_quantity <= 5) {
+      toast.warn(`Only ${variant.stock_quantity} items left in stock!`)
+    }
   }
 
   if (loading) {
@@ -473,7 +509,7 @@ const conditionColors = {
             <Alert className="mb-8 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-700">
-                This product is not available in {selectedCurrency === 'INR' ? 'India' : 'UAE'}. Please select a variant available in {selectedCurrency === 'INR' ? 'UAE' : 'India'}.
+                This product is not available in {selectedCurrency === 'INR' ? 'India' : 'UAE'}. Please select a variant available in {selectedCurrency === 'INR' ? 'India' : 'UAE'}.
               </AlertDescription>
             </Alert>
           )}
@@ -517,13 +553,13 @@ const conditionColors = {
                     Shop {product.shop_category}
                   </Badge> */}
                   <Badge
-  variant={product.stock_quantity > 5 ? "default" : "destructive"}
-  className={`absolute bottom-6 right-6 shadow-lg ${product.stock_quantity <= 5 ? "bg-red-500 text-white" : ""}`}
+  variant={(selectedVariant?.stock_quantity ?? 0) > 5 ? "default" : "destructive"}
+  className={`absolute bottom-6 right-6 shadow-lg ${(selectedVariant?.stock_quantity ?? 0) <= 5 ? "bg-red-500 text-white" : ""}`}
 >
-  {product.stock_quantity > 5
+  {(selectedVariant?.stock_quantity ?? 0) > 5
     ? "In Stock"
-    : product.stock_quantity > 0
-    ? `Only ${product.stock_quantity} left`
+    : (selectedVariant?.stock_quantity ?? 0) > 0
+    ? `Only ${selectedVariant?.stock_quantity ?? 0} left`
     : "Out of Stock"}
 </Badge>
                 </div>
@@ -643,8 +679,9 @@ const conditionColors = {
     <h3 className="font-bold text-lg text-gray-900 mb-4">Select Variant</h3>
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {product.variants.map((variant) => {
-        const isDisabled = !hasSelectedCurrencyPrice(variant);
+        const isDisabled = !hasSelectedCurrencyPrice(variant) || variant.stock_quantity === 0;
         const isSelected = selectedVariant?.id === variant.id;
+        const isLowStock = variant.stock_quantity > 0 && variant.stock_quantity <= 5;
         
         return (
           <Button
@@ -671,9 +708,21 @@ const conditionColors = {
                 isSelected ? "#fff" : isDisabled ? "#9ca3af" : "#ef4444"
               )}
             </span>
-            {isDisabled && (
+            {variant.stock_quantity === 0 && (
               <span className="text-xs text-red-500 font-medium mt-1">
-                Not Available
+                Out of Stock
+              </span>
+            )}
+            {!hasSelectedCurrencyPrice(variant) && variant.stock_quantity > 0 && (
+              <span className="text-xs text-red-500 font-medium mt-1">
+                Not available in {selectedCurrency === 'INR' ? 'India' : 'UAE'}
+              </span>
+            )}
+            {variant.stock_quantity > 0 && hasSelectedCurrencyPrice(variant) && (
+              <span className={`text-xs font-medium mt-1 ${
+                isSelected ? "text-white/80" : isLowStock ? "text-orange-600" : "text-green-600"
+              }`}>
+                {isLowStock ? `Only ${variant.stock_quantity} left` : `${variant.stock_quantity} in stock`}
               </span>
             )}
           </Button>
@@ -736,7 +785,7 @@ const conditionColors = {
                       ...(product.warranty_months && product.warranty_months !== "0"
                         ? [{ label: "Warranty", value: `${product.warranty_months} months` }]
                         : []),
-                      { label: "Stock", value: `${product.stock_quantity} available` },
+                      { label: "Stock", value: `${selectedVariant?.stock_quantity ?? 0} available` },
                       // ...(product.sku ? [{ label: "SKU", value: product.sku }] : [])
                     ].map((spec, index) => (
                       <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
@@ -760,7 +809,7 @@ const conditionColors = {
                       size="sm"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       className="rounded-lg hover:bg-white transition-colors"
-                      disabled={!currencyAvailable || !selectedVariant || product.stock_quantity === 0}
+                      disabled={!currencyAvailable || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0}
                       aria-label="Decrease quantity"
                     >
                       <Minus className="w-4 h-4" />
@@ -769,9 +818,9 @@ const conditionColors = {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
+                      onClick={() => setQuantity(Math.min(selectedVariant?.stock_quantity ?? 0, quantity + 1))}
                       className="rounded-lg hover:bg-white transition-colors"
-                      disabled={!currencyAvailable || !selectedVariant || product.stock_quantity === 0}
+                      disabled={!currencyAvailable || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0}
                       aria-label="Increase quantity"
                     >
                       <Plus className="w-4 h-4" />
@@ -785,18 +834,22 @@ const conditionColors = {
                 <Button
                   onClick={handleBuyNow}
                   className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white py-4 text-lg font-bold rounded-2xl shadow-2xl transform transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:transform-none"
-                  disabled={!product.is_available || !selectedVariant || product.stock_quantity === 0 || !currencyAvailable}
+                  disabled={!product.is_available || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0 || !currencyAvailable}
                   aria-label="Buy now"
                 >
                   <Zap className="w-5 h-5 mr-2" />
-                  {!currencyAvailable ? `Not available in ${selectedCurrency}` : "Buy Now - Quick Checkout"}
+                  {!selectedVariant || !isVariantAvailable(selectedVariant) ? 
+                    (!hasSelectedCurrencyPrice(selectedVariant) ? 
+                      `Not available in ${selectedCurrency === 'INR' ? 'India' : 'UAE'}` : 
+                      'Out of Stock') : 
+                    "Buy Now - Quick Checkout"}
                 </Button>
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     onClick={handleAddToCart}
                     variant="outline"
                     className="py-3 rounded-xl border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 transform hover:scale-105 active:scale-95"
-                    disabled={!product.is_available || !selectedVariant || product.stock_quantity === 0 || !currencyAvailable}
+                    disabled={!product.is_available || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0 || !currencyAvailable}
                     aria-label="Add to cart"
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />

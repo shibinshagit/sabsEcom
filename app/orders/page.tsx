@@ -7,13 +7,186 @@ import { useLoginModal } from '@/lib/stores/useLoginModal'
 import Footer from "@/components/ui/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat } from "lucide-react"
+import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, Send, Box, ChevronDown, ChevronUp } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from "@/lib/contexts/auth-context"
 
 function formatMoney(value: unknown) {
   const num = typeof value === "number" ? value : Number.parseFloat(String(value ?? 0))
   return num.toFixed(2)
+}
+
+// Timeline component for order status
+const OrderTimeline = ({ currentStatus }: { currentStatus: string }) => {
+  const timelineSteps = [
+    { 
+      status: 'pending', 
+      label: 'Pending',
+      description: 'Order received',
+      icon: Clock,
+      color: 'text-gray-500'
+    },
+    { 
+      status: 'confirmed', 
+      label: 'Confirmed',
+      description: 'Order confirmed',
+      icon: CheckCircle,
+      color: 'text-blue-500'
+    },
+    { 
+      status: 'packed', 
+      label: 'Packed',
+      description: 'Items packed',
+      icon: Package,
+      color: 'text-purple-500'
+    },
+    { 
+      status: 'dispatched', 
+      label: 'Dispatched',
+      description: 'Out for delivery',
+      icon: Send,
+      color: 'text-orange-500'
+    },
+    { 
+      status: 'delivered', 
+      label: 'Delivered',
+      description: 'Order delivered',
+      icon: Truck,
+      color: 'text-green-500'
+    }
+  ]
+
+  // Handle cancelled status separately
+  if (currentStatus.toLowerCase() === 'cancel' || currentStatus.toLowerCase() === 'cancelled') {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center gap-3">
+          <XCircle className="w-6 h-6 text-red-500" />
+          <div>
+            <p className="font-semibold text-red-800">Order Cancelled</p>
+            <p className="text-sm text-red-600">This order has been cancelled</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const getCurrentStepIndex = () => {
+    const index = timelineSteps.findIndex(step => 
+      step.status.toLowerCase() === currentStatus.toLowerCase()
+    )
+    return index >= 0 ? index : 0
+  }
+
+  const currentStepIndex = getCurrentStepIndex()
+
+  return (
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4">
+      <h4 className="font-semibold text-gray-800 mb-3 text-sm">Order Progress</h4>
+      
+      {/* Mobile Timeline - Vertical */}
+      <div className="md:hidden">
+        <div className="space-y-3">
+          {timelineSteps.map((step, index) => {
+            const Icon = step.icon
+            const isCompleted = index <= currentStepIndex
+            const isCurrent = index === currentStepIndex
+            
+            return (
+              <div key={step.status} className="flex items-center gap-3">
+                <div className={`
+                  w-8 h-8 rounded-full flex items-center justify-center border-2
+                  ${isCompleted 
+                    ? 'bg-green-100 border-green-300 text-green-600' 
+                    : isCurrent 
+                    ? 'bg-blue-100 border-blue-300 text-blue-600 animate-pulse'
+                    : 'bg-gray-100 border-gray-300 text-gray-400'
+                  }
+                `}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className={`text-sm font-medium ${
+                    isCompleted ? 'text-green-800' :
+                    isCurrent ? 'text-blue-800' : 'text-gray-500'
+                  }`}>
+                    {step.label}
+                  </p>
+                  <p className={`text-xs ${
+                    isCompleted ? 'text-green-600' :
+                    isCurrent ? 'text-blue-600' : 'text-gray-400'
+                  }`}>
+                    {step.description}
+                  </p>
+                </div>
+                {isCompleted && (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Desktop Timeline - Horizontal */}
+      <div className="hidden md:block">
+        <div className="flex items-center justify-between relative">
+          {/* Progress Bar */}
+          <div className="absolute top-4 left-0 right-0 h-1 bg-gray-200 rounded-full">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
+              style={{ width: `${(currentStepIndex / (timelineSteps.length - 1)) * 100}%` }}
+            />
+          </div>
+
+          {timelineSteps.map((step, index) => {
+            const Icon = step.icon
+            const isCompleted = index <= currentStepIndex
+            const isCurrent = index === currentStepIndex
+            
+            return (
+              <div key={step.status} className="flex flex-col items-center relative z-10">
+                <div className={`
+                  w-8 h-8 rounded-full flex items-center justify-center border-3 bg-white
+                  ${isCompleted 
+                    ? 'border-green-400 text-green-600 shadow-lg' 
+                    : isCurrent 
+                    ? 'border-blue-400 text-blue-600 shadow-lg animate-pulse'
+                    : 'border-gray-300 text-gray-400'
+                  }
+                `}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="text-center mt-2">
+                  <p className={`text-xs font-medium ${
+                    isCompleted ? 'text-green-800' :
+                    isCurrent ? 'text-blue-800' : 'text-gray-500'
+                  }`}>
+                    {step.label}
+                  </p>
+                  <p className={`text-xs ${
+                    isCompleted ? 'text-green-600' :
+                    isCurrent ? 'text-blue-600' : 'text-gray-400'
+                  }`}>
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Current Status Description */}
+      <div className="mt-3 pt-3 border-t border-blue-200">
+        <p className="text-sm text-center text-blue-700">
+          <span className="font-medium">Current Status:</span> {
+            timelineSteps[currentStepIndex]?.description || 'Processing your order'
+          }
+        </p>
+      </div>
+    </div>
+  )
 }
 
 interface OrderItem {
@@ -42,6 +215,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set())
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
   const { openModal } = useLoginModal()
@@ -57,6 +231,27 @@ export default function OrdersPage() {
       fetchUserOrders()
     }
   }, [isAuthenticated, user])
+
+  const toggleOrderExpansion = (orderId: number) => {
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId)
+      } else {
+        newSet.add(orderId)
+      }
+      return newSet
+    })
+  }
+
+  const isOrderCollapsible = (status: string) => {
+    const collapsibleStatuses = ['delivered', 'cancelled', 'cancel', 'completed']
+    return collapsibleStatuses.includes(status.toLowerCase())
+  }
+
+  const isOrderExpanded = (orderId: number) => {
+    return expandedOrders.has(orderId)
+  }
 
   const fetchUserOrders = async () => {
     try {
@@ -239,45 +434,111 @@ export default function OrdersPage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {orders.map((order) => (
-              <Card key={order.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">Order #{order.id}</CardTitle>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Customer: <span className="font-medium">{order.customer_name}</span>
-                      </p>
-                    </div>
-                    <Badge className={getStatusColor(order.status)}>
-                      {getStatusIcon(order.status)}
-                      <span className="ml-1 capitalize">{order.status}</span>
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <p>
-                      {order.payment_method} • Placed on {new Date(order.created_at).toLocaleDateString()} at{" "}
-                      {new Date(order.created_at).toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    <p className="mt-1 text-blue-600">{getStatusDescription(order.status)}</p>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Order Items */}
-                  <div className="space-y-3 mb-4">
-                    <h4 className="font-medium text-gray-800">Order Items:</h4>
-                    {order.items?.map((item) => (
-                      <div key={item.id} className="flex justify-between items-center py-2 border-b">
-                        <div className="flex-1">
-                          <span className="font-medium">{item.menu_item_name}</span>
-                          <span className="text-gray-600 ml-2">x{item.quantity}</span>
+            {orders.map((order) => {
+              const isCollapsible = isOrderCollapsible(order.status)
+              const isExpanded = isOrderExpanded(order.id)
+              const shouldShowContent = !isCollapsible || isExpanded
+
+              return (
+                <Card key={order.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader 
+                    className={isCollapsible ? "cursor-pointer" : ""}
+                    onClick={isCollapsible ? () => toggleOrderExpansion(order.id) : undefined}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <CardTitle className="text-lg">Order #{order.id}</CardTitle>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Customer: <span className="font-medium">{order.customer_name}</span>
+                          </p>
                         </div>
-                        <span className="font-medium">${formatMoney(item.total_price)}</span>
+                        {isCollapsible && (
+                          <div className="ml-2">
+                            {isExpanded ? (
+                              <ChevronUp className="w-5 h-5 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5 text-gray-400" />
+                            )}
+                          </div>
+                        )}
                       </div>
-                    ))}
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <p className="font-bold text-lg">
+                            ${formatMoney(order.final_total)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge className={getStatusColor(order.status)}>
+                          {getStatusIcon(order.status)}
+                          <span className="ml-1 capitalize">{order.status}</span>
+                        </Badge>
+                      </div>
+                    </div>
+                    {isCollapsible && !isExpanded && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        <p>Click to expand details • {order.items?.length || 0} item(s)</p>
+                      </div>
+                    )}
+                    {shouldShowContent && (
+                      <div className="text-sm text-gray-600 mt-2">
+                        <p>
+                          {order.payment_method} • Placed on {new Date(order.created_at).toLocaleDateString()} at{" "}
+                          {new Date(order.created_at).toLocaleTimeString([], {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </CardHeader>
+                  {shouldShowContent && (
+                    <CardContent>
+                  {/* Order Timeline */}
+                  <OrderTimeline currentStatus={order.status} />
+
+                  {/* Order Items */}
+                  <div className="space-y-4 mb-6">
+                    <h4 className="font-semibold text-gray-800 text-lg">Order Items</h4>
+                    <div className="grid gap-3">
+                      {order.items?.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex items-center gap-4 flex-1">
+                            {/* Item Image Placeholder */}
+                            <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
+                              <Box className="w-6 h-6 text-orange-600" />
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex-1">
+                                  <h5 className="font-semibold text-gray-900 text-base leading-tight truncate">
+                                    {item.menu_item_name}
+                                  </h5>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                                      Qty: {item.quantity}
+                                    </span>
+                                    <span className="text-sm text-gray-600">
+                                      ${formatMoney(item.unit_price)} each
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right ml-4">
+                                  <p className="font-bold text-lg text-orange-600">
+                                    ${formatMoney(item.total_price)}
+                                  </p>
+                                  <p className="text-xs text-gray-500">total</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Order Summary */}
@@ -307,9 +568,11 @@ export default function OrdersPage() {
                       </p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  )}
+                </Card>
+              )
+            })}
           </div>
         )}
       </div>

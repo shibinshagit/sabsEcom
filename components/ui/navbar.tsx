@@ -669,31 +669,33 @@ function Nav() {
 
             {/* Desktop Navigation with Icon Toggle */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                {loading ? (
-                  <div className="flex gap-6">
-                    <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-16"></div>
-                    <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-20"></div>
-                    <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-24"></div>
-                  </div>
-                ) : (
-                  navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={(e) => handleNavClick(item, e)}
-                      className={`rounded-full px-6 py-2 font-semibold transition-all duration-200  ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
-                        : "text-white hover:bg-white/20"
-                        }`}
-                    >
-                      {item.name}
-                    </Link>
-                  ))
-                )}
+              <div className="flex-1 overflow-hidden mr-6">
+                <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
+                  {loading ? (
+                    <div className="flex gap-4">
+                      <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-16 flex-shrink-0"></div>
+                      <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-20 flex-shrink-0"></div>
+                      <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-24 flex-shrink-0"></div>
+                    </div>
+                  ) : (
+                    navigation.map((item) => (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={(e) => handleNavClick(item, e)}
+                        className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                          ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
+                          : "text-white hover:bg-white/20"
+                          }`}
+                      >
+                        {item.name}
+                      </Link>
+                    ))
+                  )}
+                </div>
               </div>
 
-              <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300">
+              <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300 flex-shrink-0">
                 <div
                   className="absolute top-1 bg-white rounded-full transition-all duration-300 ease-out shadow-lg"
                   style={{

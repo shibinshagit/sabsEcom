@@ -10,21 +10,23 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store, DollarSign } from "lucide-react"
+import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store, DollarSign, ChevronDown, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import MultipleImageUpload from "@/components/ui/image-upload"
 
 interface ProductVariant {
   id: number
-  name: string // 
+  name: string
   price_aed: number
   price_inr: number
   discount_aed?: number
   discount_inr?: number
   available_aed: boolean
   available_inr: boolean
+  stock_quantity: number
 }
 interface Product {
   id: number
@@ -74,6 +76,7 @@ export default function ProductManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedShop, setSelectedShop] = useState<string>("all")
+  const [expandedProducts, setExpandedProducts] = useState<Set<number>>(new Set())
 
   // Available shops
 const shops: Shop[] = [
@@ -280,6 +283,7 @@ const resetForm = () => {
         discount_inr: 0,
         available_aed: true,
         available_inr: true,
+        stock_quantity: 0,
       }
     ]
   })
@@ -321,6 +325,7 @@ const openEditDialog = (item: Product) => {
         discount_inr: 0,
         available_aed: true,
         available_inr: true,
+        stock_quantity: 0,
       }]
   })
   setIsDialogOpen(true)
@@ -890,6 +895,25 @@ const formatPrice = (product: Product) => {
           />
         </div>
       </div>
+
+      {/* Stock Section */}
+      <div className="grid grid-cols-1 gap-5">
+        <div>
+          <Label>Stock Quantity</Label>
+          <Input
+            type="number"
+            min="0"
+            value={variant.stock_quantity}
+            onChange={(e) => {
+              const variants = [...formData.variants]
+              variants[idx].stock_quantity = Number(e.target.value)
+              setFormData({ ...formData, variants })
+            }}
+            className="bg-gray-700 border-gray-600 text-white"
+            placeholder="Enter stock quantity for this variant"
+          />
+        </div>
+      </div>
     </div>
   ))}
 
@@ -910,6 +934,7 @@ const formatPrice = (product: Product) => {
             discount_inr: 0,
             available_aed: true,
             available_inr: true,
+            stock_quantity: 0,
           },
         ],
       })
@@ -1021,26 +1046,17 @@ const formatPrice = (product: Product) => {
                     <TableCell>
                       <div className="flex flex-col space-y-2">
                         {item.image_urls && Array.isArray(item.image_urls) && item.image_urls.length > 0 ? (
-                          <div className="flex space-x-1">
-                            {item.image_urls.slice(0, 2).map((url, index) => (
-                              <div key={index} className="relative w-12 h-12 rounded-lg overflow-hidden">
-                                <Image
-                                  src={url}
-                                  alt={`${item.name} ${index + 1}`}
-                                  fill
-                                  className="object-cover"
-                                />
-                              </div>
-                            ))}
-                            {item.image_urls.length > 2 && (
-                              <div className="w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center">
-                                <span className="text-xs text-gray-300">+{item.image_urls.length - 2}</span>
-                              </div>
-                            )}
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden">
+                            <Image
+                              src={item.image_urls[0]}
+                              alt={item.name}
+                              fill
+                              className="object-cover"
+                            />
                           </div>
                         ) : (
-                          <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                            <ImageIcon className="w-6 h-6 text-gray-400" />
+                          <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
+                            <ImageIcon className="w-8 h-8 text-gray-400" />
                           </div>
                         )}
                       </div>
@@ -1094,44 +1110,76 @@ const formatPrice = (product: Product) => {
 
                     {/* Variants & Pricing Column */}
                     <TableCell>
-                      <div className="space-y-2 max-w-64">
+                      <div className="space-y-2 max-w-80">
                         {item.variants && Array.isArray(item.variants) && item.variants.length > 0 ? (
-                          item.variants.map((variant, index) => (
-                            <div key={variant.id || index} className="bg-gray-900/50 rounded-lg p-2 text-xs">
-                              <div className="font-semibold text-white mb-1">{variant.name}</div>
-                              <div className="grid grid-cols-2 gap-1">
-                                {/* AED Pricing */}
-                                {variant.available_aed && variant.price_aed > 0 && (
-                                  <div className="text-cyan-400">
-                                    <div>AED {variant.price_aed}</div>
-                                    {variant.discount_aed > 0 && (
-                                      <div className="text-green-400">-{variant.discount_aed}</div>
+                          <Collapsible>
+                            <CollapsibleTrigger 
+                              className="flex items-center space-x-2 w-full p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors"
+                              onClick={() => {
+                                const newExpanded = new Set(expandedProducts)
+                                if (expandedProducts.has(item.id)) {
+                                  newExpanded.delete(item.id)
+                                } else {
+                                  newExpanded.add(item.id)
+                                }
+                                setExpandedProducts(newExpanded)
+                              }}
+                            >
+                              {expandedProducts.has(item.id) ? (
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                              )}
+                              <span className="text-sm text-white font-medium">
+                                {item.variants.length} Variant{item.variants.length !== 1 ? 's' : ''}
+                              </span>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="space-y-2 mt-2">
+                              {item.variants.map((variant, index) => (
+                                <div key={variant.id || index} className="bg-gray-900/50 rounded-lg p-3 text-xs border border-gray-700">
+                                  <div className="font-semibold text-white mb-2">{variant.name}</div>
+                                  <div className="grid grid-cols-2 gap-2 mb-2">
+                                    {/* AED Pricing */}
+                                    {variant.available_aed && variant.price_aed > 0 && (
+                                      <div className="text-cyan-400">
+                                        <div>AED {variant.price_aed}</div>
+                                        {variant.discount_aed > 0 && (
+                                          <div className="text-green-400">-{variant.discount_aed}</div>
+                                        )}
+                                      </div>
+                                    )}
+                                    
+                                    {/* INR Pricing */}
+                                    {variant.available_inr && variant.price_inr > 0 && (
+                                      <div className="text-orange-400">
+                                        <div>₹{variant.price_inr}</div>
+                                        {variant.discount_inr > 0 && (
+                                          <div className="text-green-400">-₹{variant.discount_inr}</div>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
-                                )}
-                                
-                                {/* INR Pricing */}
-                                {variant.available_inr && variant.price_inr > 0 && (
-                                  <div className="text-orange-400">
-                                    <div>₹{variant.price_inr}</div>
-                                    {variant.discount_inr > 0 && (
-                                      <div className="text-green-400">-₹{variant.discount_inr}</div>
-                                    )}
+                                  
+                                  {/* Stock Information */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-gray-300">
+                                      Stock: <span className="text-white font-medium">{variant.stock_quantity || 0}</span>
+                                    </div>
+                                    
+                                    {/* Availability badges */}
+                                    <div className="flex space-x-1">
+                                      {variant.available_aed && (
+                                        <Badge className="bg-cyan-500/20 text-cyan-300 text-xs px-1 py-0">AED</Badge>
+                                      )}
+                                      {variant.available_inr && (
+                                        <Badge className="bg-orange-500/20 text-orange-300 text-xs px-1 py-0">INR</Badge>
+                                      )}
+                                    </div>
                                   </div>
-                                )}
-                              </div>
-                              
-                              {/* Availability badges */}
-                              <div className="flex space-x-1 mt-1">
-                                {variant.available_aed && (
-                                  <Badge className="bg-cyan-500/20 text-cyan-300 text-xs px-1 py-0">AED</Badge>
-                                )}
-                                {variant.available_inr && (
-                                  <Badge className="bg-orange-500/20 text-orange-300 text-xs px-1 py-0">INR</Badge>
-                                )}
-                              </div>
-                            </div>
-                          ))
+                                </div>
+                              ))}
+                            </CollapsibleContent>
+                          </Collapsible>
                         ) : (
                           <div className="text-gray-400 text-xs">No variants</div>
                         )}

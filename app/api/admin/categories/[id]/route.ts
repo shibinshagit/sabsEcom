@@ -43,12 +43,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   try {
     const id = params.id
 
-    const menuItems = await sql`
-      SELECT COUNT(*) as count FROM menu_items WHERE category_id = ${id}
+    const productItems = await sql`
+      SELECT COUNT(*) as count FROM products WHERE category_id = ${id}
     `
 
-    if (menuItems[0].count > 0) {
-      return NextResponse.json({ error: "Cannot delete category with existing menu items" }, { status: 400 })
+    if (productItems[0].count > 0) {
+      return NextResponse.json({ error: "Cannot delete category with existing Products" }, { status: 400 })
     }
 
     const result = await sql`DELETE FROM categories WHERE id = ${id} RETURNING id`

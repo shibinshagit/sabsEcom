@@ -11,6 +11,7 @@ import UserNavVisibility from "@/components/ui/user-nav-visibility"
 import { CurrencyProvider } from '@/lib/contexts/currency-context'
 import WishlistSync from '@/components/wishlist-sync'
 import CartSync from '@/components/cart-sync'
+import { Toaster } from 'react-hot-toast'
 
 import {
   ClerkProvider,
@@ -38,6 +39,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     <WishlistSync />
                     <CartSync />
                     <UserNavVisibility />
+                    <Toaster 
+                      position="top-center"
+                      toastOptions={{
+                        duration: 4000,
+                        style: {
+                          background: '#363636',
+                          color: '#fff',
+                        },
+                      }}
+                    />
                     <div className="pb-16 lg:pb-0">{children}</div>
                   </CurrencyProvider>
                 </ShopProvider>
