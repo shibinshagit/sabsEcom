@@ -92,31 +92,14 @@ function ShippingPolicyContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold text-gray-900">Standard Delivery</h4>
-                    <Badge className="bg-green-100 text-green-800">AED 25</Badge>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-2">Delivery within 3-5 business days</p>
-                  <p className="text-xs text-gray-500">Available across all Emirates • Free for orders over AED 200</p>
-                </div>
 
                 <div className="border rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-semibold text-gray-900">Express Delivery</h4>
-                    <Badge className="bg-blue-100 text-blue-800">AED 45</Badge>
+                    <Badge className="bg-blue-100 text-blue-800">AED 10</Badge>
                   </div>
-                  <p className="text-gray-600 text-sm mb-2">Next day delivery for Dubai, Abu Dhabi, Sharjah</p>
+                  <p className="text-gray-600 text-sm mb-2">Next Working day delivery for Dubai, Abu Dhabi, Sharjah</p>
                   <p className="text-xs text-gray-500">Same day delivery available for orders placed before 12:00 PM</p>
-                </div>
-
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold text-gray-900">Cash on Delivery (COD)</h4>
-                    <Badge className="bg-orange-100 text-orange-800">AED 35</Badge>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-2">Pay when you receive your order</p>
-                  <p className="text-xs text-gray-500">Available across UAE • Additional COD fee applies</p>
                 </div>
               </div>
             </CardContent>

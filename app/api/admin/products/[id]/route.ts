@@ -27,7 +27,6 @@ export async function PUT(
       warranty_period,
       storage_capacity,
       color,
-      stock_quantity,
       sku,
       variants
     } = body
@@ -104,7 +103,6 @@ export async function PUT(
         warranty_period = ${warranty_period || 0},
         storage_capacity = ${storage_capacity || ''},
         color = ${color || ''},
-        stock_quantity = ${stock_quantity || 0},
         sku = ${sku || ''},
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${params.id}

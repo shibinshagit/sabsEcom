@@ -63,7 +63,6 @@ export async function POST(request: Request) {
       warranty_period,
       storage_capacity,
       color,
-      stock_quantity,
       sku,
       variants
     } = body
@@ -120,7 +119,7 @@ export async function POST(request: Request) {
         name, description, image_urls, category_id, shop_category,
         is_available, is_featured, is_new, new_until_date, features, specifications_text,
         warranty_months, brand, model, condition_type, warranty_period,
-        storage_capacity, color, stock_quantity, sku
+        storage_capacity, color, sku
       ) VALUES (
         ${name}, 
         ${description || ''}, 
@@ -140,7 +139,6 @@ export async function POST(request: Request) {
         ${warranty_period || 0}, 
         ${storage_capacity || ''}, 
         ${color || ''}, 
-        ${stock_quantity || 0}, 
         ${finalSku}
       )
       RETURNING *;
