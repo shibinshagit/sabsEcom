@@ -81,21 +81,29 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
       if (isInWishlist(product.id)) {
         await dispatch(removeFromWishlistAPI(product.id)).unwrap()
       } else {
+        // Get the best available variant for pricing
+        const availableVariant = product.variants?.find(v => 
+          v.available_aed || v.available_inr
+        ) || product.variants?.[0];
+
         const wishlistItem = {
           id: product.id,
           name: product.name,
           price: product.price,
-          price_aed: product.price_aed,
-          price_inr: product.price_inr,
-          default_currency: product.default_currency,
-          image_url: product.image_url,
+          price_aed: availableVariant?.discount_aed || availableVariant?.price_aed || product.price_aed,
+          price_inr: availableVariant?.discount_inr || availableVariant?.price_inr || product.price_inr,
+          default_currency: product.default_currency || "AED",
+          image_url: product.image_urls?.[0] || product.image_url || '',
+          image_urls: product.image_urls || [],
           category_id: product.category_id,
           category_name: product.category_name,
           description: product.description,
           brand: product.brand,
           is_available: product.is_available,
           shop_category: product.shop_category,
-          features: product.features
+          features: product.features,
+          variants: product.variants,
+          condition_type: product.condition_type
         }
         await dispatch(addToWishlistAPI(wishlistItem)).unwrap()
         // Trigger wishlist animation
@@ -435,10 +443,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                   <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
 
                   <Button
-                    onClick={() => handleAddToCart(item)}
+                    onClick={() => router.push(`/product/${item.id}`)}
                     className="w-full mt-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
                   >
-                    Add to Cart
+                    Buy Now
                   </Button>
                   
                   <Button
@@ -648,14 +656,14 @@ const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
 
 <div className="flex gap-2">
   <Button
-    onClick={() => handleAddToCart(item)}
+    onClick={() => router.push(`/product/${item.id}`)}
     className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
     disabled={!item.is_available}
   >
     {item.is_available ? (
       <>
         <ShoppingCart className="w-4 h-4" />
-        Cart
+        Buy
       </>
     ) : (
       "Unavailable"

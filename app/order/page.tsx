@@ -68,7 +68,16 @@ export default function OrderPage() {
   
   const [couponCode, setCouponCode] = useState("")
   const [isCouponFieldOpen, setIsCouponFieldOpen] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState("upi")
+  const [paymentMethod, setPaymentMethod] = useState(selectedCurrency === 'AED' ? "cod" : "upi")
+
+  // Update payment method when currency changes
+  useEffect(() => {
+    if (selectedCurrency === 'AED') {
+      setPaymentMethod('cod')
+    } else {
+      setPaymentMethod('upi')
+    }
+  }, [selectedCurrency])
   const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null)
   const [couponError, setCouponError] = useState("")
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
@@ -89,16 +98,39 @@ export default function OrderPage() {
   }, [])
 
   const hasSelectedCurrencyPrice = (item: any, variant?: any) => {
-    // If variant is available, check variant prices
+    // Check if product has variants with pricing for selected currency
+    if (item.variants && Array.isArray(item.variants) && item.variants.length > 0) {
+      if (selectedCurrency === 'AED') {
+        return item.variants.some((v: any) => v.available_aed && v.price_aed && v.price_aed > 0)
+      } else if (selectedCurrency === 'INR') {
+        return item.variants.some((v: any) => v.available_inr && v.price_inr && v.price_inr > 0)
+      }
+    }
+    // If variant is provided directly, check variant prices
     if (variant) {
-      return selectedCurrency === 'AED' ? variant.available_aed : variant.available_inr
+      return selectedCurrency === 'AED' ? (variant.available_aed && variant.price_aed > 0) : (variant.available_inr && variant.price_inr > 0)
     }
     // Fallback to product-level prices
-    return selectedCurrency === 'AED' ? item.available_aed : item.available_inr
+    return selectedCurrency === 'AED' ? (item.available_aed && item.price_aed > 0) : (item.available_inr && item.price_inr > 0)
   }
 
   const getCurrencySpecificPrice = (item: any, variant?: any) => {
-    // If variant is available, use variant prices with discount applied
+    // If product has variants, use first available variant or specified variant
+    if (item.variants && Array.isArray(item.variants) && item.variants.length > 0) {
+      const targetVariant = variant || item.variants.find((v: any) =>
+        selectedCurrency === 'AED' ? (v.available_aed && v.price_aed > 0) : (v.available_inr && v.price_inr > 0)
+      ) || item.variants[0]
+
+      if (selectedCurrency === 'AED' && targetVariant.available_aed && targetVariant.price_aed > 0) {
+        const discount = targetVariant.discount_aed || 0
+        return Math.max(0, targetVariant.price_aed - discount)
+      } else if (selectedCurrency === 'INR' && targetVariant.available_inr && targetVariant.price_inr > 0) {
+        const discount = targetVariant.discount_inr || 0
+        return Math.max(0, targetVariant.price_inr - discount)
+      }
+    }
+
+    // If variant is provided directly, use variant prices with discount applied
     if (variant) {
       if (selectedCurrency === 'AED' && variant.available_aed) {
         const discount = variant.discount_aed || 0
@@ -107,14 +139,15 @@ export default function OrderPage() {
         const discount = variant.discount_inr || 0
         return Math.max(0, (variant.price_inr || 0) - discount)
       }
-      return 0
     }
-    
+
     // Fallback to product-level prices
     if (selectedCurrency === 'AED' && item.available_aed) {
-      return item.discount_aed > 0 ? item.discount_aed : item.price_aed || 0
+      const discount = item.discount_aed || 0
+      return Math.max(0, (item.price_aed || 0) - discount)
     } else if (selectedCurrency === 'INR' && item.available_inr) {
-      return item.discount_inr > 0 ? item.discount_inr : item.price_inr || 0
+      const discount = item.discount_inr || 0
+      return Math.max(0, (item.price_inr || 0) - discount)
     }
     return 0
   }
@@ -358,6 +391,14 @@ export default function OrderPage() {
       toast.error(`No items available for ${selectedCurrency}. Please add items or switch currency.`, { position: 'top-center' })
       return
     }
+
+    const cartTotal = calculateCartTotal()
+    const minOrderAmount = selectedCurrency === 'AED' ? 50 : 100
+    if (cartTotal < minOrderAmount) {
+      toast.error(`Minimum order amount is ${selectedCurrency === 'AED' ? 'AED 50' : '₹100'}`, { position: 'top-center' })
+      return
+    }
+
     if (!customerInfo.phone) {
       toast.error('Phone number is required to place an order', { position: 'top-center' })
       return
@@ -370,7 +411,7 @@ export default function OrderPage() {
       toast.error('Please complete all required address fields', { position: 'top-center' })
       return
     }
-    if (paymentMethod === "upi") {
+    if (paymentMethod === "upi" && selectedCurrency === 'INR') {
       try {
         setIsProcessingPayment(true)
         const razorpayResponse = await fetch('/api/payment/create-order', {
@@ -451,11 +492,19 @@ export default function OrderPage() {
       toast.error(`No items available for ${selectedCurrency}. Please add items or switch currency.`, { position: 'top-center' })
       return
     }
+
+    const cartTotal = calculateCartTotal()
+    const minOrderAmount = selectedCurrency === 'AED' ? 50 : 100
+    if (cartTotal < minOrderAmount) {
+      toast.error(`Minimum order amount is ${selectedCurrency === 'AED' ? 'AED 50' : '₹100'}`, { position: 'top-center' })
+      return
+    }
+
     // WhatsApp ordering is always enabled - customer can provide details in WhatsApp chat
     const customerName = user?.name || customerInfo.name || "Customer"
     const customerPhone = customerInfo.phone || "Not provided"
     const customerEmail = user?.email || customerInfo.email || "Not provided"
-    const cartTotal = calculateCartTotal()
+
     let message = `🛍️ *New Order from Sabs Online*\n\n`
     message += `👤 *Customer Details:*\n`
     message += `Name: ${customerName === "Customer" ? "Please provide your name" : customerName}\n`
@@ -464,28 +513,39 @@ export default function OrderPage() {
     message += `📋 *Order Type:* ${orderType.charAt(0).toUpperCase() + orderType.slice(1)}\n`
     message += `💳 *Payment Method:* ${paymentMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}\n`
     message += `💰 *Currency:* ${selectedCurrency}\n`
-    if (orderType === "delivery" && customerInfo.deliveryAddress) {
-      message += `📍 *Delivery Address:* ${customerInfo.deliveryAddress}\n`
+    if (orderType === "delivery") {
+      if (customerInfo.deliveryAddress) {
+        message += `📍 *Delivery Address:* ${customerInfo.deliveryAddress}\n`
+      } else {
+        message += `📍 *Delivery Address:* Please provide your delivery address\n`
+      }
     }
     message += `\n🛒 *Order Items:*\n`
     validCartItems.forEach((item, index) => {
       const itemPrice = getCurrencySpecificPrice(item.menuItem, item.selected_variant)
       const variantName = item.selected_variant?.name || ''
       const itemName = item.menuItem.name
-      const stockInfo = item.selected_variant && item.selected_variant.stock_quantity <= 5 ? 
+      const stockInfo = item.selected_variant && item.selected_variant.stock_quantity <= 5 ?
         ` (${item.selected_variant.stock_quantity === 0 ? 'OUT OF STOCK' : `${item.selected_variant.stock_quantity} left`})` : ''
-      message += `${index + 1}. ${itemName}${variantName && variantName !== 'Default' ? ` - ${variantName}` : ''} x${item.quantity}${stockInfo} - ${formatPriceWithSmallDecimals(itemPrice, itemPrice, selectedCurrency, true, '#000')}\n`
+      const priceText = selectedCurrency === 'AED' ? `AED ${itemPrice.toFixed(2)}` : `₹${itemPrice.toFixed(2)}`
+      message += `${index + 1}. ${itemName}${variantName && variantName !== 'Default' ? ` - ${variantName}` : ''} x${item.quantity}${stockInfo} - ${priceText}\n`
     })
     const finalTotal = cartTotal + deliveryFee - discountAmount
     message += `\n💰 *Order Summary:*\n`
-    message += `Subtotal: ${formatPriceWithSmallDecimals(cartTotal, cartTotal, selectedCurrency, true, '#000')}\n`
+    const subtotalText = selectedCurrency === 'AED' ? `AED ${cartTotal.toFixed(2)}` : `₹${cartTotal.toFixed(2)}`
+    message += `Subtotal: ${subtotalText}\n`
     if (deliveryFee > 0) {
-      message += `Delivery Fee: ${formatPriceWithSmallDecimals(deliveryFee, deliveryFee, selectedCurrency, true, '#000')}\n`
+      const deliveryText = selectedCurrency === 'AED' ? `AED ${deliveryFee.toFixed(2)}` : `₹${deliveryFee.toFixed(2)}`
+      message += `Delivery Fee: ${deliveryText}\n`
+    } else if (orderType === "delivery") {
+      message += `Delivery Fee: FREE! 🎉\n`
     }
     if (discountAmount > 0) {
-      message += `Discount (${appliedCoupon?.code}): -${formatPriceWithSmallDecimals(discountAmount, discountAmount, selectedCurrency, true, '#000')}\n`
+      const discountText = selectedCurrency === 'AED' ? `AED ${discountAmount.toFixed(2)}` : `₹${discountAmount.toFixed(2)}`
+      message += `Discount (${appliedCoupon?.code}): -${discountText}\n`
     }
-    message += `*Total: ${formatPriceWithSmallDecimals(finalTotal, finalTotal, selectedCurrency, true, '#000')}*\n`
+    const totalText = selectedCurrency === 'AED' ? `AED ${finalTotal.toFixed(2)}` : `₹${finalTotal.toFixed(2)}`
+    message += `*Total: ${totalText}*\n`
     if (specialInstructions) {
       message += `\n📝 *Special Instructions:*\n${specialInstructions}\n`
     }
@@ -493,11 +553,30 @@ export default function OrderPage() {
     const phoneNumber = "+917012975494"
     const encodedMessage = encodeURIComponent(message)
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
-    window.open(whatsappUrl, "_blank")
-    toast.success('Order sent via WhatsApp', { position: 'top-center' })
+    try {
+      window.open(whatsappUrl, "_blank")
+      toast.success('Order sent via WhatsApp! Check your WhatsApp app.', { position: 'top-center' })
+    } catch (error) {
+      console.error('Failed to open WhatsApp:', error)
+      toast.error('Failed to open WhatsApp. Please try again.', { position: 'top-center' })
+    }
   }
 
-  const deliveryFee = orderType === "delivery" && selectedCurrency === "AED" ? 10 : 100
+  // Dynamic delivery fee calculation
+  const calculateDeliveryFee = () => {
+    if (orderType !== "delivery") return 0
+
+    const cartTotal = calculateCartTotal()
+    if (selectedCurrency === 'AED') {
+      // AED: free delivery above 200, otherwise 10 AED
+      return cartTotal >= 200 ? 0 : 10
+    } else {
+      // INR: free delivery above 3000, otherwise 70 INR
+      return cartTotal >= 3000 ? 0 : 70
+    }
+  }
+
+  const deliveryFee = calculateDeliveryFee()
   const cartTotal = calculateCartTotal()
   const subtotalWithDelivery = cartTotal + deliveryFee
   const finalTotal = subtotalWithDelivery - discountAmount
@@ -766,35 +845,51 @@ export default function OrderPage() {
               </CardContent>
             </Card> */}
 
-            {selectedCurrency === "AED" && (
-  <Card className="border-0 shadow-lg rounded-2xl bg-white">
-    <CardHeader>
-      <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-        Payment Method
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <RadioGroup
-        value={paymentMethod}
-        onValueChange={setPaymentMethod}
-        className="grid grid-cols-1 gap-4"
-      >
-        <div className="flex items-center gap-2">
-          <RadioGroupItem value="upi" id="upi" />
-          <Label htmlFor="upi" className="text-sm sm:text-base cursor-pointer">
-            UPI Payment
-          </Label>
-        </div>
-        <div className="flex items-center gap-2">
-          <RadioGroupItem value="cod" id="cod" />
-          <Label htmlFor="cod" className="text-sm sm:text-base cursor-pointer">
-            Cash on Delivery
-          </Label>
-        </div>
-      </RadioGroup>
-    </CardContent>
-  </Card>
-)}
+            <Card className="border-0 shadow-lg rounded-2xl bg-white">
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+                  Payment Method
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={setPaymentMethod}
+                  className="grid grid-cols-1 gap-4"
+                >
+                  {selectedCurrency === 'INR' && (
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="upi" id="upi" />
+                      <Label htmlFor="upi" className="text-sm sm:text-base cursor-pointer">
+                        UPI Payment
+                      </Label>
+                    </div>
+                  )}
+                  {selectedCurrency === 'AED' && (
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="cod" id="cod" />
+                      <Label htmlFor="cod" className="text-sm sm:text-base cursor-pointer">
+                        Cash on Delivery
+                      </Label>
+                    </div>
+                  )}
+                </RadioGroup>
+                {selectedCurrency === 'AED' && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      💡 Only Cash on Delivery is available for UAE orders
+                    </p>
+                  </div>
+                )}
+                {selectedCurrency === 'INR' && (
+                  <div className="mt-3 p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-700">
+                      💳 Only UPI Payment is available for India orders
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
 
             <Card className="border-0 shadow-lg rounded-2xl bg-white">
@@ -1001,14 +1096,47 @@ export default function OrderPage() {
                       })}
                     </div>
                     <div className="border-t pt-4 space-y-2">
+                      {(selectedCurrency === 'AED' && cartTotal < 50) || (selectedCurrency === 'INR' && cartTotal < 100) ? (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                            <p className="text-sm text-amber-700">
+                              Minimum order: {selectedCurrency === 'AED' ? 'AED 50' : '₹100'}
+                              {orderType === "delivery" && (
+                                <span className="block">
+                                  Free delivery: {selectedCurrency === 'AED' ? 'AED 200+' : '₹3000+'}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ) : orderType === "delivery" && deliveryFee === 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <p className="text-sm text-green-700">
+                              🎉 You qualify for free delivery!
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Subtotal</span>
                         <span>{formatPriceWithSmallDecimals(cartTotal, cartTotal, selectedCurrency, true, '#000')}</span>
                       </div>
                       {orderType === "delivery" && (
                         <div className="flex justify-between text-sm sm:text-base">
-                          <span>Delivery Fee</span>
-                          <span>{formatPriceWithSmallDecimals(deliveryFee, deliveryFee, selectedCurrency, true, '#000')}</span>
+                          <span className="flex items-center gap-2">
+                            Delivery Fee
+                            {deliveryFee === 0 && (
+                              <span className="text-green-600 font-medium text-xs bg-green-100 px-2 py-1 rounded-full">
+                                FREE! 🎉
+                              </span>
+                            )}
+                          </span>
+                          <span className={deliveryFee === 0 ? "text-green-600 font-bold" : ""}>
+                            {deliveryFee === 0 ? "FREE" : formatPriceWithSmallDecimals(deliveryFee, deliveryFee, selectedCurrency, true, '#000')}
+                          </span>
                         </div>
                       )}
                       {appliedCoupon && discountAmount > 0 && (
@@ -1148,6 +1276,12 @@ export default function OrderPage() {
                         <MessageSquare className="w-4 h-4 mr-2" />
                         Order via WhatsApp
                       </Button>
+
+                      {orderType === "delivery" && (
+                        <div className="text-xs text-gray-500 text-center mt-2">
+                          💡 For WhatsApp orders, you can provide address details in the chat
+                        </div>
+                      )}
 
                       <Button
                         onClick={() => {

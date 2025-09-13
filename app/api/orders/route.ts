@@ -4,8 +4,143 @@ import { sql } from "@/lib/database"
 import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { currentUser } from "@clerk/nextjs/server"
+import nodemailer from 'nodemailer'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production")
+
+// Email configuration
+const transporter = nodemailer.createTransporter({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+})
+
+// Function to send order confirmation email
+async function sendOrderConfirmationEmail(orderData: any, orderId: number) {
+  try {
+    const customerEmail = orderData.customerEmail
+    if (!customerEmail) {
+      console.log('No customer email provided, skipping email notification')
+      return
+    }
+
+    const currency = orderData.currency || 'AED'
+    const currencySymbol = currency === 'AED' ? 'AED' : '₹'
+
+    const subtotal = orderData.originalAmount - (currency === 'AED' ? 10 : 70) || 0
+    const deliveryFee = orderData.orderType === 'delivery' ?
+      (currency === 'AED' ? (subtotal >= 200 ? 0 : 10) : (subtotal >= 3000 ? 0 : 70)) : 0
+    const finalTotal = orderData.totalAmount || (subtotal + deliveryFee - (orderData.discountAmount || 0))
+
+    // Create order items HTML
+    let itemsHtml = ''
+    orderData.items.forEach((item: any, index: number) => {
+      const itemPrice = parseFloat(item.unitPrice) || 0
+      const itemTotal = itemPrice * item.quantity
+      itemsHtml += `
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 10px; text-align: left;">${index + 1}. ${item.menuItemName}${item.variantName && item.variantName !== 'Default' ? ` - ${item.variantName}` : ''}</td>
+          <td style="padding: 10px; text-align: center;">${item.quantity}</td>
+          <td style="padding: 10px; text-align: right;">${currencySymbol} ${itemPrice.toFixed(2)}</td>
+          <td style="padding: 10px; text-align: right; font-weight: bold;">${currencySymbol} ${itemTotal.toFixed(2)}</td>
+        </tr>
+      `
+    })
+
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Confirmation</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #f97316, #dc2626); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Order Confirmed!</h1>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Thank you for your order with Sabs Online</p>
+        </div>
+
+        <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #f97316; margin-bottom: 20px;">Order Details</h2>
+
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>Order ID:</strong> #${orderId}</p>
+            <p style="margin: 5px 0;"><strong>Customer:</strong> ${orderData.customerName}</p>
+            <p style="margin: 5px 0;"><strong>Phone:</strong> ${orderData.customerPhone}</p>
+            <p style="margin: 5px 0;"><strong>Order Type:</strong> ${orderData.orderType.charAt(0).toUpperCase() + orderData.orderType.slice(1)}</p>
+            <p style="margin: 5px 0;"><strong>Payment:</strong> ${orderData.paymentMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}</p>
+            ${orderData.deliveryAddress ? `<p style="margin: 5px 0;"><strong>Delivery Address:</strong> ${orderData.deliveryAddress}</p>` : ''}
+          </div>
+
+          <h3 style="color: #f97316; margin-bottom: 15px;">Order Items</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+              <tr style="background: #f8f9fa;">
+                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Item</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">Qty</th>
+                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
+                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <div style="border-top: 2px solid #f97316; padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <span>Subtotal:</span>
+              <span>${currencySymbol} ${subtotal.toFixed(2)}</span>
+            </div>
+            ${orderData.orderType === 'delivery' ? `
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>Delivery Fee: ${deliveryFee === 0 ? '🎉 FREE!' : ''}</span>
+                <span style="${deliveryFee === 0 ? 'color: #10b981; font-weight: bold;' : ''}">${deliveryFee === 0 ? 'FREE' : currencySymbol + ' ' + deliveryFee.toFixed(2)}</span>
+              </div>
+            ` : ''}
+            ${orderData.discountAmount > 0 ? `
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #10b981;">
+                <span>Discount ${orderData.couponCode ? '(' + orderData.couponCode + ')' : ''}:</span>
+                <span>-${currencySymbol} ${orderData.discountAmount.toFixed(2)}</span>
+              </div>
+            ` : ''}
+            <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #f97316; border-top: 1px solid #ddd; padding-top: 10px;">
+              <span>Total:</span>
+              <span>${currencySymbol} ${finalTotal.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin-top: 20px;">
+            <h4 style="margin: 0 0 10px 0; color: #0066cc;">📞 Need Help?</h4>
+            <p style="margin: 0; font-size: 14px;">Contact us at <a href="tel:+917012975494" style="color: #f97316;">+91 7012975494</a> for any questions about your order.</p>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p style="margin: 0; color: #666; font-size: 14px;">Thank you for choosing Sabs Online!</p>
+            <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">We'll contact you soon with updates about your order.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: customerEmail,
+      subject: `Order Confirmation #${orderId} - Sabs Online`,
+      html: emailHtml,
+    }
+
+    await transporter.sendMail(mailOptions)
+    console.log('Order confirmation email sent successfully to:', customerEmail)
+  } catch (error) {
+    console.error('Error sending order confirmation email:', error)
+    // Don't throw error to avoid breaking order processing
+  }
+}
 
 async function getUserFromToken() {
   try {
@@ -255,9 +390,18 @@ export async function POST(request: Request) {
     await ensureOrdersTableExists()
     await ensureOrderItemsTableExists()
 
-    // Calculate delivery fee based on currency and order type
-    const deliveryFee = orderData.orderType === "delivery" ? 
-      (orderData.currency === "AED" ? 10 : 100) : 0
+    // Calculate delivery fee based on currency, order type, and cart total
+    let deliveryFee = 0
+    if (orderData.orderType === "delivery") {
+      const subtotalForDelivery = orderData.originalAmount - (orderData.currency === "AED" ? 10 : 70) || 0
+      if (orderData.currency === "AED") {
+        // AED: free delivery above 200, otherwise 10 AED
+        deliveryFee = subtotalForDelivery >= 200 ? 0 : 10
+      } else {
+        // INR: free delivery above 3000, otherwise 70 INR
+        deliveryFee = subtotalForDelivery >= 3000 ? 0 : 70
+      }
+    }
 
     // Calculate totals properly
     const subtotal = orderData.originalAmount - deliveryFee || 0
@@ -354,6 +498,14 @@ export async function POST(request: Request) {
     }
 
     console.log('Order completed successfully')
+
+    // Send order confirmation email
+    try {
+      await sendOrderConfirmationEmail(orderData, order.id)
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError)
+      // Continue with order completion even if email fails
+    }
 
     return NextResponse.json({
       success: true,

@@ -128,17 +128,21 @@ export default function ProductPage() {
           id: product.id,
           name: product.name,
           price: product.price,
-          price_aed: selectedVariant?.price_aed || product.price_aed,
-          price_inr: selectedVariant?.price_inr || product.price_inr,
+          price_aed: selectedVariant?.discount_aed || selectedVariant?.price_aed || product.price_aed,
+          price_inr: selectedVariant?.discount_inr || selectedVariant?.price_inr || product.price_inr,
           default_currency: product.default_currency,
-          image_url: product.image_urls[0] || '',
+          image_url: product.image_urls?.[0] || '',
+          image_urls: product.image_urls || [],
           category_id: product.category_id,
           category_name: product.category_name,
           description: product.description,
           brand: product.brand,
           is_available: product.is_available,
           shop_category: product.shop_category,
-          features: product.features
+          features: product.features,
+          variants: product.variants,
+          condition_type: product.condition_type,
+          selectedVariant: selectedVariant
         }
         await dispatch(addToWishlistAPI(wishlistItem)).unwrap()
         toast.success('Added to wishlist')
