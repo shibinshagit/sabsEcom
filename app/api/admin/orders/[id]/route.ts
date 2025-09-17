@@ -1,5 +1,114 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
+import nodemailer from 'nodemailer'
+
+// Email configuration
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+})
+
+// Function to send status update email to customer
+async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?: string) {
+  try {
+    const customerEmail = order.customer_email
+    if (!customerEmail) {
+      console.log('No customer email provided, skipping status update email')
+      return
+    }
+
+    const currency = order.currency || 'AED'
+    const currencySymbol = currency === 'AED' ? 'AED' : '₹'
+
+    // Only send emails for specific status changes
+    if (!['out for delivery', 'delivered'].includes(newStatus)) {
+      console.log(`Skipping email for status: ${newStatus}`)
+      return
+    }
+
+    const statusMessages = {
+      'out for delivery': {
+        emoji: '🚚',
+        title: 'Your Order is Out for Delivery!',
+        message: 'Great news! Your order is now on its way to you.',
+        color: '#f97316'
+      },
+      'delivered': {
+        emoji: '✅',
+        title: 'Order Delivered Successfully!',
+        message: 'Your order has been delivered. Thank you for shopping with us!',
+        color: '#10b981'
+      }
+    }
+
+    const statusInfo = statusMessages[newStatus as keyof typeof statusMessages]
+
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Status Update</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, ${statusInfo.color}, #dc2626); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">${statusInfo.emoji} ${statusInfo.title}</h1>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order #${order.id}</p>
+        </div>
+
+        <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <h2 style="color: ${statusInfo.color}; margin: 0 0 10px 0;">${statusInfo.message}</h2>
+            ${trackingUrl ? `
+              <a href="${trackingUrl}" target="_blank" style="display: inline-block; background: ${statusInfo.color}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px;">
+                🔍 Track Your Order
+              </a>
+            ` : ''}
+          </div>
+
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 10px 0; color: #333;">Order Details</h3>
+            <p style="margin: 5px 0;"><strong>Order ID:</strong> #${order.id}</p>
+            <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.customer_name}</p>
+            <p style="margin: 5px 0;"><strong>Total Amount:</strong> ${currencySymbol} ${parseFloat(order.final_total || order.total_amount).toFixed(2)}</p>
+            <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: ${statusInfo.color}; font-weight: bold;">${newStatus.toUpperCase()}</span></p>
+            ${order.delivery_address ? `<p style="margin: 5px 0;"><strong>Delivery Address:</strong> ${order.delivery_address}</p>` : ''}
+          </div>
+
+          ${newStatus === 'delivered' ? `
+          <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin-top: 20px;">
+            <h4 style="margin: 0 0 10px 0; color: #0066cc;">🌟 We hope you love your order!</h4>
+            <p style="margin: 0; font-size: 14px;">If you have any questions or feedback, please don't hesitate to contact us at <a href="tel:+917012975494" style="color: ${statusInfo.color};">+91 7012975494</a></p>
+          </div>
+          ` : ''}
+
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p style="margin: 0; color: #666; font-size: 14px;">Thank you for choosing Sabs Online!</p>
+            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Status updated on ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: customerEmail,
+      subject: `${statusInfo.emoji} Order #${order.id} - ${statusInfo.title}`,
+      html: emailHtml,
+    }
+
+    await transporter.sendMail(mailOptions)
+    console.log(`Status update email sent successfully to: ${customerEmail} for status: ${newStatus}`)
+  } catch (error) {
+    console.error('Error sending status update email:', error)
+    // Don't throw error to avoid breaking order status update
+  }
+}
 
 // Comprehensive stock management for all status transitions
 async function handleStockUpdate(orderId: number, previousStatus: string, newStatus: string, orderItems: any[]) {
@@ -70,10 +179,11 @@ async function handleStockUpdate(orderId: number, previousStatus: string, newSta
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { status } = await request.json()
-    const id = parseInt(params.id)
+    const { status, tracking_url } = await request.json()
+    const resolvedParams = await params
+    const id = parseInt(resolvedParams.id)
 
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 })
@@ -113,11 +223,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     // Handle stock management based on status changes
     await handleStockUpdate(id, previousStatus, status, currentOrder.items)
 
-    // Update order status
+    // Update order status and tracking URL
     const result = await sql`
-      UPDATE orders 
-      SET 
+      UPDATE orders
+      SET
         status = ${status},
+        tracking_url = ${tracking_url || null},
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING 
@@ -139,6 +250,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         discount_amount,
         coupon_code,
         status,
+        tracking_url,
         created_at,
         updated_at
     `
@@ -149,6 +261,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     const order = result[0]
     console.log(`Order ${id} status updated from ${previousStatus} to ${status}`)
+
+    // Send status update email if status changed to "out for delivery" or "delivered"
+    if (status !== previousStatus) {
+      try {
+        await sendStatusUpdateEmail(order, status, tracking_url)
+      } catch (emailError) {
+        console.error('Failed to send status update email:', emailError)
+        // Continue with the response even if email fails
+      }
+    }
 
     // Return formatted response
     const formattedOrder = {
@@ -170,6 +292,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       discount_amount: parseFloat(order.discount_amount || '0'),
       coupon_code: order.coupon_code,
       status: order.status,
+      tracking_url: order.tracking_url,
       created_at: order.created_at,
       updated_at: order.updated_at
     }

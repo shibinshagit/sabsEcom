@@ -98,6 +98,11 @@ export default function OrderPage() {
   }, [])
 
   const hasSelectedCurrencyPrice = (item: any, variant?: any) => {
+    // If variant is provided directly, check variant prices first
+    if (variant) {
+      return selectedCurrency === 'AED' ? (variant.available_aed && variant.price_aed > 0) : (variant.available_inr && variant.price_inr > 0)
+    }
+
     // Check if product has variants with pricing for selected currency
     if (item.variants && Array.isArray(item.variants) && item.variants.length > 0) {
       if (selectedCurrency === 'AED') {
@@ -106,12 +111,9 @@ export default function OrderPage() {
         return item.variants.some((v: any) => v.available_inr && v.price_inr && v.price_inr > 0)
       }
     }
-    // If variant is provided directly, check variant prices
-    if (variant) {
-      return selectedCurrency === 'AED' ? (variant.available_aed && variant.price_aed > 0) : (variant.available_inr && variant.price_inr > 0)
-    }
-    // Fallback to product-level prices
-    return selectedCurrency === 'AED' ? (item.available_aed && item.price_aed > 0) : (item.available_inr && item.price_inr > 0)
+
+    // No fallback - if variants exist but none are available, return false
+    return false
   }
 
   const getCurrencySpecificPrice = (item: any, variant?: any) => {
@@ -122,38 +124,47 @@ export default function OrderPage() {
       ) || item.variants[0]
 
       if (selectedCurrency === 'AED' && targetVariant.available_aed && targetVariant.price_aed > 0) {
-        const discount = targetVariant.discount_aed || 0
-        return Math.max(0, targetVariant.price_aed - discount)
+        // If discount price exists, use it as the selling price, otherwise use regular price
+        return targetVariant.discount_aed && targetVariant.discount_aed > 0 ? targetVariant.discount_aed : targetVariant.price_aed
       } else if (selectedCurrency === 'INR' && targetVariant.available_inr && targetVariant.price_inr > 0) {
-        const discount = targetVariant.discount_inr || 0
-        return Math.max(0, targetVariant.price_inr - discount)
+        // If discount price exists, use it as the selling price, otherwise use regular price
+        return targetVariant.discount_inr && targetVariant.discount_inr > 0 ? targetVariant.discount_inr : targetVariant.price_inr
       }
     }
 
-    // If variant is provided directly, use variant prices with discount applied
+    // If variant is provided directly, use variant prices
     if (variant) {
       if (selectedCurrency === 'AED' && variant.available_aed) {
-        const discount = variant.discount_aed || 0
-        return Math.max(0, (variant.price_aed || 0) - discount)
+        // If discount price exists, use it as the selling price, otherwise use regular price
+        return variant.discount_aed && variant.discount_aed > 0 ? variant.discount_aed : (variant.price_aed || 0)
       } else if (selectedCurrency === 'INR' && variant.available_inr) {
-        const discount = variant.discount_inr || 0
-        return Math.max(0, (variant.price_inr || 0) - discount)
+        // If discount price exists, use it as the selling price, otherwise use regular price
+        return variant.discount_inr && variant.discount_inr > 0 ? variant.discount_inr : (variant.price_inr || 0)
       }
     }
 
     // Fallback to product-level prices
     if (selectedCurrency === 'AED' && item.available_aed) {
-      const discount = item.discount_aed || 0
-      return Math.max(0, (item.price_aed || 0) - discount)
+      // If discount price exists, use it as the selling price, otherwise use regular price
+      return item.discount_aed && item.discount_aed > 0 ? item.discount_aed : (item.price_aed || 0)
     } else if (selectedCurrency === 'INR' && item.available_inr) {
-      const discount = item.discount_inr || 0
-      return Math.max(0, (item.price_inr || 0) - discount)
+      // If discount price exists, use it as the selling price, otherwise use regular price
+      return item.discount_inr && item.discount_inr > 0 ? item.discount_inr : (item.price_inr || 0)
     }
     return 0
   }
 
-  const validCartItems = cart.filter(item => hasSelectedCurrencyPrice(item.menuItem, item.selected_variant))
-  const invalidCartItems = cart.filter(item => !hasSelectedCurrencyPrice(item.menuItem, item.selected_variant))
+  const validCartItems = cart.filter(item => {
+    const isAvailable = hasSelectedCurrencyPrice(item.menuItem, item.selected_variant)
+    const price = getCurrencySpecificPrice(item.menuItem, item.selected_variant)
+    return isAvailable && price > 0
+  })
+
+  const invalidCartItems = cart.filter(item => {
+    const isAvailable = hasSelectedCurrencyPrice(item.menuItem, item.selected_variant)
+    const price = getCurrencySpecificPrice(item.menuItem, item.selected_variant)
+    return !isAvailable || price <= 0
+  })
 
   const calculateCartTotal = () => {
     return validCartItems.reduce((sum, item) => {
@@ -365,6 +376,7 @@ export default function OrderPage() {
         quantity: item.quantity,
         unitPrice: getCurrencySpecificPrice(item.menuItem, item.selected_variant).toString(),
         specialRequests: item.specialRequests,
+        productImageUrl: item.menuItem.image_url || item.menuItem.image_urls?.[0] || null,
       })),
     }
     try {
@@ -393,9 +405,9 @@ export default function OrderPage() {
     }
 
     const cartTotal = calculateCartTotal()
-    const minOrderAmount = selectedCurrency === 'AED' ? 50 : 100
+    const minOrderAmount = selectedCurrency === 'AED' ? 20 : 100
     if (cartTotal < minOrderAmount) {
-      toast.error(`Minimum order amount is ${selectedCurrency === 'AED' ? 'AED 50' : '₹100'}`, { position: 'top-center' })
+      toast.error(`Minimum order amount is ${selectedCurrency === 'AED' ? 'AED 20' : '₹100'}`, { position: 'top-center' })
       return
     }
 
@@ -407,9 +419,18 @@ export default function OrderPage() {
       toast.error('Delivery address is required for delivery orders', { position: 'top-center' })
       return
     }
-    if (orderType === "delivery" && (!detailedAddress.street || !detailedAddress.area || !detailedAddress.city || !detailedAddress.state || !detailedAddress.pincode)) {
-      toast.error('Please complete all required address fields', { position: 'top-center' })
-      return
+    if (orderType === "delivery") {
+      const requiredFields = [detailedAddress.street, detailedAddress.area, detailedAddress.city, detailedAddress.state]
+      // Pincode is only required for INR orders, optional for AED orders
+      if (selectedCurrency === 'INR') {
+        requiredFields.push(detailedAddress.pincode)
+      }
+
+      if (requiredFields.some(field => !field)) {
+        const missingField = selectedCurrency === 'INR' ? 'Please complete all required address fields including PIN code' : 'Please complete all required address fields (PIN code is optional for UAE)'
+        toast.error(missingField, { position: 'top-center' })
+        return
+      }
     }
     if (paymentMethod === "upi" && selectedCurrency === 'INR') {
       try {
@@ -494,9 +515,9 @@ export default function OrderPage() {
     }
 
     const cartTotal = calculateCartTotal()
-    const minOrderAmount = selectedCurrency === 'AED' ? 50 : 100
+    const minOrderAmount = selectedCurrency === 'AED' ? 20 : 100
     if (cartTotal < minOrderAmount) {
-      toast.error(`Minimum order amount is ${selectedCurrency === 'AED' ? 'AED 50' : '₹100'}`, { position: 'top-center' })
+      toast.error(`Minimum order amount is ${selectedCurrency === 'AED' ? 'AED 20' : '₹100'}`, { position: 'top-center' })
       return
     }
 
@@ -667,14 +688,23 @@ export default function OrderPage() {
               <Card className="border-0 shadow-lg rounded-2xl bg-white">
                 <CardHeader>
                   <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-                    Available Items ({selectedCurrency})
+                    Available Items 
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {validCartItems.map((item) => {
+                    console.log('item', item)
                     const itemPrice = getCurrencySpecificPrice(item.menuItem, item.selected_variant)
                     const variantName = item.selected_variant?.name || ''
                     const itemName = item.menuItem.name
+                    const isAvailable = hasSelectedCurrencyPrice(item.menuItem, item.selected_variant)
+                    console.log(`${itemName}: price=${itemPrice}, available=${isAvailable}`)
+
+                    // If price is 0 or unavailable, this item shouldn't be in validCartItems
+                    if (!isAvailable || itemPrice <= 0) {
+                      console.warn(`Item ${itemName} is in validCartItems but has no valid price (${itemPrice}) or availability (${isAvailable})`)
+                    }
+
                     return (
                       <div key={item.menuItem.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-6 border rounded-xl bg-gradient-to-r from-white to-gray-50 shadow-sm hover:shadow-md transition-shadow">
                         <Image
@@ -701,10 +731,21 @@ export default function OrderPage() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-lg text-gray-900">
-                                {formatPriceWithSmallDecimals(itemPrice, itemPrice, selectedCurrency, true, '#000')}
-                              </p>
-                              <p className="text-sm text-gray-500">per item</p>
+                              {isAvailable && itemPrice > 0 ? (
+                                <>
+                                  <p className="font-bold text-lg text-gray-900">
+                                    {formatPriceWithSmallDecimals(itemPrice, itemPrice, selectedCurrency, true, '#000')}
+                                  </p>
+                                  <p className="text-sm text-gray-500">per item</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="font-bold text-lg text-red-600">
+                                    Unavailable
+                                  </p>
+                                  <p className="text-sm text-red-500">in {selectedCurrency === 'AED' ? 'UAE' : 'India'}</p>
+                                </>
+                              )}
                             </div>
                           </div>
                           
@@ -780,9 +821,10 @@ export default function OrderPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {invalidCartItems.map((item) => {
-                    const itemName = item.menuItem.name.includes(' - ') ? item.menuItem.name.split(' - ')[0] : item.menuItem.name
+                    const itemName = item.menuItem.name
+                    const variantName = item.selected_variant?.name || ''
                     return (
-                      <div key={item.menuItem.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border rounded-lg bg-gray-50">
+                      <div key={item.menuItem.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-6 border-2 border-red-200 rounded-xl bg-gradient-to-r from-red-50 to-orange-50">
                         <Image
                           src={
                             item.menuItem.image_url ||
@@ -790,23 +832,36 @@ export default function OrderPage() {
                             `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(itemName)}`
                           }
                           alt={itemName}
-                          width={80}
-                          height={80}
-                          className="rounded-lg object-cover w-20 h-20 sm:w-24 sm:h-24 grayscale"
+                          width={90}
+                          height={90}
+                          className="rounded-xl object-cover w-20 h-20 sm:w-24 sm:h-24 grayscale opacity-70"
                         />
                         <div className="flex-1">
-                          <h3 className="font-semibold text-base sm:text-lg text-gray-600">{itemName}</h3>
-                          <p className="text-sm text-gray-500">
-                            Not available in {selectedCurrency === 'AED' ? "UAE" : "India"}
+                          <h3 className="font-bold text-base sm:text-lg text-gray-700">{itemName}</h3>
+                          {variantName && variantName !== 'Default' && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
+                                {variantName}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="inline-flex items-center gap-1 text-sm font-medium text-red-600 bg-red-100 px-3 py-1 rounded-full">
+                              <XCircle className="w-4 h-4" />
+                              Unavailable in {selectedCurrency === 'AED' ? "UAE" : "India"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            This variant is not available in your selected region
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500 text-sm">Qty: {item.quantity}</span>
+                          <span className="text-gray-500 text-sm font-medium">Qty: {item.quantity}</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleQuantityChange(item.menuItem.id, 0)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-100 p-2 rounded-lg"
                             aria-label="Remove item"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1014,7 +1069,9 @@ export default function OrderPage() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="pincode" className="text-sm">{selectedCurrency === 'AED' ? 'Postal Code' : 'PIN Code'} *</Label>
+                        <Label htmlFor="pincode" className="text-sm">
+                          {selectedCurrency === 'AED' ? 'Postal Code (Optional)' : 'PIN Code *'}
+                        </Label>
                         <Input
                           id="pincode"
                           value={detailedAddress.pincode}
@@ -1023,9 +1080,9 @@ export default function OrderPage() {
                             const fullAddress = `${detailedAddress.street}, ${detailedAddress.area}, ${detailedAddress.city}, ${detailedAddress.state}, ${detailedAddress.country} - ${e.target.value}`
                             dispatch(setCustomerInfo({ info: { deliveryAddress: fullAddress.trim() }, userId: user?.id }))
                           }}
-                          required
+                          required={selectedCurrency === 'INR'}
                           className="text-sm rounded-lg"
-                          placeholder={selectedCurrency === 'AED' ? "12345" : "400001"}
+                          placeholder={selectedCurrency === 'AED' ? "12345 (Optional)" : "400001"}
                           pattern={selectedCurrency === 'AED' ? "[0-9]{5}" : "[0-9]{6}"}
                           maxLength={selectedCurrency === 'AED' ? 5 : 6}
                         />
@@ -1096,15 +1153,20 @@ export default function OrderPage() {
                       })}
                     </div>
                     <div className="border-t pt-4 space-y-2">
-                      {(selectedCurrency === 'AED' && cartTotal < 50) || (selectedCurrency === 'INR' && cartTotal < 100) ? (
+                      {(selectedCurrency === 'AED' && cartTotal < 20) || (selectedCurrency === 'INR' && cartTotal < 100) ? (
                         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 text-amber-600" />
                             <p className="text-sm text-amber-700">
-                              Minimum order: {selectedCurrency === 'AED' ? 'AED 50' : '₹100'}
-                              {orderType === "delivery" && (
+                              Minimum order: {selectedCurrency === 'AED' ? 'AED 20' : '₹100'}
+                              {orderType === "delivery" && selectedCurrency === 'AED' && (
                                 <span className="block">
-                                  Free delivery: {selectedCurrency === 'AED' ? 'AED 200+' : '₹3000+'}
+                                  Delivery: AED 20 (under 50) • AED 10 (50-199) • FREE (200+)
+                                </span>
+                              )}
+                              {orderType === "delivery" && selectedCurrency === 'INR' && (
+                                <span className="block">
+                                  Free delivery: ₹3000+
                                 </span>
                               )}
                             </p>

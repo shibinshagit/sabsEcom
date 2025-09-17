@@ -7,9 +7,21 @@ import { useLoginModal } from '@/lib/stores/useLoginModal'
 import Footer from "@/components/ui/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, Send, Box, ChevronDown, ChevronUp } from "lucide-react"
+import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, Send, Box, ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from "@/lib/contexts/auth-context"
+
+function formatCurrency(value: unknown, currency: string = 'AED') {
+  const num = typeof value === "number" ? value : Number.parseFloat(String(value ?? 0))
+  const formattedNum = num.toFixed(2)
+
+  if (currency === 'AED') {
+    return `AED ${formattedNum}`
+  } else if (currency === 'INR') {
+    return `₹${formattedNum}`
+  }
+  return `${formattedNum} ${currency}`
+}
 
 function formatMoney(value: unknown) {
   const num = typeof value === "number" ? value : Number.parseFloat(String(value ?? 0))
@@ -195,6 +207,8 @@ interface OrderItem {
   quantity: number
   unit_price: number | string
   total_price: number | string
+  product_image_url?: string
+  variant_name?: string
 }
 
 interface Order {
@@ -202,11 +216,13 @@ interface Order {
   status: string
   order_type: string
   customer_name: string
-  payment_method:string
+  payment_method: string
   total_amount: number | string
   delivery_fee: number | string
   final_total: number | string
   special_instructions: string
+  currency: string
+  tracking_url?: string
   created_at: string
   items: OrderItem[]
 }
@@ -398,17 +414,17 @@ export default function OrdersPage() {
         </div>
       </section> */}
 
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-12">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">
             {user?.name ? `${user.name}'s Orders` : 'Your Orders'}
           </h2>
-          <p className="text-gray-600">Real-time updates on your orders</p>
+          <p className="text-sm sm:text-base text-gray-600">Real-time updates on your orders</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm sm:text-base text-red-800">{error}</p>
             <button
               onClick={fetchUserOrders}
               className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
@@ -433,23 +449,23 @@ export default function OrdersPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {orders.map((order) => {
               const isCollapsible = isOrderCollapsible(order.status)
               const isExpanded = isOrderExpanded(order.id)
               const shouldShowContent = !isCollapsible || isExpanded
 
               return (
-                <Card key={order.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader 
-                    className={isCollapsible ? "cursor-pointer" : ""}
+                <Card key={order.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+                  <CardHeader
+                    className={`p-4 sm:p-6 ${isCollapsible ? "cursor-pointer hover:bg-gray-50" : ""}`}
                     onClick={isCollapsible ? () => toggleOrderExpansion(order.id) : undefined}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div>
-                          <CardTitle className="text-lg">Order #{order.id}</CardTitle>
-                          <p className="text-sm text-gray-600 mt-1">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-base sm:text-lg lg:text-xl">Order #{order.id}</CardTitle>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">
                             Customer: <span className="font-medium">{order.customer_name}</span>
                           </p>
                         </div>
@@ -463,76 +479,120 @@ export default function OrdersPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="font-bold text-lg">
-                            ${formatMoney(order.final_total)}
+                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                        <div className="text-left sm:text-right">
+                          <p className="font-bold text-base sm:text-lg lg:text-xl">
+                            {formatCurrency(order.final_total, order.currency)}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs sm:text-sm text-gray-500">
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <Badge className={getStatusColor(order.status)}>
+                        <Badge className={`${getStatusColor(order.status)} text-xs sm:text-sm px-2 py-1`}>
                           {getStatusIcon(order.status)}
                           <span className="ml-1 capitalize">{order.status}</span>
                         </Badge>
                       </div>
                     </div>
                     {isCollapsible && !isExpanded && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        <p>Click to expand details • {order.items?.length || 0} item(s)</p>
+                      <div className="mt-3 pt-2 border-t border-gray-100">
+                        <p className="text-xs sm:text-sm text-gray-600">Click to expand details • {order.items?.length || 0} item(s)</p>
                       </div>
                     )}
                     {shouldShowContent && (
-                      <div className="text-sm text-gray-600 mt-2">
-                        <p>
-                          {order.payment_method} • Placed on {new Date(order.created_at).toLocaleDateString()} at{" "}
-                          {new Date(order.created_at).toLocaleTimeString([], {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
+                      <div className="text-xs sm:text-sm text-gray-600 mt-3 pt-2 border-t border-gray-100">
+                        <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                          <span className="font-medium">{order.payment_method}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span>Placed on {new Date(order.created_at).toLocaleDateString()}</span>
+                          <span className="hidden sm:inline">at</span>
+                          <span className="text-gray-500">
+                            {new Date(order.created_at).toLocaleTimeString([], {
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </span>
                         </p>
                       </div>
                     )}
                   </CardHeader>
                   {shouldShowContent && (
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0">
                   {/* Order Timeline */}
                   <OrderTimeline currentStatus={order.status} />
 
+                  {/* Tracking URL */}
+                  {order.tracking_url && (
+                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-start sm:items-center gap-3">
+                          <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mt-0.5 sm:mt-0 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-blue-800 text-sm sm:text-base">Track Your Order</h4>
+                            <p className="text-xs sm:text-sm text-blue-600">Follow your order's journey in real-time</p>
+                          </div>
+                        </div>
+                        <a
+                          href={order.tracking_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors font-medium text-xs sm:text-sm min-w-fit"
+                        >
+                          <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span className="whitespace-nowrap">Track Package</span>
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Order Items */}
-                  <div className="space-y-4 mb-6">
-                    <h4 className="font-semibold text-gray-800 text-lg">Order Items</h4>
-                    <div className="grid gap-3">
+                  <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                    <h4 className="font-semibold text-gray-800 text-base sm:text-lg">Order Items</h4>
+                    <div className="grid gap-2 sm:gap-3">
                       {order.items?.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border shadow-sm hover:shadow-md transition-shadow">
-                          <div className="flex items-center gap-4 flex-1">
-                            {/* Item Image Placeholder */}
-                            <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
-                              <Box className="w-6 h-6 text-orange-600" />
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <h5 className="font-semibold text-gray-900 text-base leading-tight truncate">
-                                    {item.menu_item_name}
-                                  </h5>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                                      Qty: {item.quantity}
-                                    </span>
-                                    <span className="text-sm text-gray-600">
-                                      ${formatMoney(item.unit_price)} each
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="text-right ml-4">
-                                  <p className="font-bold text-lg text-orange-600">
-                                    ${formatMoney(item.total_price)}
+                        <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg sm:rounded-xl border shadow-sm hover:shadow-md transition-shadow">
+                          {/* Product Image */}
+                          <div className="flex-shrink-0 self-start sm:self-center">
+                            {item.product_image_url ? (
+                              <Image
+                                src={item.product_image_url}
+                                alt={item.menu_item_name}
+                                width={80}
+                                height={80}
+                                className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-cover rounded-lg shadow-sm"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
+                                <Box className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-orange-600" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0 w-full">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h5 className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg leading-tight">
+                                  {item.menu_item_name}
+                                </h5>
+                                {item.variant_name && item.variant_name !== 'Default' && (
+                                  <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                                    Variant: {item.variant_name}
                                   </p>
-                                  <p className="text-xs text-gray-500">total</p>
+                                )}
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                                    Qty: {item.quantity}
+                                  </span>
+                                  <span className="text-xs sm:text-sm text-gray-600">
+                                    {formatCurrency(item.unit_price, order.currency)} each
+                                  </span>
                                 </div>
+                              </div>
+                              <div className="text-left sm:text-right sm:ml-4 mt-2 sm:mt-0 flex-shrink-0">
+                                <p className="font-bold text-base sm:text-lg lg:text-xl text-orange-600">
+                                  {formatCurrency(item.total_price, order.currency)}
+                                </p>
+                                <p className="text-xs text-gray-500">total</p>
                               </div>
                             </div>
                           </div>
@@ -542,28 +602,36 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Order Summary */}
-                  <div className="border-t pt-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Subtotal</span>
-                        <span>${formatMoney(order.total_amount)}</span>
-                      </div>
-                      {Number(order.delivery_fee) > 0 && (
+                  <div className="border-t pt-3 sm:pt-4">
+                    <div className="bg-gradient-to-r from-gray-50 to-orange-50 rounded-lg p-3 sm:p-4">
+                      <h5 className="font-semibold text-gray-800 mb-3 text-sm sm:text-base">Order Summary</h5>
+                      <div className="space-y-2 text-xs sm:text-sm">
                         <div className="flex justify-between">
-                          <span>Delivery Fee</span>
-                          <span>${formatMoney(order.delivery_fee)}</span>
+                          <span>Subtotal</span>
+                          <span>{formatCurrency(order.total_amount, order.currency)}</span>
                         </div>
-                      )}
-                      <div className="flex justify-between font-bold text-base border-t pt-2">
-                        <span>Total</span>
-                        <span>${formatMoney(order.final_total)}</span>
+                        {Number(order.delivery_fee) > 0 ? (
+                          <div className="flex justify-between">
+                            <span>Delivery Fee</span>
+                            <span>{formatCurrency(order.delivery_fee, order.currency)}</span>
+                          </div>
+                        ) : order.order_type === 'delivery' && (
+                          <div className="flex justify-between text-green-600">
+                            <span>Delivery Fee</span>
+                            <span className="font-medium">FREE! 🎉</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-bold text-sm sm:text-base border-t pt-2 text-orange-600">
+                          <span>Total Amount</span>
+                          <span>{formatCurrency(order.final_total, order.currency)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {order.special_instructions && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm">
+                    <div className="mt-3 sm:mt-4 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs sm:text-sm">
                         <strong>Special Instructions:</strong> {order.special_instructions}
                       </p>
                     </div>

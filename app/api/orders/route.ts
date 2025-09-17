@@ -29,9 +29,12 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number) {
     const currency = orderData.currency || 'AED'
     const currencySymbol = currency === 'AED' ? 'AED' : '₹'
 
-    const subtotal = orderData.originalAmount - (currency === 'AED' ? 10 : 70) || 0
+    const subtotal = orderData.originalAmount - (currency === 'AED' ? 20 : 70) || 0
     const deliveryFee = orderData.orderType === 'delivery' ?
-      (currency === 'AED' ? (subtotal >= 200 ? 0 : 10) : (subtotal >= 3000 ? 0 : 70)) : 0
+      (currency === 'AED' ?
+        (subtotal >= 200 ? 0 : (subtotal >= 50 ? 10 : 20)) :
+        (subtotal >= 3000 ? 0 : 70)
+      ) : 0
     const finalTotal = orderData.totalAmount || (subtotal + deliveryFee - (orderData.discountAmount || 0))
 
     // Create order items HTML
@@ -142,6 +145,147 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number) {
   }
 }
 
+// Function to send admin notification email
+async function sendAdminNotificationEmail(orderData: any, orderId: number) {
+  try {
+    const adminEmail = 'shibinshamunna912@gmail.com'
+    const currency = orderData.currency || 'AED'
+    const currencySymbol = currency === 'AED' ? 'AED' : '₹'
+
+    const subtotal = orderData.originalAmount - (currency === 'AED' ? 20 : 70) || 0
+    const deliveryFee = orderData.orderType === 'delivery' ?
+      (currency === 'AED' ?
+        (subtotal >= 200 ? 0 : (subtotal >= 50 ? 10 : 20)) :
+        (subtotal >= 3000 ? 0 : 70)
+      ) : 0
+    const finalTotal = orderData.totalAmount || (subtotal + deliveryFee - (orderData.discountAmount || 0))
+
+    // Create order items HTML with images
+    let itemsHtml = ''
+    orderData.items.forEach((item: any, index: number) => {
+      const itemPrice = parseFloat(item.unitPrice) || 0
+      const itemTotal = itemPrice * item.quantity
+      const imageUrl = item.productImageUrl || 'https://via.placeholder.com/80x80?text=No+Image'
+
+      itemsHtml += `
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 10px; text-align: center;">
+            <img src="${imageUrl}" alt="${item.menuItemName}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+          </td>
+          <td style="padding: 10px; text-align: left;">
+            <strong>${item.menuItemName}</strong>
+            ${item.variantName && item.variantName !== 'Default' ? `<br><small style="color: #666;">Variant: ${item.variantName}</small>` : ''}
+          </td>
+          <td style="padding: 10px; text-align: center; font-weight: bold;">${item.quantity}</td>
+          <td style="padding: 10px; text-align: right;">${currencySymbol} ${itemPrice.toFixed(2)}</td>
+          <td style="padding: 10px; text-align: right; font-weight: bold; color: #dc2626;">${currencySymbol} ${itemTotal.toFixed(2)}</td>
+        </tr>
+      `
+    })
+
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Order Alert</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">🚨 New Order Alert!</h1>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order #${orderId} - Sabs Online</p>
+        </div>
+
+        <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #dc2626; margin-bottom: 20px;">Order Details</h2>
+
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>Order ID:</strong> #${orderId}</p>
+            <p style="margin: 5px 0;"><strong>Customer:</strong> ${orderData.customerName}</p>
+            <p style="margin: 5px 0;"><strong>Phone:</strong> ${orderData.customerPhone}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${orderData.customerEmail || 'Not provided'}</p>
+            <p style="margin: 5px 0;"><strong>Order Type:</strong> ${orderData.orderType.charAt(0).toUpperCase() + orderData.orderType.slice(1)}</p>
+            <p style="margin: 5px 0;"><strong>Payment:</strong> ${orderData.paymentMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}</p>
+            <p style="margin: 5px 0;"><strong>Currency:</strong> ${currency}</p>
+            ${orderData.deliveryAddress ? `<p style="margin: 5px 0;"><strong>Delivery Address:</strong> ${orderData.deliveryAddress}</p>` : ''}
+          </div>
+
+          <h3 style="color: #dc2626; margin-bottom: 15px;">Order Items</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+            <thead>
+              <tr style="background: #f8f9fa;">
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold;">Image</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; font-weight: bold;">Product</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; font-weight: bold;">Qty</th>
+                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd; font-weight: bold;">Price</th>
+                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd; font-weight: bold;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <div style="border-top: 2px solid #dc2626; padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <span><strong>Subtotal:</strong></span>
+              <span><strong>${currencySymbol} ${subtotal.toFixed(2)}</strong></span>
+            </div>
+            ${orderData.orderType === 'delivery' ? `
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span><strong>Delivery Fee:</strong></span>
+                <span><strong>${deliveryFee === 0 ? 'FREE 🎉' : currencySymbol + ' ' + deliveryFee.toFixed(2)}</strong></span>
+              </div>
+            ` : ''}
+            ${orderData.discountAmount > 0 ? `
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #10b981;">
+                <span><strong>Discount ${orderData.couponCode ? '(' + orderData.couponCode + ')' : ''}:</strong></span>
+                <span><strong>-${currencySymbol} ${orderData.discountAmount.toFixed(2)}</strong></span>
+              </div>
+            ` : ''}
+            <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; color: #dc2626; border-top: 1px solid #ddd; padding-top: 15px; background: #fef2f2; margin: 10px -15px -15px -15px; padding: 15px;">
+              <span>TOTAL AMOUNT:</span>
+              <span>${currencySymbol} ${finalTotal.toFixed(2)}</span>
+            </div>
+          </div>
+
+          ${orderData.specialInstructions ? `
+          <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin-top: 20px;">
+            <h4 style="margin: 0 0 10px 0; color: #856404;">📝 Special Instructions:</h4>
+            <p style="margin: 0; font-size: 14px; color: #856404;">${orderData.specialInstructions}</p>
+          </div>
+          ` : ''}
+
+          <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin-top: 20px;">
+            <h4 style="margin: 0 0 10px 0; color: #0066cc;">⚠️ Action Required</h4>
+            <p style="margin: 0; font-size: 14px;">Please process this order and contact the customer at <strong>${orderData.customerPhone}</strong> to confirm delivery time.</p>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p style="margin: 0; color: #666; font-size: 14px;">This is an automated notification from Sabs Online</p>
+            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Order received on ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: adminEmail,
+      subject: `🚨 New Order #${orderId} - ${currencySymbol} ${finalTotal.toFixed(2)} (${orderData.customerName})`,
+      html: emailHtml,
+    }
+
+    await transporter.sendMail(mailOptions)
+    console.log('Admin notification email sent successfully to:', adminEmail)
+  } catch (error) {
+    console.error('Error sending admin notification email:', error)
+    // Don't throw error to avoid breaking order processing
+  }
+}
+
 async function getUserFromToken() {
   try {
     const cookieStore = cookies()
@@ -227,7 +371,8 @@ async function ensureOrdersTableExists() {
         { name: 'tax_amount', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'tax_amount' },
         { name: 'discount_amount', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'discount_amount' },
         { name: 'coupon_code', definition: 'VARCHAR(50)', check: 'coupon_code' },
-        { name: 'currency', definition: 'VARCHAR(3) DEFAULT \'AED\'', check: 'currency' }
+        { name: 'currency', definition: 'VARCHAR(3) DEFAULT \'AED\'', check: 'currency' },
+        { name: 'tracking_url', definition: 'TEXT', check: 'tracking_url' }
       ]
 
       for (const column of columnsToAdd) {
@@ -356,13 +501,15 @@ async function findLinkedUser(email: string, isClerkUser: boolean, userId: strin
 function getCurrencySpecificPrice(item: any, currency: string) {
   if (currency === 'AED') {
     return {
-      unitPrice: item.discount_aed > 0 ? item.discount_aed : (item.price_aed || item.price || 0),
+      // If discount price exists, use it as the selling price, otherwise use regular price
+      unitPrice: item.discount_aed && item.discount_aed > 0 ? item.discount_aed : (item.price_aed || item.price || 0),
       originalPrice: item.price_aed || item.price || 0,
       available: item.available_aed !== false
     }
   } else {
     return {
-      unitPrice: item.discount_inr > 0 ? item.discount_inr : (item.price_inr || item.price || 0),
+      // If discount price exists, use it as the selling price, otherwise use regular price
+      unitPrice: item.discount_inr && item.discount_inr > 0 ? item.discount_inr : (item.price_inr || item.price || 0),
       originalPrice: item.price_inr || item.price || 0,
       available: item.available_inr !== false
     }
@@ -393,10 +540,16 @@ export async function POST(request: Request) {
     // Calculate delivery fee based on currency, order type, and cart total
     let deliveryFee = 0
     if (orderData.orderType === "delivery") {
-      const subtotalForDelivery = orderData.originalAmount - (orderData.currency === "AED" ? 10 : 70) || 0
+      const subtotalForDelivery = orderData.originalAmount - (orderData.currency === "AED" ? 20 : 70) || 0
       if (orderData.currency === "AED") {
-        // AED: free delivery above 200, otherwise 10 AED
-        deliveryFee = subtotalForDelivery >= 200 ? 0 : 10
+        // AED: free delivery above 200, 10 AED for 50-199, 20 AED for under 50
+        if (subtotalForDelivery >= 200) {
+          deliveryFee = 0
+        } else if (subtotalForDelivery >= 50) {
+          deliveryFee = 10
+        } else {
+          deliveryFee = 20
+        }
       } else {
         // INR: free delivery above 3000, otherwise 70 INR
         deliveryFee = subtotalForDelivery >= 3000 ? 0 : 70
@@ -499,9 +652,12 @@ export async function POST(request: Request) {
 
     console.log('Order completed successfully')
 
-    // Send order confirmation email
+    // Send order confirmation email and admin notification
     try {
-      await sendOrderConfirmationEmail(orderData, order.id)
+      await Promise.all([
+        sendOrderConfirmationEmail(orderData, order.id),
+        sendAdminNotificationEmail(orderData, order.id)
+      ])
     } catch (emailError) {
       console.error('Email sending failed:', emailError)
       // Continue with order completion even if email fails

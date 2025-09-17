@@ -40,7 +40,7 @@ function ShippingPolicyContent() {
             <CardContent className="p-4 text-center">
               <Package className="w-6 h-6 text-green-600 mx-auto mb-2" />
               <p className="font-semibold text-green-900">Free Shipping</p>
-              <p className="text-sm text-green-700">Orders over AED 200</p>
+              <p className="text-sm text-green-700">Orders over AED 200 or ₹3000</p>
             </CardContent>
           </Card>
           <Card className="border-orange-200 bg-orange-50">
@@ -96,7 +96,7 @@ function ShippingPolicyContent() {
                 <div className="border rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-semibold text-gray-900">Express Delivery</h4>
-                    <Badge className="bg-blue-100 text-blue-800">AED 10</Badge>
+                    <Badge className="bg-green-100 text-blue-800">AED 10</Badge>
                   </div>
                   <p className="text-gray-600 text-sm mb-2">Next Working day delivery for Dubai, Abu Dhabi, Sharjah</p>
                   <p className="text-xs text-gray-500">Same day delivery available for orders placed before 12:00 PM</p>
@@ -115,32 +115,17 @@ function ShippingPolicyContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold text-gray-900">Standard Delivery</h4>
-                    <Badge className="bg-green-100 text-green-800">₹ 150</Badge>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-2">Delivery within 5-7 business days</p>
-                  <p className="text-xs text-gray-500">Pan India delivery • Free for orders over ₹ 2,500</p>
-                </div>
 
                 <div className="border rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-semibold text-gray-900">Express Delivery</h4>
-                    <Badge className="bg-blue-100 text-blue-800">₹ 250</Badge>
+                    <Badge className="bg-orange-100 text-blue-800">₹ 70</Badge>
                   </div>
                   <p className="text-gray-600 text-sm mb-2">Delivery within 2-3 business days</p>
-                  <p className="text-xs text-gray-500">Available in major cities • Delhi, Mumbai, Bangalore, Chennai, Kolkata</p>
+                  <p className="text-xs text-gray-500">All India Delivery Available</p>
                 </div>
 
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold text-gray-900">Cash on Delivery (COD)</h4>
-                    <Badge className="bg-orange-100 text-orange-800">₹ 100</Badge>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-2">Pay when you receive your order</p>
-                  <p className="text-xs text-gray-500">Available in most locations • Additional COD fee applies</p>
-                </div>
+                
               </div>
             </CardContent>
           </Card>
