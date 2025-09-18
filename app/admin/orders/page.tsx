@@ -97,6 +97,11 @@ export default function OrdersManagement() {
       const data = await response.json()
       console.log("Received orders data:", data)
 
+      // Log individual order items for debugging
+      if (Array.isArray(data) && data.length > 0) {
+        console.log("First order items:", data[0].items)
+      }
+
       if (Array.isArray(data)) {
         setOrders(data)
         console.log(`Loaded ${data.length} orders successfully`)
@@ -382,11 +387,11 @@ export default function OrdersManagement() {
                             </Button>
                           </DialogTrigger>
                          
-                          <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-4xl max-h-[95vh] p-0">
-                            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 pb-4 z-10">
+                          <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-4xl max-h-[95vh] p-0">
+                            <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-6 pb-4 z-10">
                               <DialogHeader>
-                                <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                <DialogTitle className="text-2xl font-bold text-white flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                                     #{order.id}
                                   </div>
                                   <span>Order #{order.id} - {order.customer_name}</span>
@@ -394,8 +399,8 @@ export default function OrdersManagement() {
                                     {order.status.toUpperCase()}
                                   </Badge>
                                 </DialogTitle>
-                                <p className="text-gray-600 mt-2 text-sm">
-                                  📅 Placed on {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <p className="text-gray-400 mt-2 text-sm">
+                                  Placed on {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                               </DialogHeader>
                             </div>
@@ -409,11 +414,11 @@ export default function OrdersManagement() {
                               }}
                             >
                                 {/* Customer & Order Overview Card */}
-                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        👤 Customer Information
+                                      <h4 className="text-lg font-bold text-white mb-4">
+                                        Customer Information
                                       </h4>
                                       <div className="space-y-3">
                                         <div className="flex items-center gap-3">
@@ -421,22 +426,22 @@ export default function OrdersManagement() {
                                             {selectedOrder.customer_name.charAt(0).toUpperCase()}
                                           </div>
                                           <div>
-                                            <p className="font-semibold text-gray-900">{selectedOrder.customer_name}</p>
-                                            <p className="text-gray-600 text-sm">{selectedOrder.customer_phone}</p>
+                                            <p className="font-semibold text-white">{selectedOrder.customer_name}</p>
+                                            <p className="text-gray-400 text-sm">{selectedOrder.customer_phone}</p>
                                           </div>
                                         </div>
                                         {selectedOrder.customer_email && (
-                                          <p className="text-gray-600 text-sm pl-11">📧 {selectedOrder.customer_email}</p>
+                                          <p className="text-gray-400 text-sm pl-11">{selectedOrder.customer_email}</p>
                                         )}
                                       </div>
 
                                       {/* Address Information */}
                                       {selectedOrder.delivery_address && (
                                         <div className="mt-5">
-                                          <h5 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                            🏠 Delivery Address
+                                          <h5 className="font-semibold text-white mb-2">
+                                            Delivery Address
                                           </h5>
-                                          <div className="bg-white border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
+                                          <div className="bg-gray-700 border border-gray-600 rounded-lg p-3 text-sm text-gray-300">
                                             {selectedOrder.delivery_address}
                                           </div>
                                         </div>
@@ -444,10 +449,10 @@ export default function OrdersManagement() {
 
                                       {selectedOrder.customer_address && (
                                         <div className="mt-4">
-                                          <h5 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                            📍 Customer Address
+                                          <h5 className="font-semibold text-white mb-2">
+                                            Customer Address
                                           </h5>
-                                          <div className="bg-white border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
+                                          <div className="bg-gray-700 border border-gray-600 rounded-lg p-3 text-sm text-gray-300">
                                             {selectedOrder.customer_address}
                                           </div>
                                         </div>
@@ -455,43 +460,26 @@ export default function OrdersManagement() {
                                     </div>
 
                                     <div>
-                                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        📋 Order Details
+                                      <h4 className="text-lg font-bold text-white mb-4">
+                                        Order Details
                                       </h4>
                                       <div className="space-y-3">
                                         <div className="flex items-center gap-3">
-                                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                          <span className="text-gray-600">Order Type:</span>
-                                          <Badge className="bg-green-100 text-green-800 capitalize">{selectedOrder.order_type}</Badge>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                                          <span className="text-gray-600">Currency:</span>
-                                          <Badge className="bg-yellow-100 text-yellow-800">{selectedOrder.currency || 'INR'}</Badge>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                                          <span className="text-gray-600">Status:</span>
-                                          <Badge className={`${getStatusColor(selectedOrder.status).replace('bg-', 'bg-').replace('-500', '-100')} text-gray-800 capitalize`}>
-                                            {selectedOrder.status}
-                                          </Badge>
-                                        </div>
-                                        <div className="flex items-center gap-3">
                                           <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                          <span className="text-gray-600">Order Date:</span>
-                                          <span className="font-medium">{new Date(selectedOrder.created_at).toLocaleDateString()}</span>
+                                          <span className="text-gray-400">Order Date:</span>
+                                          <span className="font-medium text-white">{new Date(selectedOrder.created_at).toLocaleDateString()}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
                                           <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-                                          <span className="text-gray-600">Order Time:</span>
-                                          <span className="font-medium">{new Date(selectedOrder.created_at).toLocaleTimeString()}</span>
+                                          <span className="text-gray-400">Order Time:</span>
+                                          <span className="font-medium text-white">{new Date(selectedOrder.created_at).toLocaleTimeString()}</span>
                                         </div>
                                       </div>
 
                                       {/* Tracking URL Section */}
-                                      <div className="mt-6 p-4 bg-white border border-gray-200 rounded-lg">
-                                        <Label htmlFor={`tracking-${selectedOrder.id}`} className="text-sm font-bold text-gray-900 mb-3 block flex items-center gap-2">
-                                          📦 Package Tracking
+                                      <div className="mt-6 p-4 bg-gray-700 border border-gray-600 rounded-lg">
+                                        <Label htmlFor={`tracking-${selectedOrder.id}`} className="text-sm font-bold text-white mb-3 block">
+                                          Package Tracking
                                         </Label>
                                         <div className="flex gap-2">
                                           <Input
@@ -503,13 +491,13 @@ export default function OrdersManagement() {
                                               ...prev,
                                               [selectedOrder.id]: e.target.value
                                             }))}
-                                            className="flex-1 border-gray-300 text-gray-900 placeholder-gray-500 text-sm"
+                                            className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400 text-sm"
                                           />
                                           {(trackingUrls[selectedOrder.id] || selectedOrder.tracking_url) && (
                                             <Button
                                               variant="outline"
                                               size="sm"
-                                              className="px-3 border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white"
+                                              className="px-3 border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
                                               onClick={() => {
                                                 const url = trackingUrls[selectedOrder.id] || selectedOrder.tracking_url
                                                 if (url) window.open(url, '_blank')
@@ -522,7 +510,7 @@ export default function OrdersManagement() {
                                             <Button
                                               variant="outline"
                                               size="sm"
-                                              className="px-3 border-red-500 text-red-600 hover:bg-red-500 hover:text-white"
+                                              className="px-3 border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
                                               onClick={() => setTrackingUrls(prev => {
                                                 const updated = { ...prev }
                                                 delete updated[selectedOrder.id]
@@ -533,7 +521,7 @@ export default function OrdersManagement() {
                                             </Button>
                                           )}
                                         </div>
-                                        <p className="text-xs text-gray-600 mt-2">
+                                        <p className="text-xs text-gray-400 mt-2">
                                           Customer tracking URL (automatically sent in status update emails)
                                         </p>
                                       </div>
@@ -542,51 +530,51 @@ export default function OrdersManagement() {
                                 </div>
 
                                 {/* Payment Information Card */}
-                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
-                                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    💳 Payment Information
+                                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                                  <h4 className="text-lg font-bold text-white mb-4">
+                                    Payment Information
                                   </h4>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="flex items-center gap-3">
                                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                      <span className="text-gray-600">Method:</span>
-                                      <Badge className="bg-green-100 text-green-800">{selectedOrder.payment_method?.toUpperCase() || 'COD'}</Badge>
+                                      <span className="text-gray-400">Method:</span>
+                                      <Badge className="bg-green-600 text-white">{selectedOrder.payment_method?.toUpperCase() || 'COD'}</Badge>
                                     </div>
                                     <div className="flex items-center gap-3">
                                       <div className={`w-3 h-3 rounded-full ${
                                         selectedOrder.payment_status === 'completed' ? 'bg-green-500' :
                                         selectedOrder.payment_status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
                                       }`}></div>
-                                      <span className="text-gray-600">Status:</span>
+                                      <span className="text-gray-400">Status:</span>
                                       <Badge className={`capitalize ${
-                                        selectedOrder.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
-                                        selectedOrder.payment_status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                                        selectedOrder.payment_status === 'completed' ? 'bg-green-600 text-white' :
+                                        selectedOrder.payment_status === 'failed' ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
                                       }`}>{selectedOrder.payment_status || 'pending'}</Badge>
                                     </div>
                                   </div>
 
                                   {/* Razorpay Details for Bank Reconciliation */}
                                   {(selectedOrder.razorpay_order_id || selectedOrder.razorpay_payment_id) && (
-                                    <div className="mt-4 pt-4 border-t border-gray-200">
-                                      <h6 className="font-bold text-gray-900 mb-3 flex items-center gap-2">🏦 Bank Reconciliation</h6>
+                                    <div className="mt-4 pt-4 border-t border-gray-600">
+                                      <h6 className="font-bold text-white mb-3">Bank Reconciliation</h6>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                         {selectedOrder.razorpay_order_id && (
-                                          <div><strong>Order ID:</strong> <span className="font-mono text-blue-600">{selectedOrder.razorpay_order_id}</span></div>
+                                          <div className="text-gray-300"><strong>Order ID:</strong> <span className="font-mono text-blue-400">{selectedOrder.razorpay_order_id}</span></div>
                                         )}
                                         {selectedOrder.razorpay_payment_id && (
-                                          <div><strong>Payment ID:</strong> <span className="font-mono text-blue-600">{selectedOrder.razorpay_payment_id}</span></div>
+                                          <div className="text-gray-300"><strong>Payment ID:</strong> <span className="font-mono text-blue-400">{selectedOrder.razorpay_payment_id}</span></div>
                                         )}
                                         {selectedOrder.bank_reference_num && (
-                                          <div><strong>Bank Ref:</strong> <span className="font-mono text-orange-600">{selectedOrder.bank_reference_num}</span></div>
+                                          <div className="text-gray-300"><strong>Bank Ref:</strong> <span className="font-mono text-orange-400">{selectedOrder.bank_reference_num}</span></div>
                                         )}
                                         {selectedOrder.payment_method_type && (
-                                          <div><strong>Type:</strong> <span className="capitalize">{selectedOrder.payment_method_type}</span></div>
+                                          <div className="text-gray-300"><strong>Type:</strong> <span className="capitalize">{selectedOrder.payment_method_type}</span></div>
                                         )}
                                         {selectedOrder.payment_bank && (
-                                          <div><strong>Bank:</strong> {selectedOrder.payment_bank}</div>
+                                          <div className="text-gray-300"><strong>Bank:</strong> {selectedOrder.payment_bank}</div>
                                         )}
                                         {selectedOrder.payment_vpa && (
-                                          <div><strong>UPI:</strong> <span className="font-mono">{selectedOrder.payment_vpa}</span></div>
+                                          <div className="text-gray-300"><strong>UPI:</strong> <span className="font-mono">{selectedOrder.payment_vpa}</span></div>
                                         )}
                                       </div>
                                     </div>
@@ -594,28 +582,29 @@ export default function OrdersManagement() {
                                 </div>
 
                                 {/* Order Items Card */}
-                                <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-6">
-                                  <h4 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                                    🍽️ Order Items ({selectedOrder.items?.length || 0})
+                                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                                  <h4 className="text-lg font-bold text-white mb-5">
+                                    Order Items ({selectedOrder.items?.length || 0})
                                   </h4>
                                   <div className="space-y-4">
-                                    {selectedOrder.items?.map((item, index) => (
-                                      <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                                    {selectedOrder.items?.map((item, index) => {
+                                      console.log('Admin Order Item:', item)
+                                      return (
+                                      <div key={item.id} className="bg-gray-700 border border-gray-600 rounded-lg p-4">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                           {/* Product Image */}
                                           <div className="flex-shrink-0">
-                                            {console.log(item)}
                                             {item.product_image_url ? (
                                               <Image
-                                                src={item.product_image_urls[0]}
-                                                alt={item.menu_item_name}
+                                                src={item.product_image_url}
+                                                alt={item.product_image_url}
                                                 width={80}
                                                 height={80}
-                                                className="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-sm"
+                                                className="w-20 h-20 object-cover rounded-lg border border-gray-500"
                                               />
                                             ) : (
-                                              <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                                                <Package className="w-8 h-8 text-orange-600" />
+                                              <div className="w-20 h-20 bg-gray-600 rounded-lg border border-gray-500 flex items-center justify-center">
+                                                <Package className="w-8 h-8 text-gray-400" />
                                               </div>
                                             )}
                                           </div>
@@ -625,15 +614,13 @@ export default function OrdersManagement() {
                                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                                               <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                  <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-100 text-orange-800 text-xs font-bold rounded-full">
-                                                    {index + 1}
-                                                  </span>
-                                                  <h5 className="font-bold text-gray-900 text-lg leading-tight">{item.menu_item_name}</h5>
+                                                  
+                                                  <h5 className="font-bold text-white text-lg leading-tight">{item.menu_item_name}</h5>
                                                 </div>
 
                                                 {item.variant_name && item.variant_name !== 'Default' && (
                                                   <div className="flex items-center gap-2 mb-2">
-                                                    <Badge className="bg-purple-100 text-purple-800 text-xs">
+                                                    <Badge className="bg-purple-600 text-white text-xs">
                                                       {item.variant_name}
                                                     </Badge>
                                                   </div>
@@ -641,34 +628,32 @@ export default function OrdersManagement() {
 
                                                 <div className="flex items-center gap-4 mb-2">
                                                   <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                                    <span className="text-sm text-gray-600">Qty:</span>
-                                                    <Badge className="bg-blue-100 text-blue-800 font-bold">
-                                                      {item.quantity} {item.quantity > 1 ? 'pcs' : 'pc'}
+                                                    <span className="text-sm text-gray-400">Qty:</span>
+                                                    <Badge className="bg-blue-600 text-white font-bold">
+                                                      {item.quantity}
                                                     </Badge>
                                                   </div>
                                                   <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                    <span className="text-sm text-gray-600">Unit Price:</span>
-                                                    <span className="font-medium text-gray-900">
+                                                    <span className="text-sm text-gray-400">Unit Price:</span>
+                                                    <span className="font-medium text-white">
                                                       {selectedOrder.currency === 'AED' ? 'AED' : '₹'} {item.unit_price?.toFixed(2)}
                                                     </span>
                                                   </div>
                                                 </div>
 
                                                 {item.special_requests && (
-                                                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                                                    <span className="font-semibold text-yellow-800">📝 Special Note:</span>
-                                                    <span className="text-yellow-700 ml-2">{item.special_requests}</span>
+                                                  <div className="mt-3 p-2 bg-yellow-600/20 border border-yellow-600/40 rounded text-sm">
+                                                    <span className="font-semibold text-yellow-400">Special Note:</span>
+                                                    <span className="text-yellow-300 ml-2">{item.special_requests}</span>
                                                   </div>
                                                 )}
                                               </div>
 
                                               {/* Price Section */}
                                               <div className="text-right sm:ml-4 mt-2 sm:mt-0">
-                                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
-                                                  <p className="text-xs text-gray-600 mb-1">Total</p>
-                                                  <p className="font-bold text-xl text-orange-600">
+                                                <div className="bg-gray-600 border border-gray-500 rounded-lg p-3 text-center">
+                                                  <p className="text-xs text-gray-400 mb-1">Total</p>
+                                                  <p className="font-bold text-xl text-blue-400">
                                                     {selectedOrder.currency === 'AED' ? 'AED' : '₹'} {item.total_price?.toFixed(2) || '0.00'}
                                                   </p>
                                                 </div>
@@ -677,74 +662,70 @@ export default function OrdersManagement() {
                                           </div>
                                         </div>
                                       </div>
-                                    ))}
+                                      )
+                                    })}
                                   </div>
                                 </div>
 
                                 {/* Order Summary Card */}
-                                <div className="bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-xl p-6">
-                                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    📋 Order Summary
+                                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                                  <h4 className="text-lg font-bold text-white mb-4">
+                                    Order Summary
                                   </h4>
                                   <div className="space-y-3">
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                      <span className="text-gray-600 flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    <div className="flex justify-between items-center py-2 border-b border-gray-600">
+                                      <span className="text-gray-400">
                                         Subtotal:
                                       </span>
-                                      <span className="font-semibold text-gray-900">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
+                                      <span className="font-semibold text-white">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
                                     </div>
                                     {selectedOrder.tax_amount > 0 && (
-                                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                      <div className="flex justify-between items-center py-2 border-b border-gray-600">
+                                        <span className="text-gray-400">
                                           Tax:
                                         </span>
-                                        <span className="font-semibold text-gray-900">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.tax_amount?.toFixed(2) || '0.00'}</span>
+                                        <span className="font-semibold text-white">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.tax_amount?.toFixed(2) || '0.00'}</span>
                                       </div>
                                     )}
                                     {selectedOrder.delivery_fee > 0 ? (
-                                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                      <div className="flex justify-between items-center py-2 border-b border-gray-600">
+                                        <span className="text-gray-400">
                                           Delivery Fee:
                                         </span>
-                                        <span className="font-semibold text-gray-900">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.delivery_fee?.toFixed(2) || '0.00'}</span>
+                                        <span className="font-semibold text-white">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.delivery_fee?.toFixed(2) || '0.00'}</span>
                                       </div>
                                     ) : selectedOrder.order_type === 'delivery' && (
-                                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600 flex items-center gap-2">
-                                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      <div className="flex justify-between items-center py-2 border-b border-gray-600">
+                                        <span className="text-gray-400">
                                           Delivery Fee:
                                         </span>
-                                        <span className="font-semibold text-green-600 flex items-center gap-1">
-                                          FREE! 🎉
+                                        <span className="font-semibold text-green-400">
+                                          FREE
                                         </span>
                                       </div>
                                     )}
                                     {selectedOrder.discount_amount > 0 && (
-                                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-green-600 flex items-center gap-2">
-                                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      <div className="flex justify-between items-center py-2 border-b border-gray-600">
+                                        <span className="text-green-400">
                                           Discount {selectedOrder.coupon_code && `(${selectedOrder.coupon_code})`}:
                                         </span>
-                                        <span className="font-semibold text-green-600">-{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.discount_amount?.toFixed(2) || '0.00'}</span>
+                                        <span className="font-semibold text-green-400">-{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.discount_amount?.toFixed(2) || '0.00'}</span>
                                       </div>
                                     )}
                                   </div>
-                                  <div className="flex justify-between items-center font-bold text-xl pt-4 mt-4 border-t-2 border-gray-300 bg-white rounded-lg p-4 shadow-sm">
-                                    <span className="text-gray-900 flex items-center gap-2">
-                                      💰 Total Amount:
+                                  <div className="flex justify-between items-center font-bold text-xl pt-4 mt-4 border-t-2 border-gray-600 bg-gray-700 rounded-lg p-4">
+                                    <span className="text-white">
+                                      Total Amount:
                                     </span>
-                                    <span className="text-orange-600">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.final_total?.toFixed(2) || '0.00'}</span>
+                                    <span className="text-blue-400">{selectedOrder.currency === 'AED' ? 'AED' : '₹'} {selectedOrder.final_total?.toFixed(2) || '0.00'}</span>
                                   </div>
 
                                   {selectedOrder.special_instructions && (
-                                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                      <h5 className="font-semibold text-yellow-800 mb-2 flex items-center gap-2">
-                                        📝 Special Instructions
+                                    <div className="mt-4 p-4 bg-yellow-600/20 border border-yellow-600/40 rounded-lg">
+                                      <h5 className="font-semibold text-yellow-400 mb-2">
+                                        Special Instructions
                                       </h5>
-                                      <p className="text-yellow-700 text-sm leading-relaxed">{selectedOrder.special_instructions}</p>
+                                      <p className="text-yellow-300 text-sm leading-relaxed">{selectedOrder.special_instructions}</p>
                                     </div>
                                   )}
                                 </div>

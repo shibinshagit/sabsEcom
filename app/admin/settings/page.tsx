@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertCircle, Save, SettingsIcon, Store, MapPin, CreditCard } from "lucide-react"
-import ImageUpload from "@/components/ui/image-upload"
+import ImageUploadSingle from "@/components/ui/ImageUploadSingle"
 
 interface Setting {
   id: number
@@ -240,7 +240,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <Label htmlFor="restaurant_name">Restaurant Name</Label>
+                <Label htmlFor="restaurant_name">Company Name</Label>
                 <Input
                   id="restaurant_name"
                   value={getSetting("restaurant_name")}
@@ -448,11 +448,11 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="text-white">Appearance Settings</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <ImageUpload
+            <CardContent className="space-y-6 text-white">
+              <ImageUploadSingle
                 value={getSetting("restaurant_logo")}
                 onChange={(url) => updateSetting("restaurant_logo", url)}
-                label="Restaurant Logo"
+                label="Logo"
               />
             </CardContent>
           </Card>

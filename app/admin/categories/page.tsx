@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Lock } from "lucide-react"
+import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Lock, Search } from "lucide-react"
 import Image from "next/image"
 import ImageUpload from "@/components/ui/image-upload"
 
@@ -33,6 +33,7 @@ export default function CategoriesManagement() {
   const [error, setError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -144,6 +145,12 @@ export default function CategoriesManagement() {
     resetForm()
     setIsDialogOpen(true)
   }
+
+  // Filter categories based on search term
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    category.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   if (loading) {
     return (
@@ -300,25 +307,71 @@ export default function CategoriesManagement() {
         </Dialog>
       </div>
 
+      {/* Search Bar */}
+      <div className="flex items-center space-x-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Search categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+          />
+        </div>
+        {searchTerm && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSearchTerm("")}
+            className="border-gray-600 text-gray-400 hover:text-white"
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+
       <Card className="bg-gray-800/50 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white">Categories ({categories.length})</CardTitle>
-        </CardHeader>
+        {/* <CardHeader>
+          <CardTitle className="text-white">
+            Categories ({filteredCategories.length}{searchTerm ? ` of ${categories.length}` : ''})
+          </CardTitle>
+          {searchTerm && (
+            <p className="text-gray-400 text-sm">
+              Showing results for "{searchTerm}"
+            </p>
+          )}
+        </CardHeader> */}
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-gray-700">
-                  <TableHead className="text-gray-300">Image</TableHead>
-                  <TableHead className="text-gray-300">Name</TableHead>
-                  <TableHead className="text-gray-300">Description</TableHead>
-                  <TableHead className="text-gray-300">Status</TableHead>
-                  <TableHead className="text-gray-300">Order</TableHead>
-                  <TableHead className="text-gray-300">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((category) => (
+          {filteredCategories.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              {searchTerm ? 'No categories found matching your search.' : 'No categories found.'}
+              {searchTerm && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchTerm("")}
+                  className="ml-2 border-gray-600 text-gray-400 hover:text-white"
+                >
+                  Clear search
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-gray-700">
+                    <TableHead className="text-gray-300">Image</TableHead>
+                    <TableHead className="text-gray-300">Name</TableHead>
+                    <TableHead className="text-gray-300">Description</TableHead>
+                    <TableHead className="text-gray-300">Status</TableHead>
+                    <TableHead className="text-gray-300">Order</TableHead>
+                    <TableHead className="text-gray-300">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCategories.map((category) => (
                   <TableRow key={category.id} className="border-gray-700">
                     <TableCell>
                       <div className="relative w-12 h-12 rounded-lg overflow-hidden">
@@ -381,10 +434,11 @@ export default function CategoriesManagement() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

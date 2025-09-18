@@ -21,12 +21,18 @@ async function ensureSchema() {
       tax_amount        DECIMAL(10,2) DEFAULT 0,
       delivery_fee      DECIMAL(10,2) DEFAULT 0,
       final_total       DECIMAL(10,2) NOT NULL,
+      currency          VARCHAR(10)  DEFAULT 'AED',
       status            VARCHAR(50)  DEFAULT 'pending',
       special_instructions TEXT,
       estimated_completion_time TIMESTAMP,
       created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  `
+
+  // Add currency column if it doesn't exist (for existing tables)
+  await sql`
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'AED';
   `
 
   // Order items ----------------------------------------------
@@ -65,23 +71,7 @@ async function ensureSchema() {
     );
   `
 
-  // Customers -------------------------------------------------
-  await sql`
-    CREATE TABLE IF NOT EXISTS customers (
-      id               SERIAL PRIMARY KEY,
-      name             VARCHAR(200) NOT NULL,
-      email            VARCHAR(200) UNIQUE,
-      phone            VARCHAR(50),
-      date_of_birth    DATE,
-      preferences      TEXT,
-      dietary_restrictions TEXT,
-      total_orders     INTEGER DEFAULT 0,
-      total_spent      DECIMAL(10,2) DEFAULT 0,
-      last_visit       TIMESTAMP,
-      created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `
+  // Users table already exists, no need to create
 }
 
 /**
@@ -94,10 +84,40 @@ export async function GET() {
     await ensureSchema()
 
     // Aggregate metrics ----------------------------------------------------
-    const [{ total_revenue }] = await sql`
-      SELECT COALESCE(SUM(final_total), 0) AS total_revenue
+    const [{ total_revenue_aed }] = await sql`
+      SELECT COALESCE(SUM(final_total), 0) AS total_revenue_aed
+      FROM orders
+      WHERE status = 'completed' AND COALESCE(currency, 'AED') = 'AED'
+    `
+
+    const [{ total_revenue_inr }] = await sql`
+      SELECT COALESCE(SUM(final_total), 0) AS total_revenue_inr
+      FROM orders
+      WHERE status = 'completed' AND COALESCE(currency, 'AED') = 'INR'
+    `
+
+    // Debug query to see what data we have
+    const debugData = await sql`
+      SELECT
+        currency,
+        status,
+        COUNT(*) as count,
+        SUM(final_total) as total
+      FROM orders
+      GROUP BY currency, status
+      ORDER BY currency, status
+    `
+
+    // Additional debug - check completed orders specifically
+    const completedOrdersDebug = await sql`
+      SELECT
+        id,
+        currency,
+        status,
+        final_total
       FROM orders
       WHERE status = 'completed'
+      LIMIT 10
     `
 
     const [{ total_orders }] = await sql`
@@ -123,11 +143,35 @@ export async function GET() {
       SELECT id,
              customer_name,
              total_amount,
+             COALESCE(currency, 'AED') as currency,
              status,
              created_at,
              order_type
       FROM   orders
       ORDER  BY created_at DESC
+      LIMIT  10
+    `
+
+    const recentUsers = await sql`
+      SELECT u.id,
+             u.name,
+             u.email,
+             u.phone,
+             COALESCE(user_stats.total_orders, 0) as total_orders,
+             COALESCE(user_stats.total_spent, 0) as total_spent,
+             u.created_at
+      FROM   users u
+      LEFT JOIN (
+        SELECT
+          customer_email,
+          COUNT(*) as total_orders,
+          SUM(final_total) as total_spent
+        FROM orders
+        WHERE status = 'completed' AND customer_email IS NOT NULL
+        GROUP BY customer_email
+      ) user_stats ON (u.email = user_stats.customer_email)
+      WHERE u.name IS NOT NULL
+      ORDER  BY u.created_at DESC
       LIMIT  10
     `
 
@@ -159,14 +203,22 @@ export async function GET() {
     const totalOrders = total_orders // Declare totalOrders variable
     const pendingOrders = pending_orders // Declare pendingOrders variable
 
+    console.log('Debug data:', debugData)
+    console.log('AED Revenue:', total_revenue_aed, 'INR Revenue:', total_revenue_inr)
+    console.log('Completed orders debug:', completedOrdersDebug)
+
     return NextResponse.json({
-      totalRevenue: Number(total_revenue),
+      totalRevenueAED: Number(total_revenue_aed),
+      totalRevenueINR: Number(total_revenue_inr),
       totalOrders,
       pendingOrders,
       todayReservations: today_reservations,
       recentOrders,
+      recentUsers,
       upcomingReservations,
       monthlyRevenue,
+      debugData, // Temporary for debugging
+      completedOrdersDebug, // Additional debug info
     })
   } catch (error) {
     console.error("Error fetching stats:", error)

@@ -136,13 +136,22 @@ export async function GET() {
               'quantity',      oi.quantity,
               'unit_price',    oi.unit_price,
               'total_price',   oi.total_price,
-              'special_requests', oi.special_requests
+              'special_requests', oi.special_requests,
+              'product_image_url', COALESCE(
+                oi.product_image_url,
+                CASE
+                  WHEN p.image_urls IS NOT NULL AND json_array_length(p.image_urls::json) > 0
+                  THEN p.image_urls::json->>0
+                  ELSE NULL
+                END
+              )
             ) ORDER BY oi.id
           ) FILTER (WHERE oi.id IS NOT NULL),
           '[]'::json
         ) AS items
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN products p ON oi.menu_item_id = p.id
       GROUP BY o.id
       ORDER BY o.created_at DESC
     `

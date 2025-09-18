@@ -77,6 +77,7 @@ export default function ProductManagement() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedShop, setSelectedShop] = useState<string>("all")
   const [expandedProducts, setExpandedProducts] = useState<Set<number>>(new Set())
+  const [categorySearchTerm, setCategorySearchTerm] = useState("")
 
   // Available shops
 const shops: Shop[] = [
@@ -381,6 +382,10 @@ const formatPrice = (product: Product) => {
   return <span className="font-semibold text-gray-400">No price set</span>;
 };
 
+
+  const filteredCategories = categories.filter((category) =>
+    category.name.toLowerCase().includes(categorySearchTerm.toLowerCase())
+  )
 
   const filteredItems = products.filter((item) => {
     const matchesSearch =
@@ -988,10 +993,22 @@ const formatPrice = (product: Product) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-700 border-gray-600">
+                  <div className="p-2">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                      <Input
+                        placeholder="Search categories..."
+                        value={categorySearchTerm}
+                        onChange={(e) => setCategorySearchTerm(e.target.value)}
+                        className="pl-7 h-8 bg-gray-600 border-gray-500 text-white text-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
                   <SelectItem value="all" className="text-white">
                     All Categories
                   </SelectItem>
-                  {categories.map((category) => (
+                  {filteredCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id.toString()} className="text-white">
                       {category.name}
                     </SelectItem>
@@ -1031,11 +1048,11 @@ const formatPrice = (product: Product) => {
               <TableHeader>
                 <TableRow className="border-gray-700">
                   <TableHead className="text-gray-300">Images</TableHead>
-                  <TableHead className="text-gray-300">Product Details</TableHead>
-                  <TableHead className="text-gray-300">Shop & Category</TableHead>
-                  <TableHead className="text-gray-300">Variants & Pricing</TableHead>
-                  <TableHead className="text-gray-300">Stock & SKU</TableHead>
-                  <TableHead className="text-gray-300">Status & Features</TableHead>
+                  <TableHead className="text-gray-300">Name</TableHead>
+                  <TableHead className="text-gray-300">Category</TableHead>
+                  <TableHead className="text-gray-300">Shop</TableHead>
+                  <TableHead className="text-gray-300">Variants</TableHead>
+                  <TableHead className="text-gray-300">Tags</TableHead>
                   <TableHead className="text-gray-300">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1070,41 +1087,22 @@ const formatPrice = (product: Product) => {
                           {item.is_featured && <Star className="w-4 h-4 text-amber-400" />}
                         </div>
                         
-                        {item.brand && (
-                          <div className="text-xs text-gray-400">
-                            <span className="font-medium">Brand:</span> {item.brand}
-                          </div>
-                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge variant="outline" className="border-cyan-500 text-cyan-400">
+                          <Store className="w-3 h-3 mr-1" />
+                          Shop {item.shop_category}
+                        </Badge>
                         
-                        {item.model && (
-                          <div className="text-xs text-gray-400">
-                            <span className="font-medium">Model:</span> {item.model}
-                          </div>
-                        )}
-                        
-                        {item.color && (
-                          <div className="text-xs text-gray-400">
-                            <span className="font-medium">Color:</span> {item.color}
-                          </div>
-                        )}
-                        
-                        {item.description && (
-                          <p className="text-gray-400 text-xs line-clamp-2 max-w-48">{item.description}</p>
-                        )}
                       </div>
                     </TableCell>
 
                     {/* Shop & Category Column */}
                     <TableCell>
                       <div className="space-y-2">
-                        <Badge variant="outline" className="border-cyan-500 text-cyan-400">
-                          <Store className="w-3 h-3 mr-1" />
-                          Shop {item.shop_category}
-                        </Badge>
                         <div className="text-sm text-gray-300">{item.category_name}</div>
-                        <div className="text-xs text-gray-400">
-                          Condition: <span className="capitalize">{item.condition_type}</span>
-                        </div>
                       </div>
                     </TableCell>
 
@@ -1134,51 +1132,67 @@ const formatPrice = (product: Product) => {
                                 {item.variants.length} Variant{item.variants.length !== 1 ? 's' : ''}
                               </span>
                             </CollapsibleTrigger>
-                            <CollapsibleContent className="space-y-2 mt-2">
-                              {item.variants.map((variant, index) => (
-                                <div key={variant.id || index} className="bg-gray-900/50 rounded-lg p-3 text-xs border border-gray-700">
-                                  <div className="font-semibold text-white mb-2">{variant.name}</div>
-                                  <div className="grid grid-cols-2 gap-2 mb-2">
-                                    {/* AED Pricing */}
-                                    {variant.available_aed && variant.price_aed > 0 && (
-                                      <div className="text-cyan-400">
-                                        <div>AED {variant.price_aed}</div>
-                                        {variant.discount_aed > 0 && (
-                                          <div className="text-green-400">-{variant.discount_aed}</div>
-                                        )}
-                                      </div>
-                                    )}
-                                    
-                                    {/* INR Pricing */}
-                                    {variant.available_inr && variant.price_inr > 0 && (
-                                      <div className="text-orange-400">
-                                        <div>₹{variant.price_inr}</div>
-                                        {variant.discount_inr > 0 && (
-                                          <div className="text-green-400">-₹{variant.discount_inr}</div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Stock Information */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="text-gray-300">
-                                      Stock: <span className="text-white font-medium">{variant.stock_quantity || 0}</span>
-                                    </div>
-                                    
-                                    {/* Availability badges */}
-                                    <div className="flex space-x-1">
-                                      {variant.available_aed && (
-                                        <Badge className="bg-cyan-500/20 text-cyan-300 text-xs px-1 py-0">AED</Badge>
-                                      )}
-                                      {variant.available_inr && (
-                                        <Badge className="bg-orange-500/20 text-orange-300 text-xs px-1 py-0">INR</Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </CollapsibleContent>
+                          <CollapsibleContent className="space-y-3 mt-3">
+  {item.variants.map((variant, index) => (
+    <div
+      key={variant.id || index}
+      className="bg-gray-900/60 rounded-lg p-3 border border-gray-700 text-xs space-y-2"
+    >
+      {/* Variant Name */}
+      <div className="flex items-center justify-between">
+        <span className="font-semibold text-white">{variant.name}</span>
+      </div>
+
+      {/* AED Pricing */}
+      {variant.available_aed && variant.price_aed > 0 && (
+        <div className="flex justify-between">
+          <Badge className="bg-cyan-500/20 text-cyan-300 px-1 py-0">
+              AED
+            </Badge>
+          <span className="text-cyan-400 line-through font-medium">
+            {variant.price_aed}
+          </span>
+          {variant.discount_aed > 0 && (
+            <span className="text-green-400 ml-2">
+              {variant.discount_aed}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* INR Pricing */}
+      {variant.available_inr && variant.price_inr > 0 && (
+        <div className="flex justify-between">
+          <Badge className="bg-orange-500/20 text-orange-300 px-1 py-0">
+              INR
+            </Badge>  
+          <span className="text-orange-400 line-through font-medium">
+            ₹{variant.price_inr}
+          </span>
+          {variant.discount_inr > 0 && (
+            <span className="text-green-400 ml-2">
+              ₹{variant.discount_inr}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Stock Info */}
+      <div className="flex justify-between text-gray-300">
+        <span>
+          Stock:{" "}
+          <span className="text-white font-medium">
+            {variant.stock_quantity || 0}
+          </span>
+        </span>
+        <span className="italic text-gray-400">
+          {variant.stock_quantity > 0 ? "" : "Out of Stock"}
+        </span>
+      </div>
+    </div>
+  ))}
+</CollapsibleContent>
+
                           </Collapsible>
                         ) : (
                           <div className="text-gray-400 text-xs">No variants</div>
@@ -1186,30 +1200,7 @@ const formatPrice = (product: Product) => {
                       </div>
                     </TableCell>
 
-                    {/* Stock & SKU Column */}
-                    <TableCell>
-                      <div className="space-y-2">
-                        <div className="text-sm">
-                          <span className="text-gray-400">Stock:</span>
-                          <span className="text-white ml-1">{item.stock_quantity || 0}</span>
-                        </div>
-                        
-                        {item.sku && (
-                          <div className="text-xs text-gray-400">
-                            <span className="font-medium">SKU:</span>
-                            <div className="font-mono bg-gray-900 px-1 rounded text-xs mt-1 break-all">
-                              {item.sku}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {item.warranty_months && (
-                          <div className="text-xs text-gray-400">
-                            <span className="font-medium">Warranty:</span> {item.warranty_months}m
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
+      
 
                     {/* Status & Features Column */}
                     <TableCell>
@@ -1227,26 +1218,11 @@ const formatPrice = (product: Product) => {
                           )}
                         </div>
 
-                        {/* Features */}
-                        {item.features && Array.isArray(item.features) && item.features.length > 0 && (
-                          <div className="text-xs">
-                            <div className="text-gray-400 font-medium mb-1">Features:</div>
-                            <div className="space-y-1">
-                              {item.features.slice(0, 3).map((feature, index) => (
-                                <div key={index} className="text-gray-300 bg-gray-900/30 px-1 rounded">
-                                  • {feature}
-                                </div>
-                              ))}
-                              {item.features.length > 3 && (
-                                <div className="text-gray-500">+{item.features.length - 3} more</div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+
 
                         {/* Created Date */}
                         {item.created_at && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-white">
                             {new Date(item.created_at).toLocaleDateString()}
                           </div>
                         )}
