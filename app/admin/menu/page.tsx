@@ -52,6 +52,7 @@ interface Product {
   stock_quantity: number
   sku: string
   shop_category: "A" | "B" | "Both"
+  store_name: string
   created_at: string
 }
 
@@ -93,6 +94,7 @@ const [formData, setFormData] = useState({
   image_urls: [] as string[], // Changed from image_url to image_urls array
   category_id: 0,
   shop_category: "Both" as "A" | "B" | "Both",
+  store_name: "",
   is_available: true,
   is_featured: false,
   is_new: false,
@@ -259,6 +261,7 @@ const resetForm = () => {
     image_urls: [], // Changed from image_url to empty array
     category_id: 0,
     shop_category: "Both",
+    store_name: "",
     is_available: true,
     is_featured: false,
     is_new: false,
@@ -296,10 +299,11 @@ const openEditDialog = (item: Product) => {
   setFormData({
     name: item.name,
     description: item.description || "",
-    image_urls: Array.isArray(item.image_urls) ? item.image_urls : 
+    image_urls: Array.isArray(item.image_urls) ? item.image_urls :
                 (item.image_urls ? [item.image_urls as any] : []), // Handle backward compatibility
     category_id: item.category_id,
     shop_category: item.shop_category || "Both",
+    store_name: item.store_name || "",
     is_available: item.is_available,
     is_featured: item.is_featured,
     features: item.features?.join(", ") || "",
@@ -315,8 +319,8 @@ const openEditDialog = (item: Product) => {
     sku: item.sku || "",
     is_new: item.is_new || false,
     new_until_date: item.new_until_date || "",
-    variants: Array.isArray(item.variants) && item.variants.length > 0 
-    ? item.variants 
+    variants: Array.isArray(item.variants) && item.variants.length > 0
+    ? item.variants
     : [{
         id: Date.now(),
         name: "",
@@ -468,6 +472,16 @@ const formatPrice = (product: Product) => {
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="store_name">Store Name</Label>
+                  <Input
+                    id="store_name"
+                    value={formData.store_name}
+                    onChange={(e) => setFormData({ ...formData, store_name: e.target.value })}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="e.g. Nike New York"
+                  />
+                </div>
               </div>
 
               {/* Shop and Category Selection */}
@@ -1049,6 +1063,7 @@ const formatPrice = (product: Product) => {
                 <TableRow className="border-gray-700">
                   <TableHead className="text-gray-300">Images</TableHead>
                   <TableHead className="text-gray-300">Name</TableHead>
+                  <TableHead className="text-gray-300">Store Name</TableHead>
                   <TableHead className="text-gray-300">Category</TableHead>
                   <TableHead className="text-gray-300">Shop</TableHead>
                   <TableHead className="text-gray-300">Variants</TableHead>
@@ -1086,7 +1101,14 @@ const formatPrice = (product: Product) => {
                           <span className="text-white font-semibold text-sm">{item.name}</span>
                           {item.is_featured && <Star className="w-4 h-4 text-amber-400" />}
                         </div>
-                        
+
+                      </div>
+                    </TableCell>
+
+                    {/* Store Name Column */}
+                    <TableCell>
+                      <div className="text-sm text-gray-300">
+                        {item.store_name || "-"}
                       </div>
                     </TableCell>
                     <TableCell>

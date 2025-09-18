@@ -33,7 +33,7 @@ function ShippingPolicyContent() {
             <CardContent className="p-4 text-center">
               <Clock className="w-6 h-6 text-blue-600 mx-auto mb-2" />
               <p className="font-semibold text-blue-900">Processing Time</p>
-              <p className="text-sm text-blue-700">1-2 business days</p>
+              <p className="text-sm text-blue-700">1-2 business days in UAE, 3-6 business days in India</p>
             </CardContent>
           </Card>
           <Card className="border-green-200 bg-green-50">
@@ -69,12 +69,12 @@ function ShippingPolicyContent() {
                   <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
                     <p className="font-medium text-blue-900">Standard Processing</p>
-                    <p className="text-blue-700 text-sm">All orders are processed within 1-2 business days (Monday to Friday, excluding holidays).</p>
+                    <p className="text-blue-700 text-sm">All orders are processed within 1-2 business days in UAE, 3-6 business days in India (Monday to Friday, excluding holidays).</p>
                   </div>
                 </div>
               </div>
               <ul className="space-y-2 text-gray-600">
-                <li>• Orders placed before 2:00 PM are typically processed the same day</li>
+                <li>• Orders placed before 11:00 AM are typically processed the same day</li>
                 <li>• Orders placed on weekends or holidays will be processed the next business day</li>
                 <li>• You will receive an email confirmation once your order has been processed and shipped</li>
                 <li>• Custom or personalized items may require additional processing time</li>
@@ -98,8 +98,8 @@ function ShippingPolicyContent() {
                     <h4 className="font-semibold text-gray-900">Express Delivery</h4>
                     <Badge className="bg-green-100 text-blue-800">AED 10</Badge>
                   </div>
-                  <p className="text-gray-600 text-sm mb-2">Next Working day delivery for Dubai, Abu Dhabi, Sharjah</p>
-                  <p className="text-xs text-gray-500">Same day delivery available for orders placed before 12:00 PM</p>
+                  <p className="text-gray-600 text-sm mb-2">Next Working day delivery in all over UAE</p>
+                  <p className="text-xs text-gray-500">Same day delivery available for orders placed before 11:00 AM</p>
                 </div>
               </div>
             </CardContent>

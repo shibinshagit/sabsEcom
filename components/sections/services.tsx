@@ -29,9 +29,9 @@ const Services = () => {
             gradient: "from-pink-100 to-rose-100",
           },
           {
-            icon: RotateCcw,
-            title: "Easy returns",
-            subtitle: "30 days policy",
+            icon: Heart,
+            title: "Authentic Products",
+            subtitle: "Genuine brands",
             bgColor: "bg-purple-50",
             borderColor: "border-purple-200",
             iconColor: "text-purple-600",
@@ -41,7 +41,7 @@ const Services = () => {
           },
           {
             icon: Heart,
-            title: "Beauty guarantee",
+            title: "Result guarantee",
             subtitle: "100% authentic",
             bgColor: "bg-rose-50",
             borderColor: "border-rose-200",
@@ -53,7 +53,7 @@ const Services = () => {
           {
             icon: Sparkles,
             title: "Premium quality",
-            subtitle: "Luxury brands",
+            subtitle: "High standards",
             bgColor: "bg-orange-50",
             borderColor: "border-orange-200",
             iconColor: "text-orange-600",
@@ -76,8 +76,8 @@ const Services = () => {
           },
           {
             icon: Shield,
-            title: "Tech warranty",
-            subtitle: "2 year coverage",
+            title: "High Quality",
+            subtitle: "Safe & trusted",
             bgColor: "bg-indigo-50",
             borderColor: "border-indigo-200",
             iconColor: "text-indigo-600",
@@ -87,8 +87,8 @@ const Services = () => {
           },
           {
             icon: Cpu,
-            title: "Latest tech",
-            subtitle: "Cutting edge",
+            title: "Latest Models",
+            subtitle: "Top brands",
             bgColor: "bg-purple-50",
             borderColor: "border-purple-200",
             iconColor: "text-purple-600",

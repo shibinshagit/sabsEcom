@@ -107,16 +107,17 @@ const formatPriceWithSmallDecimals = (
   const symbol = getCurrencySymbol(currency, colorClass); // 👈 pass color
 
   return (
-    <span className={`flex items-center gap-1 ${colorClass}`}>
-      {/* Currency Symbol - only if showSymbol is true */}
-      {showSymbol && <span className="flex items-center">{symbol}</span>}
+ <span className={`flex items-center gap-1 ${colorClass}`}>
+  {showSymbol && <span>{symbol}</span>}
 
-      {/* Price with small decimals */}
-      <span className="flex items-center">
-        {whole}
-        <span className="text-xs ml-[1px]">.{decimal}</span>
-      </span>
+  <span className="inline-flex items-end">
+    <span className="text-xl font-semibold leading-none">{whole}</span>
+    <span className="text-sm font-medium leading-none ml-0.5 relative bottom-[0.5px]">
+      .{decimal}
     </span>
+  </span>
+</span>
+
   );
 };
 

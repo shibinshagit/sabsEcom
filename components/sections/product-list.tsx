@@ -390,7 +390,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                   {/* Discount Percentage Badge */}
                   {discountPercent > 0 && (
                     <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
-                      -{discountPercent}%
+                      -{discountPercent}% 
                     </Badge>
                   )}
                 </div>
@@ -583,6 +583,11 @@ const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
     {conditionLabel}
   </Badge>
 )}
+  {discountPercent > 0 && (
+                    <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
+                      {discountPercent}% off
+                    </Badge>
+                  )}
 
         </div>
 
@@ -635,11 +640,17 @@ const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
             </p>
 
             {/* Discount Percentage */}
-            {discountPercent > 0 && (
-              <span className="text-green-600 font-semibold text-xs lg:text-sm">
-                {discountPercent}% OFF
-              </span>
-            )}
+             {discountPercent > 0 && (
+                              <span className="text-gray-500 text-xs line-through">
+                               {formatPriceWithSmallDecimals(
+                                availableVariant.price_aed,
+                                availableVariant.price_inr,
+                                "AED",
+                                true,           
+                                "#6B7280"  
+                              )}
+                              </span>
+                            )}
           </div>
 
           {/* Truncated Product Name */}
