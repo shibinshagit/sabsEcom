@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,9 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from "lucide-react"
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams()
   const router = useRouter()
-  const token = searchParams.get('token')
+  const [token, setToken] = useState<string | null>(null)
 
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -21,9 +20,14 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false)
   const [validToken, setValidToken] = useState<boolean | null>(null)
 
-  // Verify token on component mount
+  // Get token from URL and verify it on component mount
   useEffect(() => {
-    if (!token) {
+    // Get token from URL search params
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlToken = urlParams.get('token')
+    setToken(urlToken)
+
+    if (!urlToken) {
       setValidToken(false)
       setError("Invalid reset link. Please request a new password reset.")
       return
@@ -33,7 +37,7 @@ export default function ResetPasswordPage() {
     fetch('/api/auth/verify-reset-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ token: urlToken })
     })
     .then(res => res.json())
     .then(data => {
@@ -48,7 +52,7 @@ export default function ResetPasswordPage() {
       setValidToken(false)
       setError("Failed to verify reset link.")
     })
-  }, [token])
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
