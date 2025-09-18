@@ -191,7 +191,7 @@ function ShippingPolicyContent() {
                 </div>
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                   <h4 className="font-medium text-purple-900">India Tracking</h4>
-                  <p className="text-sm text-purple-700">Blue Dart, DTDC, or India Post tracking</p>
+                  <p className="text-sm text-purple-700">DTDC, or India Post tracking</p>
                 </div>
               </div>
             </CardContent>

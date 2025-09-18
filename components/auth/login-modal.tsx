@@ -27,7 +27,7 @@ export default function LoginModal({
 }: LoginModalProps) {
   const { sendOTP, login, register, loginWithPassword } = useAuth()
   const { signIn } = useSignIn()
-  const [mode, setMode] = useState<"login" | "register">("login")
+  const [mode, setMode] = useState<"login" | "register" | "forgot-password">("login")
   const [step, setStep] = useState<"email" | "otp" | "password">("email")
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
@@ -40,6 +40,7 @@ export default function LoginModal({
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [clerkLoading, setClerkLoading] = useState(false)
+  const [resetEmailSent, setResetEmailSent] = useState(false)
 
   const resetForm = () => {
     setStep("email")
@@ -52,9 +53,10 @@ export default function LoginModal({
     setError("")
     setShowPassword(false)
     setShowConfirmPassword(false)
+    setResetEmailSent(false)
   }
 
-  const handleModeChange = (newMode: "login" | "register") => {
+  const handleModeChange = (newMode: "login" | "register" | "forgot-password") => {
     setMode(newMode)
     resetForm()
   }
@@ -93,6 +95,32 @@ export default function LoginModal({
       await loginWithPassword(email, password)
       onClose()
       resetForm()
+    } catch (error: any) {
+      setError(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset email')
+      }
+
+      setResetEmailSent(true)
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -161,7 +189,7 @@ export default function LoginModal({
   }
 
   // Dynamically set the dialog title based on mode
-  const dialogTitle = mode === "register" ? "Registration" : title
+  const dialogTitle = mode === "register" ? "Registration" : mode === "forgot-password" ? "Reset Password" : title
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -180,7 +208,95 @@ export default function LoginModal({
           </div>
 
           <div className="p-6 overflow-y-auto flex-1">
-            {step === "email" ? (
+            {mode === "forgot-password" ? (
+              <div className="space-y-5">
+                {!resetEmailSent ? (
+                  <>
+                    <div className="text-center space-y-2">
+                      <h3 className="text-lg font-semibold text-slate-900">Reset your password</h3>
+                      <p className="text-sm text-slate-600">
+                        Enter your email address and we'll send you a link to reset your password.
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="reset-email" className="text-sm font-medium text-slate-700">
+                          Email Address
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="reset-email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="your@email.com"
+                            required
+                            className="h-10 pl-4 pr-4 border-slate-300 focus:border-slate-500 focus:ring-slate-500 rounded-lg text-slate-900 placeholder:text-slate-400 bg-white shadow-sm"
+                          />
+                          <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        </div>
+                      </div>
+
+                      {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-2.5">
+                          <p className="text-sm text-red-700 font-medium">{error}</p>
+                        </div>
+                      )}
+
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+                      >
+                        {loading ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Sending reset link...
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4" />
+                            Send reset link
+                          </div>
+                        )}
+                      </Button>
+                    </form>
+
+                    <div className="text-center">
+                      <button
+                        onClick={() => handleModeChange("login")}
+                        className="text-sm text-slate-600 hover:text-slate-900 underline"
+                      >
+                        Back to login
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center space-y-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900">Reset link sent!</h3>
+                    <p className="text-sm text-slate-600">
+                      We've sent a password reset link to
+                      <br />
+                      <span className="font-medium text-slate-900">{email}</span>
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Check your inbox and click the link to reset your password.
+                    </p>
+                    <Button
+                      onClick={() => handleModeChange("login")}
+                      variant="outline"
+                      className="w-full h-10 border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg font-medium"
+                    >
+                      Back to login
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : step === "email" ? (
               <div className="space-y-5">
                 {/* Google Sign In Button - Always visible */}
                 <div className="space-y-4">
@@ -307,13 +423,13 @@ export default function LoginModal({
                       </Button>
                     </form>
 
-                    {/* OTP Login Alternative */}
+                    {/* Forgot Password Link */}
                     <div className="text-center">
                       <button
-                        onClick={() => setStep("email")}
+                        onClick={() => handleModeChange("forgot-password")}
                         className="text-sm text-slate-600 hover:text-slate-900 underline"
                       >
-                        Or login with OTP instead
+                        Forgot your password?
                       </button>
                     </div>
                   </TabsContent>

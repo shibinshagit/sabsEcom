@@ -148,7 +148,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number) {
 // Function to send admin notification email
 async function sendAdminNotificationEmail(orderData: any, orderId: number) {
   try {
-    const adminEmail = 'shibinshamunna912@gmail.com'
+    const adminEmail = 'oursouq01@gmail.com'
     const currency = orderData.currency || 'AED'
     const currencySymbol = currency === 'AED' ? 'AED' : '₹'
 
