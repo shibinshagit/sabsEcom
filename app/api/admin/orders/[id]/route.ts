@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 })
 
 // Function to send status update email to customer
-async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?: string) {
+async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?: string, trackingId?: string) {
   try {
     const customerEmail = order.customer_email
     if (!customerEmail) {
@@ -63,9 +63,17 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
         <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
             <h2 style="color: ${statusInfo.color}; margin: 0 0 10px 0;">${statusInfo.message}</h2>
+
+            ${trackingId ? `
+              <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 6px; padding: 15px; margin: 15px 0; text-align: center;">
+                <p style="margin: 0 0 8px 0; color: #1976d2; font-weight: bold; font-size: 14px;">📦 Tracking ID</p>
+                <p style="margin: 0; font-family: monospace; font-size: 16px; font-weight: bold; color: #0d47a1; background: white; padding: 8px; border-radius: 4px; display: inline-block;">${trackingId}</p>
+              </div>
+            ` : ''}
+
             ${trackingUrl ? `
               <a href="${trackingUrl}" target="_blank" style="display: inline-block; background: ${statusInfo.color}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px;">
-                🔍 Track Your Order
+                🔍 Track Your Order Online
               </a>
             ` : ''}
           </div>
@@ -181,7 +189,7 @@ async function handleStockUpdate(orderId: number, previousStatus: string, newSta
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { status, tracking_url } = await request.json()
+    const { status, tracking_url, tracking_id } = await request.json()
     const resolvedParams = await params
     const id = parseInt(resolvedParams.id)
 
@@ -223,12 +231,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // Handle stock management based on status changes
     await handleStockUpdate(id, previousStatus, status, currentOrder.items)
 
-    // Update order status and tracking URL
+    // Update order status, tracking URL, and tracking ID
     const result = await sql`
       UPDATE orders
       SET
         status = ${status},
         tracking_url = ${tracking_url || null},
+        tracking_id = ${tracking_id || null},
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING 
@@ -251,6 +260,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         coupon_code,
         status,
         tracking_url,
+        tracking_id,
         created_at,
         updated_at
     `
@@ -265,7 +275,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // Send status update email if status changed to "out for delivery" or "delivered"
     if (status !== previousStatus) {
       try {
-        await sendStatusUpdateEmail(order, status, tracking_url)
+        await sendStatusUpdateEmail(order, status, tracking_url, tracking_id)
       } catch (emailError) {
         console.error('Failed to send status update email:', emailError)
         // Continue with the response even if email fails
@@ -293,6 +303,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       coupon_code: order.coupon_code,
       status: order.status,
       tracking_url: order.tracking_url,
+      tracking_id: order.tracking_id,
       created_at: order.created_at,
       updated_at: order.updated_at
     }

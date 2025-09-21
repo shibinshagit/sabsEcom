@@ -318,8 +318,7 @@ function CancellationPolicyContent() {
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
                 <span>📧 cancel@sabsonline.com</span>
-                <span>📱 WhatsApp: +971-XXX-XXXX</span>
-                <span>☎️ Call: +971-XXX-XXXX</span>
+                <span>📱 WhatsApp: +971-56666-7178</span>
                 <span>⏰ Available 24/7</span>
               </div>
             </CardContent>

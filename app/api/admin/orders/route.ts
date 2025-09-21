@@ -123,6 +123,8 @@ export async function GET() {
         o.coupon_code,
         COALESCE(o.currency, 'INR') as currency,
         o.status,
+        o.tracking_url,
+        o.tracking_id,
         o.created_at,
         o.updated_at,
         COALESCE(
@@ -190,6 +192,8 @@ export async function GET() {
       coupon_code: order.coupon_code,
       currency: order.currency,
       status: order.status,
+      tracking_url: order.tracking_url,
+      tracking_id: order.tracking_id,
       created_at: order.created_at,
       updated_at: order.updated_at,
       items: Array.isArray(order.items) ? order.items.map((item: any) => ({

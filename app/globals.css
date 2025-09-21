@@ -158,6 +158,24 @@
       @apply mx-4 rounded-lg;
     }
   }
+
+  /* Custom hover effects for navigation */
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+  }
+
+  /* Body scroll lock utilities */
+  .scroll-locked {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+  }
+
+  /* Prevent scroll on touch devices when menu is open */
+  .scroll-locked {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
 }
 
 /* Story ring animation */

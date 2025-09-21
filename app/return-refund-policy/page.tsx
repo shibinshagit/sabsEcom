@@ -67,7 +67,7 @@ function ReturnRefundPolicyContent() {
                   <ul className="text-sm text-gray-600 space-y-1">
                     <li>• Items in original packaging</li>
                     <li>• Unworn and unused items</li>
-                    <li>• Items with tags attached</li>
+                    <li>• Unboxing video required</li>
                     <li>• Defective or damaged products</li>
                     <li>• Wrong items received</li>
                   </ul>
@@ -135,42 +135,6 @@ function ReturnRefundPolicyContent() {
             </CardContent>
           </Card>
 
-          {/* Refund Methods */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-green-600" />
-                Refund Methods & Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-semibold text-gray-900">Credit/Debit Card</h4>
-                    <Badge className="bg-green-100 text-green-800">5-7 days</Badge>
-                  </div>
-                  <p className="text-gray-600 text-sm">Refunds are processed back to your original payment method. Bank processing may take additional time.</p>
-                </div>
-
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-semibold text-gray-900">Cash on Delivery (COD)</h4>
-                    <Badge className="bg-blue-100 text-blue-800">3-5 days</Badge>
-                  </div>
-                  <p className="text-gray-600 text-sm">For COD orders, refunds will be processed via bank transfer to your provided account details.</p>
-                </div>
-
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-semibold text-gray-900">Store Credit</h4>
-                    <Badge className="bg-orange-100 text-orange-800">Instant</Badge>
-                  </div>
-                  <p className="text-gray-600 text-sm">Opt for store credit and get an additional 10% bonus credit for future purchases.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Exchange Policy */}
           <Card>
@@ -283,7 +247,7 @@ function ReturnRefundPolicyContent() {
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
                 <span>📧 returns@sabsonline.com</span>
-                <span>📱 WhatsApp: +971-XXX-XXXX</span>
+                <span>📱 WhatsApp: +971-56666-7178</span>
                 <span>⏰ Sun-Thu: 9AM-6PM GST</span>
               </div>
             </CardContent>

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, Send, Box, ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from "@/lib/contexts/auth-context"
+import { format } from "path"
 
 function formatCurrency(value: unknown, currency: string = 'AED') {
   const num = typeof value === "number" ? value : Number.parseFloat(String(value ?? 0))
@@ -33,7 +34,7 @@ const OrderTimeline = ({ currentStatus }: { currentStatus: string }) => {
   const timelineSteps = [
     { 
       status: 'pending', 
-      label: 'Pending',
+      label: 'Order Placed',
       description: 'Order received',
       icon: Clock,
       color: 'text-gray-500'
@@ -223,6 +224,7 @@ interface Order {
   special_instructions: string
   currency: string
   tracking_url?: string
+  tracking_id?: string
   created_at: string
   items: OrderItem[]
 }
@@ -482,7 +484,7 @@ export default function OrdersPage() {
                       <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
                         <div className="text-left sm:text-right">
                           <p className="font-bold text-base sm:text-lg lg:text-xl">
-                            {formatCurrency(order.final_total, order.currency)}
+                            {formatCurrency(formatMoney(Number(order.total_amount) + Number(order.delivery_fee)), order.currency)}
                           </p>
                           <p className="text-xs sm:text-sm text-gray-500">
                             {new Date(order.created_at).toLocaleDateString()}
@@ -521,10 +523,10 @@ export default function OrdersPage() {
                   {/* Order Timeline */}
                   <OrderTimeline currentStatus={order.status} />
 
-                  {/* Tracking URL */}
-                  {order.tracking_url && (
+                  {/* Tracking Information */}
+                  {(order.tracking_url || order.tracking_id) && (
                     <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex flex-col gap-3">
                         <div className="flex items-start sm:items-center gap-3">
                           <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mt-0.5 sm:mt-0 flex-shrink-0" />
                           <div className="min-w-0 flex-1">
@@ -532,15 +534,33 @@ export default function OrdersPage() {
                             <p className="text-xs sm:text-sm text-blue-600">Follow your order's journey in real-time</p>
                           </div>
                         </div>
-                        <a
-                          href={order.tracking_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors font-medium text-xs sm:text-sm min-w-fit"
-                        >
-                          <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span className="whitespace-nowrap">Track Package</span>
-                        </a>
+
+                        {/* Tracking Details */}
+                        <div className="space-y-2 pl-7 sm:pl-8">
+                          {order.tracking_id && (
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                              <span className="text-xs sm:text-sm font-medium text-blue-700">Tracking ID:</span>
+                              <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono text-xs sm:text-sm font-semibold">
+                                {order.tracking_id}
+                              </div>
+                            </div>
+                          )}
+
+                          {order.tracking_url && (
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                              <span className="text-xs sm:text-sm font-medium text-blue-700">Track Online:</span>
+                              <a
+                                href={order.tracking_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors font-medium text-xs sm:text-sm w-fit"
+                              >
+                                <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="whitespace-nowrap">Track Package</span>
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -623,7 +643,7 @@ export default function OrdersPage() {
                         )}
                         <div className="flex justify-between font-bold text-sm sm:text-base border-t pt-2 text-orange-600">
                           <span>Total Amount</span>
-                          <span>{formatCurrency(order.final_total, order.currency)}</span>
+                          <span>{formatCurrency(formatMoney(Number(order.total_amount) + Number(order.delivery_fee)), order.currency)}</span>
                         </div>
                       </div>
                     </div>

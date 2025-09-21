@@ -372,7 +372,8 @@ async function ensureOrdersTableExists() {
         { name: 'discount_amount', definition: 'DECIMAL(10,2) DEFAULT 0', check: 'discount_amount' },
         { name: 'coupon_code', definition: 'VARCHAR(50)', check: 'coupon_code' },
         { name: 'currency', definition: 'VARCHAR(3) DEFAULT \'AED\'', check: 'currency' },
-        { name: 'tracking_url', definition: 'TEXT', check: 'tracking_url' }
+        { name: 'tracking_url', definition: 'TEXT', check: 'tracking_url' },
+        { name: 'tracking_id', definition: 'VARCHAR(100)', check: 'tracking_id' }
       ]
 
       for (const column of columnsToAdd) {

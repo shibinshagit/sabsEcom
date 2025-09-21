@@ -121,7 +121,7 @@ function ShippingPolicyContent() {
                     <h4 className="font-semibold text-gray-900">Express Delivery</h4>
                     <Badge className="bg-orange-100 text-blue-800">₹ 70</Badge>
                   </div>
-                  <p className="text-gray-600 text-sm mb-2">Delivery within 2-3 business days</p>
+                  <p className="text-gray-600 text-sm mb-2">Delivery within 2-5 business days</p>
                   <p className="text-xs text-gray-500">All India Delivery Available</p>
                 </div>
 
@@ -206,7 +206,7 @@ function ShippingPolicyContent() {
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
                 <span>📧 support@sabsonline.com</span>
-                <span>📱 WhatsApp: +971-XXX-XXXX</span>
+                <span>📱 WhatsApp: +971-56666-7178</span>
                 <span>⏰ Sun-Thu: 9AM-6PM GST</span>
               </div>
             </CardContent>

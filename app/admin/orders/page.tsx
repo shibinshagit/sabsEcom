@@ -30,6 +30,7 @@ export default function OrdersManagement() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [updating, setUpdating] = useState<number | null>(null)
   const [trackingUrls, setTrackingUrls] = useState<{[key: number]: string}>({})
+  const [trackingIds, setTrackingIds] = useState<{[key: number]: string}>({})
 
 
   interface Order {
@@ -53,6 +54,7 @@ export default function OrdersManagement() {
     coupon_code?: string
     discount_amount: number
     tracking_url?: string
+    tracking_id?: string
     created_at: string
     updated_at: string
     items: Array<{
@@ -125,6 +127,7 @@ export default function OrdersManagement() {
       // Find the order to get item details for stock reduction
       const order = orders.find(o => o.id === orderId)
       const trackingUrl = trackingUrls[orderId] || ''
+      const trackingId = trackingIds[orderId] || ''
 
       const response = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PUT",
@@ -132,6 +135,7 @@ export default function OrdersManagement() {
         body: JSON.stringify({
           status: newStatus,
           tracking_url: trackingUrl,
+          tracking_id: trackingId,
           reduce_stock: newStatus === 'confirmed', // Reduce stock when order is confirmed
           order_items: order?.items
         }),
@@ -476,53 +480,97 @@ export default function OrdersManagement() {
                                         </div>
                                       </div>
 
-                                      {/* Tracking URL Section */}
+                                      {/* Tracking Section */}
                                       <div className="mt-6 p-4 bg-gray-700 border border-gray-600 rounded-lg">
-                                        <Label htmlFor={`tracking-${selectedOrder.id}`} className="text-sm font-bold text-white mb-3 block">
+                                        <Label className="text-sm font-bold text-white mb-3 block">
                                           Package Tracking
                                         </Label>
-                                        <div className="flex gap-2">
-                                          <Input
-                                            id={`tracking-${selectedOrder.id}`}
-                                            type="url"
-                                            placeholder="https://example.com/track/ORDER123"
-                                            value={trackingUrls[selectedOrder.id] || selectedOrder.tracking_url || ''}
-                                            onChange={(e) => setTrackingUrls(prev => ({
-                                              ...prev,
-                                              [selectedOrder.id]: e.target.value
-                                            }))}
-                                            className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400 text-sm"
-                                          />
-                                          {(trackingUrls[selectedOrder.id] || selectedOrder.tracking_url) && (
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              className="px-3 border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
-                                              onClick={() => {
-                                                const url = trackingUrls[selectedOrder.id] || selectedOrder.tracking_url
-                                                if (url) window.open(url, '_blank')
-                                              }}
-                                            >
-                                              <ExternalLink className="w-4 h-4" />
-                                            </Button>
-                                          )}
-                                          {trackingUrls[selectedOrder.id] && (
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              className="px-3 border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
-                                              onClick={() => setTrackingUrls(prev => {
-                                                const updated = { ...prev }
-                                                delete updated[selectedOrder.id]
-                                                return updated
-                                              })}
-                                            >
-                                              <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                          )}
+
+                                        {/* Tracking URL */}
+                                        <div className="space-y-3">
+                                          <div>
+                                            <Label htmlFor={`tracking-url-${selectedOrder.id}`} className="text-xs text-gray-300 mb-1 block">
+                                              Tracking URL
+                                            </Label>
+                                            <div className="flex gap-2">
+                                              <Input
+                                                id={`tracking-url-${selectedOrder.id}`}
+                                                type="url"
+                                                placeholder="https://example.com/track/ORDER123"
+                                                value={trackingUrls[selectedOrder.id] || selectedOrder.tracking_url || ''}
+                                                onChange={(e) => setTrackingUrls(prev => ({
+                                                  ...prev,
+                                                  [selectedOrder.id]: e.target.value
+                                                }))}
+                                                className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400 text-sm"
+                                              />
+                                              {(trackingUrls[selectedOrder.id] || selectedOrder.tracking_url) && (
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="px-3 border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                                                  onClick={() => {
+                                                    const url = trackingUrls[selectedOrder.id] || selectedOrder.tracking_url
+                                                    if (url) window.open(url, '_blank')
+                                                  }}
+                                                >
+                                                  <ExternalLink className="w-4 h-4" />
+                                                </Button>
+                                              )}
+                                              {trackingUrls[selectedOrder.id] && (
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="px-3 border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                                                  onClick={() => setTrackingUrls(prev => {
+                                                    const updated = { ...prev }
+                                                    delete updated[selectedOrder.id]
+                                                    return updated
+                                                  })}
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Tracking ID */}
+                                          <div>
+                                            <Label htmlFor={`tracking-id-${selectedOrder.id}`} className="text-xs text-gray-300 mb-1 block">
+                                              Tracking ID
+                                            </Label>
+                                            <div className="flex gap-2">
+                                              <Input
+                                                id={`tracking-id-${selectedOrder.id}`}
+                                                type="text"
+                                                placeholder="e.g., abdc567"
+                                                value={trackingIds[selectedOrder.id] || selectedOrder.tracking_id || ''}
+                                                onChange={(e) => setTrackingIds(prev => ({
+                                                  ...prev,
+                                                  [selectedOrder.id]: e.target.value
+                                                }))}
+                                                className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400 text-sm"
+                                              />
+                                              {trackingIds[selectedOrder.id] && (
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="px-3 border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                                                  onClick={() => setTrackingIds(prev => {
+                                                    const updated = { ...prev }
+                                                    delete updated[selectedOrder.id]
+                                                    return updated
+                                                  })}
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          </div>
                                         </div>
+
                                         <p className="text-xs text-gray-400 mt-2">
-                                          Customer tracking URL (automatically sent in status update emails)
+                                          Tracking details automatically sent in status update emails
                                         </p>
                                       </div>
                                     </div>

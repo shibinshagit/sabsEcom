@@ -124,6 +124,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     return () => clearTimeout(initTimer)
   }, [isAuthenticated])
 
+  // Debug currency changes
+  useEffect(() => {
+    console.log('Currency changed to:', selectedCurrency)
+  }, [selectedCurrency])
+
   useEffect(() => {
     dispatch(fetchProducts())
     dispatch(fetchCategories())
@@ -343,9 +348,18 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               v.available_aed || v.available_inr
             ) || item.variants?.[0];
             
-            // Calculate discount percentage
-            const discountPercent = availableVariant ? 
-              Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100) : 0;
+            // Calculate discount percentage based on selected currency
+            let discountPercent = 0;
+            if (availableVariant) {
+              console.log('Lightning Deals - Currency:', selectedCurrency, 'Variant:', availableVariant);
+              if (selectedCurrency === 'AED' && availableVariant.price_aed && availableVariant.discount_aed && availableVariant.price_aed > availableVariant.discount_aed) {
+                discountPercent = Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100);
+                console.log('AED Discount:', discountPercent, 'Price:', availableVariant.price_aed, 'Discount:', availableVariant.discount_aed);
+              } else if (selectedCurrency === 'INR' && availableVariant.price_inr && availableVariant.discount_inr && availableVariant.price_inr > availableVariant.discount_inr) {
+                discountPercent = Math.round(((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100);
+                console.log('INR Discount:', discountPercent, 'Price:', availableVariant.price_inr, 'Discount:', availableVariant.discount_inr);
+              }
+            }
 
             return (
               <Card
@@ -508,17 +522,17 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
       (v) => v.available_aed || v.available_inr
     ) || item.variants?.[0];
 
-  // Calculate discount percentage
-  const priceAED = availableVariant?.price_aed || item.min_price_aed || 0;
-  const discountAED = availableVariant?.discount_aed || priceAED;
-  const priceINR = availableVariant?.price_inr || item.min_price_inr || 0;
-  const discountINR = availableVariant?.discount_inr || priceINR;
-
+  // Calculate discount percentage based on selected currency
   let discountPercent = 0;
-  if (priceAED && discountAED && priceAED > discountAED) {
-    discountPercent = Math.round(((priceAED - discountAED) / priceAED) * 100);
-  } else if (priceINR && discountINR && priceINR > discountINR) {
-    discountPercent = Math.round(((priceINR - discountINR) / priceINR) * 100);
+  if (availableVariant) {
+    console.log('Main Grid - Currency:', selectedCurrency, 'Variant:', availableVariant);
+    if (selectedCurrency === 'AED' && availableVariant.price_aed && availableVariant.discount_aed && availableVariant.price_aed > availableVariant.discount_aed) {
+      discountPercent = Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100);
+      console.log('AED Main Discount:', discountPercent, 'Price:', availableVariant.price_aed, 'Discount:', availableVariant.discount_aed);
+    } else if (selectedCurrency === 'INR' && availableVariant.price_inr && availableVariant.discount_inr && availableVariant.price_inr > availableVariant.discount_inr) {
+      discountPercent = Math.round(((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100);
+      console.log('INR Main Discount:', discountPercent, 'Price:', availableVariant.price_inr, 'Discount:', availableVariant.discount_inr);
+    }
   }
 
 // Condition label mapping
