@@ -484,7 +484,7 @@ export default function OrdersPage() {
                       <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
                         <div className="text-left sm:text-right">
                           <p className="font-bold text-base sm:text-lg lg:text-xl">
-                            {formatCurrency(formatMoney(Number(order.total_amount) + Number(order.delivery_fee)), order.currency)}
+                            {formatCurrency(order.final_total || order.total_amount, order.currency)}
                           </p>
                           <p className="text-xs sm:text-sm text-gray-500">
                             {new Date(order.created_at).toLocaleDateString()}
@@ -628,7 +628,7 @@ export default function OrdersPage() {
                       <div className="space-y-2 text-xs sm:text-sm">
                         <div className="flex justify-between">
                           <span>Subtotal</span>
-                          <span>{formatCurrency(order.total_amount, order.currency)}</span>
+                          <span>{formatCurrency(order.items.reduce((sum, item) => sum + Number(item.total_price), 0), order.currency)}</span>
                         </div>
                         {Number(order.delivery_fee) > 0 ? (
                           <div className="flex justify-between">
@@ -643,7 +643,7 @@ export default function OrdersPage() {
                         )}
                         <div className="flex justify-between font-bold text-sm sm:text-base border-t pt-2 text-orange-600">
                           <span>Total Amount</span>
-                          <span>{formatCurrency(formatMoney(Number(order.total_amount) + Number(order.delivery_fee)), order.currency)}</span>
+                          <span>{formatCurrency(order.final_total || order.total_amount, order.currency)}</span>
                         </div>
                       </div>
                     </div>

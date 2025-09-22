@@ -40,8 +40,9 @@ export default function CategoriesManagement() {
     image_url: "",
     is_active: true,
     is_special: false,
-    sort_order: 0,
+    sort_order: undefined as number | undefined,
   })
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     fetchCategories()
@@ -92,7 +93,7 @@ export default function CategoriesManagement() {
       resetForm()
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred"
-      alert(`Failed to save category: ${message}`)
+      setErrorMessage(message)
       console.error("Failed to save category:", error)
     }
   }
@@ -123,9 +124,10 @@ export default function CategoriesManagement() {
       image_url: "",
       is_active: true,
       is_special: false,
-      sort_order: 0,
+      sort_order: undefined,
     })
     setEditingCategory(null)
+    setErrorMessage(null)
   }
 
   const openEditDialog = (category: Category) => {
@@ -195,7 +197,12 @@ export default function CategoriesManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white">Categories Management</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open)
+          if (!open) {
+            setErrorMessage(null) // Clear error when dialog closes
+          }
+        }}>
           <DialogTrigger asChild>
             <Button
               onClick={openAddDialog}
@@ -243,10 +250,28 @@ export default function CategoriesManagement() {
                 <Input
                   id="sort_order"
                   type="number"
-                  value={formData.sort_order}
-                  onChange={(e) => setFormData({ ...formData, sort_order: Number(e.target.value) })}
-                  className="bg-gray-700 border-gray-600 text-white"
+                  value={formData.sort_order || ""}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? undefined : Number(e.target.value)
+                    setFormData({ ...formData, sort_order: value })
+                    setErrorMessage(null) // Clear error when user starts typing
+                  }}
+                  className={`bg-gray-700 border-gray-600 text-white ${
+                    errorMessage && errorMessage.toLowerCase().includes('sort order') 
+                      ? 'border-red-500 focus:border-red-500' 
+                      : ''
+                  }`}
+                  placeholder="Leave empty for auto-assignment"
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  💡 Leave empty to automatically assign the next available sort order
+                </p>
+                {errorMessage && errorMessage.toLowerCase().includes('sort order') && (
+                  <p className="text-red-400 text-sm mt-1 flex items-center">
+                    <span className="mr-1">⚠️</span>
+                    {errorMessage}
+                  </p>
+                )}
               </div>
 
               {/* Enhanced Switch Components with Better Visibility */}

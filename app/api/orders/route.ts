@@ -538,31 +538,37 @@ export async function POST(request: Request) {
     await ensureOrdersTableExists()
     await ensureOrderItemsTableExists()
 
-    // Calculate delivery fee based on currency, order type, and cart total
+    // Calculate subtotal from individual items (proper way)
+    let subtotal = 0
+    for (const item of orderData.items) {
+      const pricing = getCurrencySpecificPrice(item, orderData.currency || 'AED')
+      const unitPrice = parseFloat(item.unitPrice) || pricing.unitPrice
+      subtotal += unitPrice * item.quantity
+    }
+
+    // Calculate delivery fee based on currency, order type, and subtotal
     let deliveryFee = 0
     if (orderData.orderType === "delivery") {
-      const subtotalForDelivery = orderData.originalAmount - (orderData.currency === "AED" ? 20 : 70) || 0
       if (orderData.currency === "AED") {
         // AED: free delivery above 200, 10 AED for 50-199, 20 AED for under 50
-        if (subtotalForDelivery >= 200) {
+        if (subtotal >= 200) {
           deliveryFee = 0
-        } else if (subtotalForDelivery >= 50) {
+        } else if (subtotal >= 50) {
           deliveryFee = 10
         } else {
           deliveryFee = 20
         }
       } else {
         // INR: free delivery above 3000, otherwise 70 INR
-        deliveryFee = subtotalForDelivery >= 3000 ? 0 : 70
+        deliveryFee = subtotal >= 3000 ? 0 : 70
       }
     }
 
     // Calculate totals properly
-    const subtotal = orderData.originalAmount - deliveryFee || 0
     const taxAmount = 0 // Set tax amount as needed
     const discountAmount = orderData.discountAmount || 0
     const totalAmount = subtotal + deliveryFee + taxAmount - discountAmount
-    const finalTotal = orderData.totalAmount || totalAmount
+    const finalTotal = totalAmount
 
     // Determine payment status
     const paymentStatus = orderData.paymentMethod === 'upi' && orderData.paymentId ? 'paid' : 'pending'

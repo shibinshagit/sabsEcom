@@ -11,19 +11,45 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Category name is required" }, { status: 400 })
     }
 
-    const [category] = await sql`
-      UPDATE categories 
-      SET 
-        name = ${name}, 
-        description = ${description || ""}, 
-        image_url = ${image_url || ""}, 
-        is_active = ${is_active || true}, 
-        is_special = ${is_special || false}, 
-        sort_order = ${sort_order || 0},
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
-      RETURNING *
-    `
+    // Only update sort_order if explicitly provided, otherwise keep existing value
+    let category
+    if (sort_order !== undefined && sort_order !== null) {
+      // Check if the provided sort_order already exists (excluding current category)
+      const existingCategory = await sql`
+        SELECT id FROM categories WHERE sort_order = ${sort_order} AND id != ${id}
+      `
+      if (existingCategory.length > 0) {
+        return NextResponse.json({ 
+          error: `Sort order ${sort_order} is already in use by another category. Please choose a different value.` 
+        }, { status: 400 })
+      }
+      [category] = await sql`
+        UPDATE categories 
+        SET 
+          name = ${name}, 
+          description = ${description || ""}, 
+          image_url = ${image_url || ""}, 
+          is_active = ${is_active !== undefined ? is_active : true}, 
+          is_special = ${is_special !== undefined ? is_special : false}, 
+          sort_order = ${sort_order},
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${id}
+        RETURNING *
+      `
+    } else {
+      [category] = await sql`
+        UPDATE categories 
+        SET 
+          name = ${name}, 
+          description = ${description || ""}, 
+          image_url = ${image_url || ""}, 
+          is_active = ${is_active !== undefined ? is_active : true}, 
+          is_special = ${is_special !== undefined ? is_special : false}, 
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${id}
+        RETURNING *
+      `
+    }
 
     if (!category) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 })

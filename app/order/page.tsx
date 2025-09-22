@@ -589,15 +589,59 @@ export default function OrderPage() {
 
     const cartTotal = calculateCartTotal()
     if (selectedCurrency === 'AED') {
-      // AED: free delivery above 200, otherwise 10 AED
-      return cartTotal >= 200 ? 0 : 10
+      // AED: free delivery above 200, 10 AED for 50-199, 20 AED for under 50
+      if (cartTotal >= 200) {
+        return 0
+      } else if (cartTotal >= 50) {
+        return 10
+      } else {
+        return 20
+      }
     } else {
       // INR: free delivery above 3000, otherwise 70 INR
       return cartTotal >= 3000 ? 0 : 70
     }
   }
 
+  // Function to get delivery fee message
+  const getDeliveryFeeMessage = () => {
+    if (orderType !== "delivery") return null
+
+    const cartTotal = calculateCartTotal()
+    const currentDeliveryFee = calculateDeliveryFee()
+
+    // Don't show message if already getting free delivery (to avoid duplication)
+    if (currentDeliveryFee === 0) return null
+
+    if (selectedCurrency === 'AED') {
+      if (cartTotal >= 50) {
+        const amountNeeded = 200 - cartTotal
+        return {
+          type: 'info',
+          message: `Shop for AED ${amountNeeded.toFixed(2)} more to get FREE delivery!`,
+          icon: '🚚'
+        }
+      } else {
+        const amountForReducedFee = 50 - cartTotal
+        const amountForFree = 200 - cartTotal
+        return {
+          type: 'warning',
+          message: `Shop for AED ${amountForReducedFee.toFixed(2)} more to get AED 10 off delivery or spend AED ${amountForFree.toFixed(2)} for FREE delivery!`,
+          icon: '💰'
+        }
+      }
+    } else {
+      const amountNeeded = 3000 - cartTotal
+      return {
+        type: 'info',
+        message: `Shop for ₹${amountNeeded.toFixed(2)} more to get FREE delivery!`,
+        icon: '🚚'
+      }
+    }
+  }
+
   const deliveryFee = calculateDeliveryFee()
+  const deliveryMessage = getDeliveryFeeMessage()
   const cartTotal = calculateCartTotal()
   const subtotalWithDelivery = cartTotal + deliveryFee
   const finalTotal = subtotalWithDelivery - discountAmount
@@ -1201,7 +1245,21 @@ export default function OrderPage() {
                           </span>
                         </div>
                       )}
-                      {appliedCoupon && discountAmount > 0 && (
+                      {deliveryMessage && (
+                         <div className={`p-3 rounded-lg text-sm ${
+                           deliveryMessage.type === 'success' 
+                             ? 'bg-green-50 border border-green-200 text-green-800' 
+                             : deliveryMessage.type === 'info'
+                             ? 'bg-blue-50 border border-blue-200 text-blue-800'
+                             : 'bg-orange-50 border border-orange-200 text-orange-800'
+                         }`}>
+                           <div className="flex items-start gap-2">
+                             <span className="text-lg">{deliveryMessage.icon}</span>
+                             <span className="flex-1">{deliveryMessage.message}</span>
+                           </div>
+                         </div>
+                       )}
+                       {appliedCoupon && discountAmount > 0 && (
                         <div className="flex justify-between text-sm sm:text-base text-green-600">
                           <span>
                             Discount ({appliedCoupon.code})
