@@ -114,13 +114,12 @@ const Services = () => {
 
   const cardVariants = {
     hidden: { opacity: 0, y: 50 },
-    visible: (i) => ({
+    visible: (i: number) => ({
       opacity: 1,
       y: 0,
       transition: {
         delay: i * 0.2,
         duration: 0.5,
-        ease: "easeOut",
       },
     }),
     hover: {
@@ -133,7 +132,7 @@ const Services = () => {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 lg:mt-8 overflow-hidden">
+    <div className="px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 lg:mt-8 pb-8 sm:pb-12 lg:pb-12 overflow-hidden">
       <style jsx>{`
         @keyframes pulseGlow {
           0% {

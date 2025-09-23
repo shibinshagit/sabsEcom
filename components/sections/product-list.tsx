@@ -17,6 +17,10 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { addToWishlistAPI, removeFromWishlistAPI } from '@/lib/store/slices/wishlistSlice'
 import SearchFilters from "@/components/ui/search-filters"
+import ShopSwitchPopup from "@/components/ui/shop-switch-popup"
+import { useShopSwitchPopup } from "@/lib/hooks/useShopSwitchPopup"
+import FloatingShopAd from "@/components/ui/floating-shop-ad"
+import { useFloatingShopAd } from "@/lib/hooks/useFloatingShopAd"
 
 interface ProductListProps {
   showSpinner?: boolean
@@ -43,6 +47,21 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const searchParams = useSearchParams()
   const categoryFromUrl = searchParams.get("category")
   const { shop } = useShop()
+
+  // Shop switching popup
+  const { isPopupOpen, closePopup, switchShop } = useShopSwitchPopup({
+    intervalMinutes: 3, // Show every 3 minutes
+    initialDelayMinutes: 1, // Wait 1 minute before first show
+    maxShowsPerSession: 4 // Max 4 times per session
+  })
+
+  // Floating shop ad
+  const { isAdVisible, closeAd, switchShop: switchShopFromAd } = useFloatingShopAd({
+    showAfterScrollPixels: 400, // Show after scrolling 400px
+    displayDurationMinutes: 2, // Show for 2 minutes
+    cooldownMinutes: 4, // 4 minute cooldown
+    maxShowsPerSession: 3 // Max 3 times per session
+  })
   const router = useRouter()
 
   const isInWishlist = (productId: number) => {
@@ -82,7 +101,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         await dispatch(removeFromWishlistAPI(product.id)).unwrap()
       } else {
         // Get the best available variant for pricing
-        const availableVariant = product.variants?.find(v => 
+        const availableVariant = product.variants?.find((v: any) => 
           v.available_aed || v.available_inr
         ) || product.variants?.[0];
 
@@ -344,7 +363,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         <div className="flex gap-3 lg:gap-4 overflow-x-auto pb-4 scrollbar-hide">
           {lightningDeals.map((item, index) => {
             // Get the best available variant
-            const availableVariant = item.variants?.find(v => 
+            const availableVariant = item.variants?.find((v: any) => 
               v.available_aed || v.available_inr
             ) || item.variants?.[0];
             
@@ -519,7 +538,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   // Get the best available variant
   const availableVariant =
     item.variants?.find(
-      (v) => v.available_aed || v.available_inr
+      (v: any) => v.available_aed || v.available_inr
     ) || item.variants?.[0];
 
   // Calculate discount percentage based on selected currency
@@ -553,8 +572,8 @@ const conditionColors = {
   sale: "bg-blue-600"
 };
 
-const conditionLabel = conditionLabels[item.condition_type] || "";
-const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
+const conditionLabel = conditionLabels[item.condition_type as keyof typeof conditionLabels] || "";
+const badgeColor = conditionColors[item.condition_type as keyof typeof conditionColors] || "bg-gray-500";
 
   return (
     <div key={item.id} className="cursor-pointer">
@@ -752,6 +771,20 @@ const badgeColor = conditionColors[item.condition_type] || "bg-gray-500";
           </div>
         </div>
       </div>
+
+      {/* Shop Switch Popup */}
+      <ShopSwitchPopup
+        isOpen={isPopupOpen}
+        onClose={closePopup}
+        onSwitchShop={switchShop}
+      />
+
+      {/* Floating Shop Ad */}
+      <FloatingShopAd
+        isVisible={isAdVisible}
+        onClose={closeAd}
+        onSwitchShop={switchShopFromAd}
+      />
     </div>
     
   )

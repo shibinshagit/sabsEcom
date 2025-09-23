@@ -30,6 +30,7 @@ interface Category {
   name: string
   slug?: string
   shop?: "A" | "B" | "Both"
+  is_special?: boolean
 }
 
 function Nav() {
@@ -45,6 +46,8 @@ function Nav() {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState([])
   const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null)
+  const [autoScrollInterval, setAutoScrollInterval] = useState<NodeJS.Timeout | null>(null)
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false)
 
   const pathname = usePathname()
   const router = useRouter()
@@ -248,6 +251,52 @@ function Nav() {
   const handleLogout = async () => {
     await logout()
   }
+
+  const startAutoScroll = () => {
+    if (categories.length <= 5) return
+    
+    const navContainer = document.querySelector('.categories-scroll-container')
+    if (!navContainer) return
+    
+    // Start from the beginning
+    navContainer.scrollLeft = 0
+    
+    setIsAutoScrolling(true)
+    const interval = setInterval(() => {
+      const maxScroll = navContainer.scrollWidth - navContainer.clientWidth
+      const currentScroll = navContainer.scrollLeft
+      
+      if (currentScroll >= maxScroll - 10) { // Small buffer to ensure we reach the end
+        // Smooth scroll back to beginning
+        navContainer.scrollTo({ left: 0, behavior: 'smooth' })
+      } else {
+        // Scroll by one category width approximately
+        const categoryWidth = 120 // Approximate width of each category button
+        navContainer.scrollTo({ 
+          left: currentScroll + categoryWidth, 
+          behavior: 'smooth' 
+        })
+      }
+    }, 2500) // Scroll every 2.5 seconds
+    
+    setAutoScrollInterval(interval)
+  }
+
+  // Start auto-scroll when categories load and are more than 5
+  useEffect(() => {
+    if (categories.length > 5 && !loading && !isAutoScrolling) {
+      setTimeout(() => startAutoScroll(), 2000) // Start after 2 seconds
+    }
+  }, [categories.length, loading])
+
+  // Cleanup auto-scroll on unmount
+  useEffect(() => {
+    return () => {
+      if (autoScrollInterval) {
+        clearInterval(autoScrollInterval)
+      }
+    }
+  }, [autoScrollInterval])
 
   const handleNavClick = async (item: (typeof navigation)[0], e: React.MouseEvent) => {
     if (item.name === "Logout") {
@@ -668,34 +717,152 @@ function Nav() {
             </div>
 
             {/* Desktop Navigation with Icon Toggle */}
-            <div className="flex items-center justify-between">
-              <div className="flex-1 overflow-hidden mr-6">
-                <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
-                  {loading ? (
-                    <div className="flex gap-4">
-                      <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-16 flex-shrink-0"></div>
-                      <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-20 flex-shrink-0"></div>
-                      <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-24 flex-shrink-0"></div>
-                    </div>
-                  ) : (
-                    navigation.map((item) => (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center space-x-2 flex-1 min-w-0">
+                {loading ? (
+                  <div className="flex gap-4">
+                    <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-16 flex-shrink-0"></div>
+                    <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-20 flex-shrink-0"></div>
+                    <div className="animate-pulse bg-white/20 rounded-full px-6 py-2 h-10 w-24 flex-shrink-0"></div>
+                  </div>
+                ) : (
+                  <>
+                    {/* All Products - Always visible and constant with hover dropdown */}
+                    <div className="relative group">
                       <Link
-                        key={item.name}
-                        href={item.href}
-                        onClick={(e) => handleNavClick(item, e)}
-                        className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                          ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
-                          : "text-white hover:bg-white/20"
-                          }`}
+                        key="all-products"
+                        href="/products"
+                        onClick={(e) => handleNavClick(baseNavigation[0], e)}
+                        className={`hidden lg:flex items-center rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+                          pathname === '/products' && !searchParams.get('category')
+                            ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
+                            : "text-white hover:bg-white/20"
+                        }`}
                       >
-                        {item.name}
+                        All Products
+                        <span className="ml-1 text-xs opacity-70">▼</span>
                       </Link>
-                    ))
-                  )}
-                </div>
+                      <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 shadow-xl rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="p-3">
+                          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+                            {shop === "A" ? "Beauty Categories" : shop === "B" ? "Style Categories" : "Categories"}
+                          </div>
+                          {categories.length > 0 ? (
+                            <div className="space-y-1 max-h-80 overflow-y-auto">
+                              {categories.map((category) => (
+                                <Link
+                                  key={category.id}
+                                  href={`/products?category=${category.slug || category.id}`}
+                                  className={`block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors ${
+                                    category.is_special 
+                                      ? `border-l-2 ${shop === "A" ? "border-orange-500 hover:bg-orange-100" : "border-purple-400 hover:bg-purple-50"}` 
+                                      : ""
+                                  }`}
+                                  onClick={(e) => {
+                                    const item = {
+                                      name: category.name,
+                                      href: `/products?category=${category.slug || category.id}`,
+                                      categoryId: category.id,
+                                      isCategory: true
+                                    }
+                                    handleNavClick(item, e)
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span>{category.name}</span>
+                                    {category.is_special && (
+                                      <span className={`text-xs ${shop === "A" ? "text-orange-500" : "text-purple-600"}`}>✨</span>
+                                    )}
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-3 py-4 text-sm text-gray-400 text-center">
+                              No categories available
+                            </div>
+                          )}
+                          <div className="border-t border-gray-100 mt-3 pt-3">
+                            <Link
+                              href="/products"
+                              className="block px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                              onClick={(e) => handleNavClick(baseNavigation[0], e)}
+                            >
+                              View All Products
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Scrolling Categories Container */}
+                    <div 
+                      className={`hidden lg:flex items-center space-x-2 categories-scroll-container ${
+                        categories.length > 5 
+                          ? 'overflow-x-auto scrollbar-hide' 
+                          : ''
+                      }`}
+                      style={{
+                        maxWidth: categories.length > 5 ? '900px' : 'auto',
+                        scrollBehavior: 'smooth',
+                        WebkitOverflowScrolling: 'touch'
+                      }}
+                      onMouseEnter={() => {
+                        if (categories.length > 5 && autoScrollInterval) {
+                          clearInterval(autoScrollInterval)
+                          setIsAutoScrolling(false)
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        if (categories.length > 5) {
+                          setTimeout(() => startAutoScroll(), 1000) // Delay restart
+                        }
+                      }}
+                    >
+                      {/* Category links only */}
+                      {categories.map(category => {
+                        const item = {
+                          name: category.name,
+                          href: `/products?category=${category.slug || category.id}`,
+                          categoryId: category.id,
+                          isCategory: true
+                        }
+                        return (
+                          <Link
+                            key={category.id}
+                            href={item.href}
+                            onClick={(e) => handleNavClick(item, e)}
+                            className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 relative ${
+                              isActiveCategoryLink(item)
+                                ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
+                                : "text-white hover:bg-white/20"
+                            } ${
+                              category.is_special 
+                                ? `border-2 ${shop === "A" ? "border-orange-500 shadow-orange-500/40" : "border-purple-400 shadow-purple-400/30"} shadow-lg` 
+                                : ""
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              {category.name}
+                              {category.is_special && (
+                                <span className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full font-bold ${
+                                  shop === "A" 
+                                    ? "bg-orange-500 text-white" 
+                                    : "bg-purple-400 text-purple-900"
+                                }`}>
+                                  ✨
+                                </span>
+                              )}
+                            </span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300 flex-shrink-0">
+              <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300 flex-shrink-0 ml-4">
                 <div
                   className="absolute top-1 bg-white rounded-full transition-all duration-300 ease-out shadow-lg"
                   style={{
@@ -1136,27 +1303,80 @@ function Nav() {
 
             {/* Mobile Navigation Menu */}
             {isOpen && (
-              <div className="mt-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl">
+              <div className="mt-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl max-h-[80vh] overflow-hidden">
                 {loading ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 p-4">
                     <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-full"></div>
                     <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-3/4"></div>
                     <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-1/2"></div>
                   </div>
                 ) : (
-                  navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={(e) => handleNavClick(item, e)}
-                      className={`block px-3 py-2 text-base font-medium transition-colors rounded-lg ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
-                        : `text-white hover:bg-white/20 text-gray-700`
+                  <div className="overflow-y-auto max-h-[80vh]">
+                    <div className="p-4 space-y-2">
+                      {/* All Products - Featured */}
+                      <Link
+                        href="/products"
+                        onClick={(e) => {
+                          handleNavClick(baseNavigation[0], e)
+                          setIsOpen(false)
+                        }}
+                        className={`block px-4 py-3 text-base font-semibold transition-colors rounded-lg border-2 ${
+                          pathname === '/products' && !searchParams.get('category')
+                            ? `${shop === "A" ? "text-orange-600 bg-orange-50 border-orange-200" : "text-purple-600 bg-purple-50 border-purple-200"}`
+                            : `text-gray-700 hover:bg-gray-50 border-gray-200`
                         }`}
-                    >
-                      {item.name}
-                    </Link>
-                  ))
+                      >
+                        All Products
+                       </Link>
+
+                       {/* Categories Section */}
+                       {categories.length > 0 && (
+                         <>
+                           <div className="px-3 py-2 mt-6 text-xs font-medium text-gray-500 uppercase tracking-wider border-t border-gray-200 pt-4">
+                             {shop === "A" ? "Beauty Categories" : shop === "B" ? "Style Categories" : "Categories"}
+                           </div>
+                          <div className="space-y-1 pb-4">
+                            {categories.map((category) => {
+                              const item = {
+                                name: category.name,
+                                href: `/products?category=${category.slug || category.id}`,
+                                categoryId: category.id,
+                                isCategory: true
+                              }
+                              return (
+                                <Link
+                                  key={category.id}
+                                  href={item.href}
+                                  onClick={(e) => {
+                                    handleNavClick(item, e)
+                                    setIsOpen(false)
+                                  }}
+                                  className={`block px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
+                                    isActiveCategoryLink(item)
+                                      ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
+                                      : `text-gray-600 hover:bg-gray-50`
+                                  } ${
+                                    category.is_special 
+                                      ? `border-l-4 ${shop === "A" ? "border-orange-500 bg-orange-100/70" : "border-purple-400 bg-purple-50/50"}` 
+                                      : ""
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span>{category.name}</span>
+                                    {category.is_special && (
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                        ✨ Special
+                                      </span>
+                                    )}
+                                  </div>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 )}
 
               </div>

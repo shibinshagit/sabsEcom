@@ -20,6 +20,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import toast from 'react-hot-toast'
 import LoginModal from "@/components/auth/login-modal"
+import RecommendedProducts from "@/components/sections/recommended-products"
 
 interface Variant {
   id: number
@@ -878,6 +879,13 @@ const conditionColors = {
           </div>
         </div>
       </div>
+
+      {/* Recommended Products Section */}
+      <RecommendedProducts 
+        currentProductId={product.id}
+        categoryId={product.category_id}
+        shopCategory={product.shop_category}
+      />
 
       <Footer />
     </div>

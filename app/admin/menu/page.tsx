@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store, DollarSign, ChevronDown, ChevronRight } from "lucide-react"
+import { Plus, Edit, Trash2, ImageIcon, AlertCircle, Search, Star, Store, DollarSign, ChevronDown, ChevronRight, Download, FileSpreadsheet } from "lucide-react"
 import Image from "next/image"
 import MultipleImageUpload from "@/components/ui/image-upload"
 
@@ -339,6 +340,178 @@ const openEditDialog = (item: Product) => {
   const openAddDialog = () => {
     resetForm()
     setIsDialogOpen(true)
+  }
+
+  // Export functions
+  const exportToCSV = () => {
+    const dataToExport = filteredItems
+    const csvHeaders = [
+      'ID', 'Name', 'Description', 'Category', 'Shop', 'Brand', 'Model', 
+      'SKU', 'Store Name', 'Is Available', 'Is Featured', 'Is New',
+      'Variant Name', 'AED Price', 'AED Discount', 'INR Price', 'INR Discount',
+      'Stock Quantity', 'Available AED', 'Available INR', 'Created Date'
+    ]
+    
+    const csvRows = []
+    csvRows.push(csvHeaders.join(','))
+    
+    dataToExport.forEach(product => {
+      if (product.variants && product.variants.length > 0) {
+        product.variants.forEach(variant => {
+          const row = [
+            product.id,
+            `"${product.name.replace(/"/g, '""')}"`,
+            `"${product.description.replace(/"/g, '""')}"`,
+            `"${product.category_name}"`,
+            product.shop_category,
+            `"${product.brand || ''}"`,
+            `"${product.model || ''}"`,
+            `"${product.sku || ''}"`,
+            `"${product.store_name || ''}"`,
+            product.is_available ? 'Yes' : 'No',
+            product.is_featured ? 'Yes' : 'No',
+            product.is_new ? 'Yes' : 'No',
+            `"${variant.name}"`,
+            variant.price_aed || 0,
+            variant.discount_aed || 0,
+            variant.price_inr || 0,
+            variant.discount_inr || 0,
+            variant.stock_quantity || 0,
+            variant.available_aed ? 'Yes' : 'No',
+            variant.available_inr ? 'Yes' : 'No',
+            product.created_at ? new Date(product.created_at).toLocaleDateString() : ''
+          ]
+          csvRows.push(row.join(','))
+        })
+      } else {
+        const row = [
+          product.id,
+          `"${product.name.replace(/"/g, '""')}"`,
+          `"${product.description.replace(/"/g, '""')}"`,
+          `"${product.category_name}"`,
+          product.shop_category,
+          `"${product.brand || ''}"`,
+          `"${product.model || ''}"`,
+          `"${product.sku || ''}"`,
+          `"${product.store_name || ''}"`,
+          product.is_available ? 'Yes' : 'No',
+          product.is_featured ? 'Yes' : 'No',
+          product.is_new ? 'Yes' : 'No',
+          'No variants',
+          '', '', '', '', '', '', '',
+          product.created_at ? new Date(product.created_at).toLocaleDateString() : ''
+        ]
+        csvRows.push(row.join(','))
+      }
+    })
+    
+    const csvContent = csvRows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    
+    const filterInfo = []
+    if (selectedCategory !== 'all') {
+      const categoryName = categories.find(c => c.id.toString() === selectedCategory)?.name || selectedCategory
+      filterInfo.push(`category-${categoryName}`)
+    }
+    if (selectedShop !== 'all') {
+      filterInfo.push(`shop-${selectedShop}`)
+    }
+    const filterSuffix = filterInfo.length > 0 ? `_${filterInfo.join('_')}` : ''
+    
+    link.setAttribute('download', `products_export${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const exportToExcel = () => {
+    const dataToExport = filteredItems
+    const csvHeaders = [
+      'ID', 'Name', 'Description', 'Category', 'Shop', 'Brand', 'Model', 
+      'SKU', 'Store Name', 'Is Available', 'Is Featured', 'Is New',
+      'Variant Name', 'AED Price', 'AED Discount', 'INR Price', 'INR Discount',
+      'Stock Quantity', 'Available AED', 'Available INR', 'Created Date'
+    ]
+    
+    const csvRows = []
+    csvRows.push(csvHeaders.join(','))
+    
+    dataToExport.forEach(product => {
+      if (product.variants && product.variants.length > 0) {
+        product.variants.forEach(variant => {
+          const row = [
+            product.id,
+            `"${product.name.replace(/"/g, '""')}"`,
+            `"${product.description.replace(/"/g, '""')}"`,
+            `"${product.category_name}"`,
+            product.shop_category,
+            `"${product.brand || ''}"`,
+            `"${product.model || ''}"`,
+            `"${product.sku || ''}"`,
+            `"${product.store_name || ''}"`,
+            product.is_available ? 'Yes' : 'No',
+            product.is_featured ? 'Yes' : 'No',
+            product.is_new ? 'Yes' : 'No',
+            `"${variant.name}"`,
+            variant.price_aed || 0,
+            variant.discount_aed || 0,
+            variant.price_inr || 0,
+            variant.discount_inr || 0,
+            variant.stock_quantity || 0,
+            variant.available_aed ? 'Yes' : 'No',
+            variant.available_inr ? 'Yes' : 'No',
+            product.created_at ? new Date(product.created_at).toLocaleDateString() : ''
+          ]
+          csvRows.push(row.join(','))
+        })
+      } else {
+        const row = [
+          product.id,
+          `"${product.name.replace(/"/g, '""')}"`,
+          `"${product.description.replace(/"/g, '""')}"`,
+          `"${product.category_name}"`,
+          product.shop_category,
+          `"${product.brand || ''}"`,
+          `"${product.model || ''}"`,
+          `"${product.sku || ''}"`,
+          `"${product.store_name || ''}"`,
+          product.is_available ? 'Yes' : 'No',
+          product.is_featured ? 'Yes' : 'No',
+          product.is_new ? 'Yes' : 'No',
+          'No variants',
+          '', '', '', '', '', '', '',
+          product.created_at ? new Date(product.created_at).toLocaleDateString() : ''
+        ]
+        csvRows.push(row.join(','))
+      }
+    })
+    
+    // Add BOM for proper Excel UTF-8 support
+    const csvContent = '\uFEFF' + csvRows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    
+    const filterInfo = []
+    if (selectedCategory !== 'all') {
+      const categoryName = categories.find(c => c.id.toString() === selectedCategory)?.name || selectedCategory
+      filterInfo.push(`category-${categoryName}`)
+    }
+    if (selectedShop !== 'all') {
+      filterInfo.push(`shop-${selectedShop}`)
+    }
+    const filterSuffix = filterInfo.length > 0 ? `_${filterInfo.join('_')}` : ''
+    
+    link.setAttribute('download', `products_export_excel${filterSuffix}_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   // Format price display based on currency
@@ -1001,6 +1174,43 @@ const formatPrice = (product: Product) => {
                 />
               </div>
             </div>
+            
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600 hover:border-gray-500"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-gray-800 border-gray-700">
+                <DropdownMenuItem
+                  onClick={exportToCSV}
+                  className="cursor-pointer text-white hover:bg-gray-700 focus:bg-gray-700"
+                >
+                  <Download className="w-4 h-4 mr-3 text-green-400" />
+                  <div className="flex flex-col">
+                    <span className="font-medium">Export as CSV</span>
+                    <span className="text-xs text-gray-400">Standard CSV format</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={exportToExcel}
+                  className="cursor-pointer text-white hover:bg-gray-700 focus:bg-gray-700"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-3 text-blue-400" />
+                  <div className="flex flex-col">
+                    <span className="font-medium">Export for Excel</span>
+                    <span className="text-xs text-gray-400">Excel-optimized CSV</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="w-full sm:w-48">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="bg-gray-700 border-gray-600 text-white">

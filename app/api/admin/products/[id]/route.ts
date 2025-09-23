@@ -4,9 +4,10 @@ import { sql } from "@/lib/database"
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const {
       name,
@@ -33,26 +34,25 @@ export async function PUT(
     } = body
 
     // Validate required fields
-    if (!name || !category_id) {
+    if (!name || !description || !category_id) {
       return NextResponse.json(
-        { error: "Name and category are required" },
+        { error: "Name, description, and category_id are required" },
         { status: 400 }
       )
     }
 
-    // Validate variants
-    if (!variants || !Array.isArray(variants) || variants.length === 0) {
+    // Validate category_id is a number
+    if (isNaN(Number(category_id))) {
+      return NextResponse.json(
+        { error: "Category ID must be a valid number" },
+        { status: 400 }
+      )
+    }
+
+    // Validate variants array
+    if (!Array.isArray(variants) || variants.length === 0) {
       return NextResponse.json(
         { error: "At least one variant is required" },
-        { status: 400 }
-      )
-    }
-
-    // Validate variant names
-    const hasInvalidVariant = variants.some(v => !v.name?.trim())
-    if (hasInvalidVariant) {
-      return NextResponse.json(
-        { error: "All variants must have a name" },
         { status: 400 }
       )
     }
@@ -66,7 +66,7 @@ export async function PUT(
     }
 
     // Validate product ID
-    if (!params.id || isNaN(Number(params.id))) {
+    if (!id || isNaN(Number(id))) {
       return NextResponse.json(
         { error: "Invalid product ID" },
         { status: 400 }
@@ -107,7 +107,7 @@ export async function PUT(
         color = ${color || ''},
         sku = ${sku || ''},
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${params.id}
+      WHERE id = ${id}
       RETURNING *;
     `
 
@@ -116,7 +116,7 @@ export async function PUT(
     }
 
     // Delete existing variants
-    await sql`DELETE FROM product_variants WHERE product_id = ${params.id};`
+    await sql`DELETE FROM product_variants WHERE product_id = ${id};`
 
     // Insert new variants
     for (const variant of variants) {
@@ -125,7 +125,7 @@ export async function PUT(
           product_id, name, price_aed, price_inr, discount_aed, discount_inr,
           available_aed, available_inr, stock_quantity
         ) VALUES (
-          ${params.id}, ${variant.name}, ${variant.price_aed || 0}, ${variant.price_inr || 0},
+          ${id}, ${variant.name}, ${variant.price_aed || 0}, ${variant.price_inr || 0},
           ${variant.discount_aed || 0}, ${variant.discount_inr || 0},
           ${variant.available_aed ?? true}, ${variant.available_inr ?? true}, ${variant.stock_quantity || 0}
         );
@@ -156,7 +156,7 @@ export async function PUT(
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_variants v ON p.id = v.product_id
-      WHERE p.id = ${params.id}
+      WHERE p.id = ${id}
       GROUP BY p.id, c.name;
     `
 
@@ -172,11 +172,13 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
     // Validate product ID
-    if (!params.id || isNaN(Number(params.id))) {
+    if (!id || isNaN(Number(id))) {
       return NextResponse.json(
         { error: "Invalid product ID" },
         { status: 400 }
@@ -184,12 +186,12 @@ export async function DELETE(
     }
 
     // Delete variants first (cascade should handle this, but being explicit)
-    await sql`DELETE FROM product_variants WHERE product_id = ${params.id};`
+    await sql`DELETE FROM product_variants WHERE product_id = ${id};`
 
     // Delete the product
     const [product] = await sql`
       DELETE FROM products
-      WHERE id = ${params.id}
+      WHERE id = ${id}
       RETURNING id;
     `
 
@@ -212,11 +214,13 @@ export async function DELETE(
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
     // Validate product ID
-    if (!params.id || isNaN(Number(params.id))) {
+    if (!id || isNaN(Number(id))) {
       return NextResponse.json(
         { error: "Invalid product ID" },
         { status: 400 }
@@ -246,7 +250,7 @@ export async function GET(
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_variants v ON p.id = v.product_id
-      WHERE p.id = ${params.id}
+      WHERE p.id = ${id}
       GROUP BY p.id, c.name;
     `
 

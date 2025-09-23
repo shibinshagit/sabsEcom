@@ -538,7 +538,7 @@ export async function POST(request: Request) {
     await ensureOrdersTableExists()
     await ensureOrderItemsTableExists()
 
-    // Calculate subtotal from individual items (proper way)
+    // Calculate subtotal from individual items 
     let subtotal = 0
     for (const item of orderData.items) {
       const pricing = getCurrencySpecificPrice(item, orderData.currency || 'AED')

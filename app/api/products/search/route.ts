@@ -199,7 +199,7 @@ function getDisplayPrice(product: any, currency: string) {
 function hasDiscount(product: any) {
   if (!product.variants || !Array.isArray(product.variants)) return false
   
-  return product.variants.some(variant => 
+  return product.variants.some((variant: any) => 
     (variant.discount_aed && variant.discount_aed > 0 && variant.discount_aed < variant.price_aed) ||
     (variant.discount_inr && variant.discount_inr > 0 && variant.discount_inr < variant.price_inr)
   )
@@ -213,8 +213,8 @@ function getMinPrice(product: any, currency: string) {
   const availableField = currency === 'INR' ? 'available_inr' : 'available_aed'
   
   const prices = product.variants
-    .filter(v => v[availableField] && v[field] > 0)
-    .map(v => v[discountField] || v[field])
+    .filter((v: any) => v[availableField] && v[field] > 0)
+    .map((v: any) => v[discountField] || v[field])
     
   return prices.length > 0 ? Math.min(...prices) : null
 }
@@ -224,7 +224,7 @@ function getAvailableCurrencies(product: any) {
   
   const currencies = new Set()
   
-  product.variants.forEach(variant => {
+  product.variants.forEach((variant: any) => {
     if (variant.available_aed && variant.price_aed > 0) currencies.add('AED')
     if (variant.available_inr && variant.price_inr > 0) currencies.add('INR')
   })
