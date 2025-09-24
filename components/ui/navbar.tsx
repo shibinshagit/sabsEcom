@@ -5,7 +5,8 @@ import { Suspense } from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams, useRouter } from "next/navigation"
-import { Menu, X, ShoppingBag, User, LogOut, ShoppingCart, Search, Bell, Heart, Sparkles, Watch, Globe } from "lucide-react"
+import { Search, ShoppingCart, Heart, Menu, X, User, LogOut, Settings, Package, Users, BarChart3, Calendar, MessageSquare, Star, ChevronDown, Globe, Zap, Crown, Gift, ShoppingBag, Sparkles, Watch, Bell } from "lucide-react"
+import EnhancedSearch from "@/components/ui/enhanced-search"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSelector } from "react-redux"
@@ -401,114 +402,11 @@ function Nav() {
                   </h1>
                 </Link>
 
-                {/* Search Bar */}
-                <div className="relative flex-1 max-w-2xl search-container">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
-                  <Input
-                    placeholder={shop === "A" ? "Search beauty products..." : "Search for style accessories..."}
-                    value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-12 pr-16 h-12 rounded-full bg-white border-0 text-base shadow-lg"
-                    onFocus={() => searchTerm.length >= 2 && setShowSearchDropdown(true)}
-                  />
-                  {isSearching && (
-                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
-                    </div>
-                  )}
-                  
-                  {/* Search Dropdown */}
-                  {showSearchDropdown && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-96 overflow-y-auto">
-                      {searchResults.length > 0 ? (
-                        <>
-                          {/* Results Header */}
-                          <div className="px-3 py-2 bg-gray-50 border-b text-xs font-medium text-gray-600">
-                            Found {searchResults.length} product{searchResults.length > 1 ? 's' : ''} in Shop {shop}
-                          </div>
-                          
-                          {searchResults.map((product: any) => (
-                            <div
-                              key={product.id}
-                              onClick={() => handleSearchResultClick(product.id)}
-                              className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                            >
-                              <Image
-                                src={product.image_urls?.[0] || "/placeholder.svg"}
-                                alt={product.name}
-                                width={40}
-                                height={40}
-                                className="rounded-lg object-cover"
-                              />
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900 text-sm line-clamp-1">{product.name}</p>
-                                {product.brand && (
-                                  <p className="text-xs text-gray-500">{product.brand}</p>
-                                )}
-                                {product.search_matches && product.search_matches.length > 0 && (
-                                  <p className="text-xs text-blue-600">
-                                    Match: {product.search_matches[0].field}
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-2 mt-1">
-                                  {product.display_price ? (
-                                    <>
-                                      <p className="text-orange-600 font-semibold text-sm">
-                                        {product.display_price.symbol} {product.display_price.price}
-                                      </p>
-                                      {product.has_discount && (
-                                        <span className="text-xs text-green-600">
-                                          {Math.round(((product.display_price.original_price - product.display_price.price) / product.display_price.original_price) * 100)}% OFF
-                                        </span>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <p className="text-gray-500 text-sm">Price unavailable</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* View All Results */}
-                          <div
-                            onClick={handleViewAllResults}
-                            className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium border-t"
-                          >
-                            View all results for "{searchTerm}"
-                          </div>
-                        </>
-                      ) : searchTerm.length >= 2 ? (
-                        <div className="p-4 text-center text-gray-500">
-                          <div className="text-4xl mb-2">🔍</div>
-                          <p className="font-medium">No products found for "{searchTerm}"</p>
-                          <p className="text-sm mt-1">Try different keywords or check spelling</p>
-                          
-                          {/* Show suggestions if available */}
-                          {searchSuggestions.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-xs text-gray-400 mb-2">Did you mean:</p>
-                              <div className="flex flex-wrap gap-2">
-                                {searchSuggestions.map((suggestion, index) => (
-                                  <button
-                                    key={index}
-                                    onClick={() => {
-                                      setSearchTerm(suggestion)
-                                      handleSearch(suggestion)
-                                    }}
-                                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors"
-                                  >
-                                    {suggestion}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
+                {/* Enhanced Search Bar */}
+                <EnhancedSearch 
+                  className="flex-1 max-w-2xl"
+                  placeholder={shop === "A" ? "Search beauty products..." : "Search for style accessories..."}
+                />
               </div>
 
               {/* Right side buttons */}
@@ -1204,78 +1102,15 @@ function Nav() {
               </div>
             </div>
 
-            <div className="relative mb-3 search-container">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder={shop === "A" ? "Search beauty" : "Search style"}
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-9 pr-10 h-9 rounded-full bg-white border-0 text-sm"
-                onFocus={() => searchTerm.length >= 2 && setShowSearchDropdown(true)}
+            <div className="mb-3">
+              <EnhancedSearch
+                placeholder={shop === "A" ? "Search beauty products..." : "Search style products..."}
+                onSearchSubmit={(query) => {
+                  router.push(`/products?search=${encodeURIComponent(query)}`)
+                  setIsOpen(false)
+                }}
+                className="w-full"
               />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400"></div>
-                </div>
-              )}
-              
-              {/* Search Dropdown for Mobile */}
-              {showSearchDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-64 overflow-y-auto">
-                  {searchResults.length > 0 ? (
-                    <>
-                      <div className="px-3 py-2 bg-gray-50 border-b text-xs font-medium text-gray-600">
-                        {searchResults.length} found
-                      </div>
-                      {searchResults.map((product: any) => (
-                        <div
-                          key={product.id}
-                          onClick={() => handleSearchResultClick(product.id)}
-                          className="flex items-center gap-2 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                        >
-                          <Image
-                            src={product.image_urls?.[0] || "/placeholder.svg"}
-                            alt={product.name}
-                            width={30}
-                            height={30}
-                            className="rounded object-cover"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900 text-xs line-clamp-1">{product.name}</p>
-                            {product.display_price ? (
-                              <p className="text-orange-600 font-semibold text-xs">
-                                {product.display_price.symbol} {product.display_price.price}
-                              </p>
-                            ) : (
-                              <p className="text-gray-500 text-xs">Unavailable</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  ) : searchTerm.length >= 2 ? (
-                    <div className="p-3 text-center text-gray-500">
-                      <p className="text-xs">No products found</p>
-                      {searchSuggestions.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          {searchSuggestions.slice(0, 2).map((suggestion, index) => (
-                            <button
-                              key={index}
-                              onClick={() => {
-                                setSearchTerm(suggestion)
-                                handleSearch(suggestion)
-                              }}
-                              className="block w-full px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
-                            >
-                              Try "{suggestion}"
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              )}
             </div>
 
             <div className="flex overflow-x-auto scrollbar-hide gap-2">

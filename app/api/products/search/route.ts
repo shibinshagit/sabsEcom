@@ -98,25 +98,25 @@ export async function GET(request: Request) {
         CASE WHEN p.is_featured THEN 10 ELSE 0 END +
         CASE WHEN p.is_new THEN 5 ELSE 0 END
       ) > 0
-      ${sortBy === 'price_low' ? sql`
-        ORDER BY 
-          CASE WHEN ${currency === 'AED' ? sql`v.available_aed` : sql`v.available_inr`} THEN 
-            COALESCE(${currency === 'AED' ? sql`v.discount_aed` : sql`v.discount_inr`}, ${currency === 'AED' ? sql`v.price_aed` : sql`v.price_inr`})
-          ELSE 999999 END ASC,
-          relevance_score DESC
-      ` : sortBy === 'price_high' ? sql`
-        ORDER BY 
-          CASE WHEN ${currency === 'AED' ? sql`v.available_aed` : sql`v.available_inr`} THEN 
-            COALESCE(${currency === 'AED' ? sql`v.discount_aed` : sql`v.discount_inr`}, ${currency === 'AED' ? sql`v.price_aed` : sql`v.price_inr`})
-          ELSE 0 END DESC,
-          relevance_score DESC
-      ` : sortBy === 'name' ? sql`
-        ORDER BY p.name ASC, relevance_score DESC
-      ` : sortBy === 'newest' ? sql`
-        ORDER BY p.created_at DESC, relevance_score DESC
-      ` : sql`
-        ORDER BY relevance_score DESC, p.is_featured DESC, p.is_new DESC, p.name ASC
-      `}
+      ORDER BY 
+        ${sortBy === 'price_low' || sortBy === 'price_high' ? sql`
+          (SELECT 
+            CASE WHEN ${currency === 'AED' ? sql`v2.available_aed` : sql`v2.available_inr`} THEN 
+              COALESCE(${currency === 'AED' ? sql`v2.discount_aed` : sql`v2.discount_inr`}, ${currency === 'AED' ? sql`v2.price_aed` : sql`v2.price_inr`})
+            ELSE ${sortBy === 'price_low' ? sql`999999` : sql`0`} END
+           FROM product_variants v2 
+           WHERE v2.product_id = p.id 
+             AND ${currency === 'AED' ? sql`v2.available_aed = TRUE` : sql`v2.available_inr = TRUE`}
+           ORDER BY 
+             COALESCE(${currency === 'AED' ? sql`v2.discount_aed` : sql`v2.discount_inr`}, ${currency === 'AED' ? sql`v2.price_aed` : sql`v2.price_inr`}) ${sortBy === 'price_low' ? sql`ASC` : sql`DESC`}
+           LIMIT 1
+          ) ${sortBy === 'price_low' ? sql`ASC` : sql`DESC`},
+        ` : sortBy === 'name' ? sql`
+          p.name ASC,
+        ` : sortBy === 'newest' ? sql`
+          p.created_at DESC,
+        ` : sql``}
+        relevance_score DESC, p.is_featured DESC, p.is_new DESC, p.name ASC
       LIMIT ${limit}
     `
 

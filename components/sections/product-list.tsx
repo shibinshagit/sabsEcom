@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart } from "lucide-react"
+import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -202,6 +202,69 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [currentSearchQuery, setCurrentSearchQuery] = useState("")
   const [searchSortBy, setSearchSortBy] = useState("relevance")
+  const [isSearchLoading, setIsSearchLoading] = useState(false)
+  const [activeFilters, setActiveFilters] = useState<any>({})
+
+  // Apply filters to search results
+  const applyFilters = (items: any[], filters: any) => {
+    if (!filters || Object.keys(filters).length === 0) return items
+    
+    return items.filter(item => {
+      // Get the best available variant for filtering
+      const availableVariant = item.variants?.find((v: any) => 
+        selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+      ) || item.variants?.[0]
+
+      const originalPrice = selectedCurrency === 'AED' 
+        ? (availableVariant?.price_aed || 0)
+        : (availableVariant?.price_inr || 0)
+
+      const discountPrice = selectedCurrency === 'AED' 
+        ? (availableVariant?.discount_aed || 0)
+        : (availableVariant?.discount_inr || 0)
+
+      // A product has a discount only if:
+      // 1. Both original price and discount price exist and are > 0
+      // 2. Discount price is meaningfully less than original price (at least 1% difference)
+      const hasDiscount = originalPrice > 0 && 
+                         discountPrice > 0 && 
+                         discountPrice < originalPrice &&
+                         ((originalPrice - discountPrice) / originalPrice) >= 0.01
+
+      // Use discount price if available, otherwise original price
+      const currentPrice = hasDiscount ? discountPrice : originalPrice
+
+      // Apply discount filter
+      if (filters.discount && !hasDiscount) return false
+
+      // Calculate discount percentage for range filters
+      const discountPercentage = hasDiscount ? ((originalPrice - currentPrice) / originalPrice) * 100 : 0
+
+      // Apply discount percentage range filters
+      if (filters.discount_10_20 && (discountPercentage < 10 || discountPercentage >= 20)) return false
+      if (filters.discount_20_30 && (discountPercentage < 20 || discountPercentage >= 30)) return false
+      if (filters.discount_30_40 && (discountPercentage < 30 || discountPercentage >= 40)) return false
+      if (filters.discount_40_plus && discountPercentage < 40) return false
+
+      // Apply price range slider filter
+      if (filters.priceRange && Array.isArray(filters.priceRange)) {
+        const [minPrice, maxPrice] = filters.priceRange
+        if (currentPrice < minPrice || currentPrice > maxPrice) return false
+      }
+
+      // Apply featured filter
+      if (filters.featured && !item.is_featured) return false
+
+      // Apply new arrivals filter
+      if (filters.new_arrivals && !item.is_new) return false
+
+      return true
+    })
+  }
+
+  const handleFilterChange = (filters: any) => {
+    setActiveFilters(filters)
+  }
 
   // Use search API when there's a search term
   useEffect(() => {
@@ -209,16 +272,21 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     if (searchFromUrl && searchFromUrl.trim().length >= 2) {
       setIsSearchActive(true)
       setCurrentSearchQuery(searchFromUrl.trim())
+      setIsSearchLoading(true)
+      // Clear category selection when searching to show results across all categories
+      dispatch(setSelectedCategory(null))
       fetchSearchResults(searchFromUrl.trim(), searchSortBy)
     } else {
       setIsSearchActive(false)
       setSearchResults([])
       setCurrentSearchQuery("")
+      setIsSearchLoading(false)
     }
-  }, [searchParams, shop, selectedCurrency, selectedCategory, searchSortBy])
+  }, [searchParams, shop, selectedCurrency, searchSortBy, dispatch])
 
   const fetchSearchResults = async (query: string, sort: string = 'relevance') => {
     try {
+      setIsSearchLoading(true)
       const searchUrl = new URL('/api/products/search', window.location.origin)
       searchUrl.searchParams.set('q', query)
       searchUrl.searchParams.set('shop', shop)
@@ -232,10 +300,72 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
       const response = await fetch(searchUrl.toString())
       const searchData = await response.json()
       
-      setSearchResults(searchData.items || [])
+      let results = searchData.items || []
+      
+      // Apply client-side sorting for options not handled by API
+      if (sort === 'name') {
+        results = results.sort((a: any, b: any) => a.name.localeCompare(b.name))
+      } else if (sort === 'newest') {
+        results = results.sort((a: any, b: any) => {
+          // First priority: items with is_new flag
+          if (a.is_new && !b.is_new) return -1
+          if (!a.is_new && b.is_new) return 1
+          
+          // Second priority: creation date (newest first)
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
+      } else if (sort === 'price_low' || sort === 'price_high') {
+        results = results.sort((a: any, b: any) => {
+          const aVariant = a.variants?.find((v: any) => 
+            selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+          ) || a.variants?.[0]
+          const bVariant = b.variants?.find((v: any) => 
+            selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+          ) || b.variants?.[0]
+          
+          // Get the actual selling price (discount price if available, otherwise regular price)
+          const aPrice = selectedCurrency === 'AED' 
+            ? (aVariant?.discount_aed && aVariant.discount_aed > 0 ? aVariant.discount_aed : aVariant?.price_aed || 0)
+            : (aVariant?.discount_inr && aVariant.discount_inr > 0 ? aVariant.discount_inr : aVariant?.price_inr || 0)
+          const bPrice = selectedCurrency === 'AED' 
+            ? (bVariant?.discount_aed && bVariant.discount_aed > 0 ? bVariant.discount_aed : bVariant?.price_aed || 0)
+            : (bVariant?.discount_inr && bVariant.discount_inr > 0 ? bVariant.discount_inr : bVariant?.price_inr || 0)
+          
+          return sort === 'price_low' ? aPrice - bPrice : bPrice - aPrice
+        })
+      } else if (sort === 'discount') {
+        results = results.sort((a: any, b: any) => {
+          const aVariant = a.variants?.find((v: any) => 
+            selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+          ) || a.variants?.[0]
+          const bVariant = b.variants?.find((v: any) => 
+            selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+          ) || b.variants?.[0]
+          
+          // Calculate discount percentage for each product
+          const aOriginalPrice = selectedCurrency === 'AED' ? (aVariant?.price_aed || 0) : (aVariant?.price_inr || 0)
+          const aDiscountPrice = selectedCurrency === 'AED' ? (aVariant?.discount_aed || 0) : (aVariant?.discount_inr || 0)
+          const aDiscountPercent = aOriginalPrice > 0 && aDiscountPrice > 0 
+            ? Math.round(((aOriginalPrice - aDiscountPrice) / aOriginalPrice) * 100) 
+            : 0
+          
+          const bOriginalPrice = selectedCurrency === 'AED' ? (bVariant?.price_aed || 0) : (bVariant?.price_inr || 0)
+          const bDiscountPrice = selectedCurrency === 'AED' ? (bVariant?.discount_aed || 0) : (bVariant?.discount_inr || 0)
+          const bDiscountPercent = bOriginalPrice > 0 && bDiscountPrice > 0 
+            ? Math.round(((bOriginalPrice - bDiscountPrice) / bOriginalPrice) * 100) 
+            : 0
+          
+          // Sort by highest discount first
+          return bDiscountPercent - aDiscountPercent
+        })
+      }
+      
+      setSearchResults(results)
     } catch (error) {
       console.error('Search failed:', error)
       setSearchResults([])
+    } finally {
+      setIsSearchLoading(false)
     }
   }
 
@@ -250,10 +380,68 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     router.push('/products')
   }
 
-  // Updated filteredItems logic
-  const filteredItems = isSearchActive ? searchResults : currencyFilteredItems.filter((item) => {
+  // Updated filteredItems logic with filters applied
+  const baseFilteredItems = isSearchActive ? searchResults : currencyFilteredItems.filter((item) => {
     return selectedCategory === null || item.category_id === selectedCategory
   })
+  
+  // Apply sorting to regular products (non-search)
+  const sortedBaseItems = !isSearchActive && searchSortBy !== 'relevance' ? 
+    [...baseFilteredItems].sort((a: any, b: any) => {
+      if (searchSortBy === 'name') {
+        return a.name.localeCompare(b.name)
+      } else if (searchSortBy === 'newest') {
+        // First priority: items with is_new flag
+        if (a.is_new && !b.is_new) return -1
+        if (!a.is_new && b.is_new) return 1
+        
+        // Second priority: creation date (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      } else if (searchSortBy === 'price_low' || searchSortBy === 'price_high') {
+        const aVariant = a.variants?.find((v: any) => 
+          selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+        ) || a.variants?.[0]
+        const bVariant = b.variants?.find((v: any) => 
+          selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+        ) || b.variants?.[0]
+        
+        // Get the actual selling price (discount price if available, otherwise regular price)
+        const aPrice = selectedCurrency === 'AED' 
+          ? (aVariant?.discount_aed && aVariant.discount_aed > 0 ? aVariant.discount_aed : aVariant?.price_aed || 0)
+          : (aVariant?.discount_inr && aVariant.discount_inr > 0 ? aVariant.discount_inr : aVariant?.price_inr || 0)
+        const bPrice = selectedCurrency === 'AED' 
+          ? (bVariant?.discount_aed && bVariant.discount_aed > 0 ? bVariant.discount_aed : bVariant?.price_aed || 0)
+          : (bVariant?.discount_inr && bVariant.discount_inr > 0 ? bVariant.discount_inr : bVariant?.price_inr || 0)
+        
+        return searchSortBy === 'price_low' ? aPrice - bPrice : bPrice - aPrice
+      } else if (searchSortBy === 'discount') {
+        const aVariant = a.variants?.find((v: any) => 
+          selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+        ) || a.variants?.[0]
+        const bVariant = b.variants?.find((v: any) => 
+          selectedCurrency === 'AED' ? v.available_aed : v.available_inr
+        ) || b.variants?.[0]
+        
+        // Calculate discount percentage for each product
+        const aOriginalPrice = selectedCurrency === 'AED' ? (aVariant?.price_aed || 0) : (aVariant?.price_inr || 0)
+        const aDiscountPrice = selectedCurrency === 'AED' ? (aVariant?.discount_aed || 0) : (aVariant?.discount_inr || 0)
+        const aDiscountPercent = aOriginalPrice > 0 && aDiscountPrice > 0 
+          ? Math.round(((aOriginalPrice - aDiscountPrice) / aOriginalPrice) * 100) 
+          : 0
+        
+        const bOriginalPrice = selectedCurrency === 'AED' ? (bVariant?.price_aed || 0) : (bVariant?.price_inr || 0)
+        const bDiscountPrice = selectedCurrency === 'AED' ? (bVariant?.discount_aed || 0) : (bVariant?.discount_inr || 0)
+        const bDiscountPercent = bOriginalPrice > 0 && bDiscountPrice > 0 
+          ? Math.round(((bOriginalPrice - bDiscountPrice) / bOriginalPrice) * 100) 
+          : 0
+        
+        // Sort by highest discount first
+        return bDiscountPercent - aDiscountPercent
+      }
+      return 0
+    }) : baseFilteredItems
+  
+  const filteredItems = applyFilters(sortedBaseItems, activeFilters)
 
   const shouldShowSpinButton = authInitialized && !isAuthenticated && !showSpinner
 
@@ -289,6 +477,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         sortBy={searchSortBy}
         onSortChange={handleSortChange}
         onClearSearch={handleClearSearch}
+        onFilterChange={handleFilterChange}
+        products={sortedBaseItems}
       />
 
       {/* Blur Overlay with Animation */}
@@ -344,8 +534,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
           </div>
         </div>
 
-        {/* Lightning Deals Section */}
-    {lightningDeals.length > 0 && (
+        {/* Lightning Deals Section - Only show when not searching */}
+    {lightningDeals.length > 0 && !isSearchActive && (
   <div className="px-4 lg:px-6 mt-6">
     <div className="max-w-7xl mx-auto">
     
@@ -508,13 +698,37 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         {/* Main Products Grid */}
         <div className="px-4 lg:px-6 mt-6 pb-8">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-4 lg:mb-6">
-              <div className="flex items-center gap-2">
-                <Tag className="w-5 h-5 text-green-500" />
-                <span className="font-bold text-lg lg:text-xl">Fast Selling Products</span>
+            {/* Show section header only when not searching */}
+            {!isSearchActive && (
+              <div className="flex items-center justify-between mb-4 lg:mb-6">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-green-500" />
+                  <span className="font-bold text-lg lg:text-xl">Fast Selling Products</span>
+                </div>
+                <ChevronDown className="w-5 h-5 text-gray-400" />
               </div>
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            </div>
+            )}
+            
+            {/* Show unified search results header when searching */}
+            {isSearchActive && (
+              <div className="flex items-center justify-between mb-4 lg:mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <span className="font-bold text-lg lg:text-xl">Search Results</span>
+                  <span className="text-gray-500">({filteredItems.length} products)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            )}
             {loading ? (
               <div
                 className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
@@ -579,12 +793,12 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
     <div key={item.id} className="cursor-pointer">
       <Card
         className={`bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group ${
-          viewMode === "list" ? "flex" : ""
+          viewMode === "list" ? "flex items-center" : ""
         }`}
       >
         <div
           className={`relative ${
-            viewMode === "list" ? "w-48 flex-shrink-0" : ""
+            viewMode === "list" ? "w-32 h-32 flex-shrink-0" : ""
           }`}
         >
           <Image
@@ -599,7 +813,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
             width={200}
             height={200}
             className={`object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer ${
-              viewMode === "list" ? "w-full h-full" : "w-full h-40 lg:h-48"
+              viewMode === "list" ? "w-32 h-32 rounded-lg" : "w-full h-40 lg:h-48"
             }`}
           />
 
@@ -686,9 +900,13 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
                             )}
           </div>
 
-          {/* Truncated Product Name */}
-          <h3 className="text-sm lg:text-base font-medium text-gray-900 line-clamp-2 mb-2">
-            {item.name.length > 15 ? item.name.slice(0, 17) + "..." : item.name}
+          {/* Product Name */}
+          <h3 className={`font-medium text-gray-900 mb-2 ${
+            viewMode === "list" 
+              ? "text-base lg:text-lg line-clamp-2" 
+              : "text-sm lg:text-base line-clamp-2"
+          }`}>
+            {viewMode === "list" ? item.name : (item.name.length > 15 ? item.name.slice(0, 17) + "..." : item.name)}
           </h3>
 
           {viewMode === "list" && (
@@ -701,7 +919,11 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
 <div className="flex gap-2">
   <Button
     onClick={() => router.push(`/product/${item.id}`)}
-    className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+    className={`flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 flex items-center justify-center gap-2 ${
+      viewMode === "list" 
+        ? "hover:from-orange-600 hover:to-red-600 hover:scale-102" 
+        : "hover:from-orange-600 hover:to-red-600 hover:scale-105"
+    } active:scale-95`}
     disabled={!item.is_available}
   >
     {item.is_available ? (
@@ -736,8 +958,23 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
 
               </div>
             )}
+            {/* Loading state for search */}
+            {isSearchLoading && (
+              <div className="text-center py-16">
+                <div className="flex justify-center mb-4">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Searching for "{searchParams.get("search")}"...
+                </h3>
+                <p className="text-gray-500">
+                  Finding the best products for you
+                </p>
+              </div>
+            )}
+            
             {/* Updated no products found section */}
-            {filteredItems.length === 0 && !loading && (
+            {filteredItems.length === 0 && !loading && !isSearchLoading && (
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🔍</div>
                 {searchParams.get("search") ? (

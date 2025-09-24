@@ -14,10 +14,10 @@ export default function HomePage() {
 
       <Navbar />
       {!isAuthenticated && <NewUserSpinnerSection />}
-      <Services />
       <Suspense fallback={<div>Loading navbar...</div>}>
         <ProductList />
       </Suspense>
+      <Services />
       <Footer />
     </main>
   )
