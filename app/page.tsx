@@ -9,7 +9,6 @@ import { Suspense } from "react"
 
 export default function HomePage() {
   const { isAuthenticated } = useAuth()
-
   return (
     <main className="min-h-screen">
 
