@@ -347,7 +347,7 @@ export default function LoginModal({
                 </div>
 
                 {/* Mode Tabs */}
-                <Tabs value={mode} onValueChange={handleModeChange} className="w-full">
+                <Tabs value={mode} onValueChange={(value) => handleModeChange(value as "login" | "register" | "forgot-password")} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-4">
                     <TabsTrigger value="login">Login</TabsTrigger>
                     <TabsTrigger value="register">Register</TabsTrigger>

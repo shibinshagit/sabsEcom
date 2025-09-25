@@ -12,6 +12,7 @@ interface Country {
   name: string
   currency: string
   flag: string
+  flagSvg: string
 }
 
 const countries: Country[] = [
@@ -19,13 +20,15 @@ const countries: Country[] = [
     code: "IN",
     name: "INDIA",
     currency: "INR",
-    flag: "🇮🇳"
+    flag: "🇮🇳",
+    flagSvg: "/Flag_of_India.svg"
   },
   {
     code: "AE",
     name: "UAE",
     currency: "AED",
-    flag: "🇦🇪"
+    flag: "🇦🇪",
+    flagSvg: "/Flag_of_the_United_Arab_Emirates.svg"
   }
 ]
 
@@ -128,7 +131,19 @@ export default function CountrySelectionModal({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="text-2xl sm:text-3xl">{country.flag}</div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex-shrink-0">
+                      <Image
+                        src={country.flagSvg}
+                        alt={`${country.name} flag`}
+                        fill
+                        className={`rounded-full border-2 border-gray-200 shadow-sm ${
+                          country.code === 'AE' 
+                            ? 'object-cover object-[20%]' 
+                            : 'object-cover object-center'
+                        }`}
+                        sizes="(max-width: 640px) 40px, 48px"
+                      />
+                    </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 text-lg sm:text-xl">
                         {country.name}
