@@ -9,7 +9,7 @@ interface UseShopSwitchPopupOptions {
 
 export function useShopSwitchPopup({
   intervalMinutes = 15, // Show every 15 minutes
-  initialDelayMinutes = 5, // Wait 5 minutes before first show
+  initialDelayMinutes = 10, // Wait 5 minutes before first show
   maxShowsPerSession = 2 // Max 2 times per session
 }: UseShopSwitchPopupOptions = {}) {
   const [isPopupOpen, setIsPopupOpen] = useState(false)

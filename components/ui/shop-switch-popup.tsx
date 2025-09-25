@@ -44,7 +44,7 @@ export default function ShopSwitchPopup({ isOpen, onClose, onSwitchShop }: ShopS
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div 

@@ -59,7 +59,7 @@ export default function FloatingShopAd({ isVisible, onClose, onSwitchShop }: Flo
 
   return (
     <div 
-      className={`fixed right-4 top-1/2 transform -translate-y-1/2 z-40 transition-all duration-500 ${
+      className={`fixed right-4 top-1/2 transform -translate-y-1/2 z-[10000] transition-all duration-500 ${
         isAnimating ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
       style={{ maxWidth: '280px' }}

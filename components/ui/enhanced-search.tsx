@@ -280,7 +280,7 @@ export default function EnhancedSearch({
                   <div className="flex items-center gap-2">
                     {/* <Sparkles className="w-4 h-4 text-blue-500" /> */}
                     <span className="text-sm font-medium text-gray-700">
-                      Found {searchResults.length} result{searchResults.length > 1 ? 's' : ''} in Shop {shop}
+                      Found {searchResults.length} result{searchResults.length > 1 ? 's' : ''} in Shop {shop === "A" ? "Beauty" : "Style"}
                     </span>
                   </div>
                 </div>

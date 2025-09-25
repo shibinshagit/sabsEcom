@@ -1138,7 +1138,7 @@ function Nav() {
 
             {/* Mobile Navigation Menu */}
             {isOpen && (
-              <div className="mt-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl max-h-[80vh] overflow-hidden">
+              <div className="mt-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl max-h-[40vh] overflow-hidden">
                 {loading ? (
                   <div className="space-y-2 p-4">
                     <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-full"></div>
@@ -1146,7 +1146,7 @@ function Nav() {
                     <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-1/2"></div>
                   </div>
                 ) : (
-                  <div className="overflow-y-auto max-h-[80vh]">
+                  <div className="overflow-y-auto max-h-[40vh]">
                     <div className="p-4 space-y-2">
                       {/* All Products - Featured */}
                       <Link

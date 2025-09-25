@@ -492,7 +492,7 @@ export default function SearchFilters({
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 bg-white border-2 border-gray-100 shadow-xl rounded-xl p-2 backdrop-blur-sm">
+              <DropdownMenuContent align="end" className="min-w-[14rem] w-56 max-h-[40vh] overflow-y-auto bg-white border-2 border-gray-100 shadow-xl rounded-xl p-2 backdrop-blur-sm z-[9999]">
                 <DropdownMenuLabel className="text-sm text-gray-700 font-semibold px-3 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg mb-2">
                   🔍 Filter Results
                 </DropdownMenuLabel>
@@ -651,7 +651,7 @@ export default function SearchFilters({
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-40 bg-white border-2 border-gray-100 shadow-xl rounded-xl p-2 backdrop-blur-sm">
+              <DropdownMenuContent align="start" className="min-w-[12rem] w-48 max-h-[40vh] overflow-y-auto bg-white border-2 border-gray-100 shadow-xl rounded-xl p-2 backdrop-blur-sm z-[9999]">
                 <DropdownMenuLabel className="text-sm text-gray-700 font-semibold px-3 py-2 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg mb-2">
                   📊 Sort Results
                 </DropdownMenuLabel>
