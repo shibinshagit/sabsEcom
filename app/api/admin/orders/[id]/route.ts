@@ -24,12 +24,24 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
     const currencySymbol = currency === 'AED' ? 'AED' : '₹'
 
     // Only send emails for specific status changes
-    if (!['out for delivery', 'delivered'].includes(newStatus)) {
+    if (!['confirmed', 'dispatched', 'out for delivery', 'delivered'].includes(newStatus)) {
       console.log(`Skipping email for status: ${newStatus}`)
       return
     }
 
     const statusMessages = {
+      'confirmed': {
+        emoji: '✅',
+        title: 'Order Confirmed!',
+        message: 'Your order has been confirmed and is being prepared.',
+        color: '#3b82f6'
+      },
+      'dispatched': {
+        emoji: '📦',
+        title: 'Order Shipped!',
+        message: 'Your order has been shipped and is on its way to you.',
+        color: '#f97316'
+      },
       'out for delivery': {
         emoji: '🚚',
         title: 'Your Order is Out for Delivery!',
@@ -272,10 +284,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const order = result[0]
     console.log(`Order ${id} status updated from ${previousStatus} to ${status}`)
 
-    // Send status update email if status changed to "out for delivery" or "delivered"
-    if (status !== previousStatus) {
+    // Send status update email if status changed OR if tracking is being added for first time
+    const hadPreviousTracking = currentOrder.tracking_url || currentOrder.tracking_id
+    const hasNewTracking = tracking_url || tracking_id
+    const isFirstTimeTracking = !hadPreviousTracking && hasNewTracking
+    
+    if (status !== previousStatus || isFirstTimeTracking) {
       try {
         await sendStatusUpdateEmail(order, status, tracking_url, tracking_id)
+        if (isFirstTimeTracking) {
+          console.log(`First-time tracking email sent for order ${id} with status: ${status}`)
+        }
       } catch (emailError) {
         console.error('Failed to send status update email:', emailError)
         // Continue with the response even if email fails

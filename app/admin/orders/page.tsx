@@ -126,8 +126,9 @@ export default function OrdersManagement() {
 
       // Find the order to get item details for stock reduction
       const order = orders.find(o => o.id === orderId)
-      const trackingUrl = trackingUrls[orderId] || ''
-      const trackingId = trackingIds[orderId] || ''
+      // Preserve existing tracking info if no new tracking info is entered
+      const trackingUrl = trackingUrls[orderId] || order?.tracking_url || ''
+      const trackingId = trackingIds[orderId] || order?.tracking_id || ''
 
       const response = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PUT",
@@ -174,6 +175,91 @@ export default function OrdersManagement() {
       setError(error instanceof Error ? error.message : "Failed to update order status")
 
       alert(`Failed to update order status: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const handleSaveTracking = async (orderId: number) => {
+    try {
+      setUpdating(orderId)
+      console.log(`Saving tracking info for order ${orderId}`)
+
+      const trackingUrl = trackingUrls[orderId] || ''
+      const trackingId = trackingIds[orderId] || ''
+
+      if (!trackingUrl && !trackingId) {
+        alert('Please enter tracking URL or tracking ID')
+        return
+      }
+
+      const response = await fetch(`/api/admin/orders/${orderId}/tracking`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tracking_url: trackingUrl,
+          tracking_id: trackingId,
+          send_notification: true
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log("Tracking info saved successfully:", result)
+
+        // Update the order in state with the actual values from API response
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === orderId
+              ? {
+                ...order,
+                tracking_url: result.tracking_url,
+                tracking_id: result.tracking_id,
+                updated_at: new Date().toISOString()
+              }
+              : order
+          )
+        )
+
+        // Update selected order if it's the current one
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(prev => prev ? {
+            ...prev,
+            tracking_url: result.tracking_url,
+            tracking_id: result.tracking_id
+          } : null)
+        }
+
+        // Clear the temporary state
+        setTrackingUrls(prev => {
+          const updated = { ...prev }
+          delete updated[orderId]
+          return updated
+        })
+        setTrackingIds(prev => {
+          const updated = { ...prev }
+          delete updated[orderId]
+          return updated
+        })
+
+        // Show different success message based on order status and existing tracking
+        const order = orders.find(o => o.id === orderId)
+        const notificationStatuses = ['confirmed', 'dispatched', 'out for delivery', 'delivered']
+        const willNotify = order && notificationStatuses.includes(order.status.toLowerCase())
+        const hadExistingTracking = order && (order.tracking_url || order.tracking_id)
+        
+        const action = hadExistingTracking ? 'updated' : 'saved'
+        alert(willNotify 
+          ? `Tracking information ${action} and customer notified successfully!`
+          : `Tracking information ${action}!`
+        )
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to save tracking information")
+      }
+    } catch (error) {
+      console.error("Failed to save tracking info:", error)
+      alert(`Failed to save tracking information: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setUpdating(null)
     }
@@ -572,6 +658,38 @@ export default function OrdersManagement() {
                                         <p className="text-xs text-gray-400 mt-2">
                                           Tracking details automatically sent in status update emails
                                         </p>
+                                        
+                                        {/* Submit Button for Tracking */}
+                                        {(trackingUrls[selectedOrder.id] || trackingIds[selectedOrder.id]) && (
+                                          <div className="mt-4 pt-3 border-t border-gray-600">
+                                            <Button
+                                              onClick={() => handleSaveTracking(selectedOrder.id)}
+                                              disabled={updating === selectedOrder.id}
+                                              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                                            >
+                                              {updating === selectedOrder.id ? (
+                                                <>
+                                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                  Saving Tracking...
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Package className="w-4 h-4 mr-2" />
+                                                  {(() => {
+                                                    const hasExistingTracking = selectedOrder.tracking_url || selectedOrder.tracking_id
+                                                    const willNotify = ['confirmed', 'dispatched', 'out for delivery', 'delivered'].includes(selectedOrder.status.toLowerCase())
+                                                    
+                                                    if (hasExistingTracking) {
+                                                      return willNotify ? 'Update Tracking & Notify Customer' : 'Update Tracking'
+                                                    } else {
+                                                      return willNotify ? 'Save Tracking & Notify Customer' : 'Save Tracking'
+                                                    }
+                                                  })()}
+                                                </>
+                                              )}
+                                            </Button>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </div>

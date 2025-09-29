@@ -55,16 +55,23 @@ const OrderTimeline = ({ currentStatus }: { currentStatus: string }) => {
     },
     { 
       status: 'dispatched', 
-      label: 'Dispatched',
-      description: 'Out for delivery',
+      label: 'Shipped',
+      description: 'Package shipped',
       icon: Send,
       color: 'text-orange-500'
+    },
+    { 
+      status: 'out for delivery', 
+      label: 'Out for Delivery',
+      description: 'On the way to you',
+      icon: Truck,
+      color: 'text-indigo-500'
     },
     { 
       status: 'delivered', 
       label: 'Delivered',
       description: 'Order delivered',
-      icon: Truck,
+      icon: CheckCircle,
       color: 'text-green-500'
     }
   ]
@@ -524,7 +531,7 @@ export default function OrdersPage() {
                   <OrderTimeline currentStatus={order.status} />
 
                   {/* Tracking Information */}
-                  {(order.tracking_url || order.tracking_id) && (
+                  {(order.tracking_url || order.tracking_id) && order.status !== 'cancel' && (
                     <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4">
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start sm:items-center gap-3">
@@ -641,6 +648,12 @@ export default function OrdersPage() {
                             <span className="font-medium">FREE! 🎉</span>
                           </div>
                         )}
+                        {(order as any).discount_amount && Number((order as any).discount_amount) > 0 && (
+                          <div className="flex justify-between text-green-600">
+                            <span>🎉 Coupon Discount {(order as any).coupon_code ? `(${(order as any).coupon_code})` : ''}</span>
+                            <span className="font-bold">-{formatCurrency((order as any).discount_amount, order.currency)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between font-bold text-sm sm:text-base border-t pt-2 text-orange-600">
                           <span>Total Amount</span>
                           <span>{formatCurrency(order.final_total || order.total_amount, order.currency)}</span>
@@ -648,6 +661,8 @@ export default function OrdersPage() {
                       </div>
                     </div>
                   </div>
+
+
 
                   {order.special_instructions && (
                     <div className="mt-3 sm:mt-4 p-3 bg-gray-50 rounded-lg">
