@@ -115,6 +115,7 @@ const [formData, setFormData] = useState({
       discount_inr: 0,
       available_aed: true,
       available_inr: true,
+      stock_quantity: 0,
     }
   ],
   condition_type: "none",
@@ -129,6 +130,8 @@ const [formData, setFormData] = useState({
     fetchProducts()
     fetchCategories()
   }, [])
+
+
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -260,8 +263,8 @@ const resetForm = () => {
     name: "",
     description: "",
     image_urls: [], // Changed from image_url to empty array
-    category_id: 0,
-    shop_category: "Both",
+    category_id: categories.length > 0 ? categories[0].id : 0,
+    shop_category: "Both" as "A" | "B" | "Both",
     store_name: "",
     is_available: true,
     is_featured: false,
@@ -303,7 +306,7 @@ const openEditDialog = (item: Product) => {
     image_urls: Array.isArray(item.image_urls) ? item.image_urls :
                 (item.image_urls ? [item.image_urls as any] : []), // Handle backward compatibility
     category_id: item.category_id,
-    shop_category: item.shop_category || "Both",
+    shop_category: (item.shop_category as "A" | "B" | "Both") || "Both",
     store_name: item.store_name || "",
     is_available: item.is_available,
     is_featured: item.is_featured,
@@ -321,7 +324,11 @@ const openEditDialog = (item: Product) => {
     is_new: item.is_new || false,
     new_until_date: item.new_until_date || "",
     variants: Array.isArray(item.variants) && item.variants.length > 0
-    ? item.variants
+    ? item.variants.map(variant => ({
+        ...variant,
+        discount_aed: variant.discount_aed || 0,
+        discount_inr: variant.discount_inr || 0,
+      }))
     : [{
         id: Date.now(),
         name: "",
@@ -663,15 +670,17 @@ const formatPrice = (product: Product) => {
                   <Label htmlFor="shop_category">Shop *</Label>
                   <Select
                     value={formData.shop_category}
-                    onValueChange={(value) => setFormData({ ...formData, shop_category: value })}
+                    onValueChange={(value: "A" | "B" | "Both") => {
+                      setFormData(prev => ({ ...prev, shop_category: value }));
+                    }}
                     required
                   >
                     <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                       <SelectValue placeholder="Select a shop (required)" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent className="bg-gray-700 border-gray-600" style={{ zIndex: 99999 }} position="popper">
                       {shops.map((shop) => (
-                        <SelectItem key={shop.id} value={shop.id} className="text-white">
+                        <SelectItem key={shop.id} value={shop.id} className="text-white hover:bg-gray-600">
                           <div className="flex items-center space-x-2">
                             <Store className="w-4 h-4" />
                             <span>{shop.label}</span>
@@ -685,16 +694,19 @@ const formatPrice = (product: Product) => {
                 <div>
                   <Label htmlFor="category">Category *</Label>
                   <Select
-                    value={formData.category_id.toString()}
-                    onValueChange={(value) => setFormData({ ...formData, category_id: Number(value) })}
+                    value={formData.category_id > 0 ? formData.category_id.toString() : ""}
+                    onValueChange={(value: string) => {
+                      setFormData(prev => ({ ...prev, category_id: Number(value) }));
+                    }}
                     required
+                    disabled={categories.length === 0}
                   >
                     <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue placeholder="Select a category (required)" />
+                      <SelectValue placeholder={categories.length === 0 ? "Loading categories..." : "Select a category (required)"} />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent className="bg-gray-700 border-gray-600" style={{ zIndex: 99999 }} position="popper">
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()} className="text-white">
+                        <SelectItem key={category.id} value={category.id.toString()} className="text-white hover:bg-gray-600">
                           {category.name}
                         </SelectItem>
                       ))}
@@ -756,18 +768,20 @@ const formatPrice = (product: Product) => {
                   <Label htmlFor="condition_type">Condition</Label>
                   <Select
                     value={formData.condition_type}
-                    onValueChange={(value) => setFormData({ ...formData, condition_type: value })}
+                    onValueChange={(value: string) => {
+                      setFormData(prev => ({ ...prev, condition_type: value }));
+                    }}
                   >
                     <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue />
+                      <SelectValue placeholder="Select condition" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
-                      <SelectItem value="none" className="text-white">None</SelectItem>
-                      <SelectItem value="master" className="text-white">Master</SelectItem>
-                      <SelectItem value="first-copy" className="text-white">1st Copy</SelectItem>
-                      <SelectItem value="second-copy" className="text-white">2nd Copy</SelectItem>
-                      <SelectItem value="hot" className="text-white">Hot</SelectItem>
-                      <SelectItem value="sale" className="text-white">Sale</SelectItem>
+                    <SelectContent className="bg-gray-700 border-gray-600" style={{ zIndex: 99999 }} position="popper">
+                      <SelectItem value="none" className="text-white hover:bg-gray-600">None</SelectItem>
+                      <SelectItem value="master" className="text-white hover:bg-gray-600">Master</SelectItem>
+                      <SelectItem value="first-copy" className="text-white hover:bg-gray-600">1st Copy</SelectItem>
+                      <SelectItem value="second-copy" className="text-white hover:bg-gray-600">2nd Copy</SelectItem>
+                      <SelectItem value="hot" className="text-white hover:bg-gray-600">Hot</SelectItem>
+                      <SelectItem value="sale" className="text-white hover:bg-gray-600">Sale</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1384,7 +1398,7 @@ const formatPrice = (product: Product) => {
           <span className="text-cyan-400 line-through font-medium">
             {variant.price_aed}
           </span>
-          {variant.discount_aed > 0 && (
+          {variant.discount_aed && variant.discount_aed > 0 && (
             <span className="text-green-400 ml-2">
               {variant.discount_aed}
             </span>
@@ -1401,7 +1415,7 @@ const formatPrice = (product: Product) => {
           <span className="text-orange-400 line-through font-medium">
             ₹{variant.price_inr}
           </span>
-          {variant.discount_inr > 0 && (
+          {variant.discount_inr && variant.discount_inr > 0 && (
             <span className="text-green-400 ml-2">
               ₹{variant.discount_inr}
             </span>

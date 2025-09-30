@@ -5,11 +5,11 @@ export async function GET() {
   try {
     const menuItems = await sql`
       SELECT 
-        m.*,
+        p.*,
         c.name as category_name
-      FROM menu_items m
-      LEFT JOIN categories c ON m.category_id = c.id
-      ORDER BY c.sort_order, c.name, m.name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      ORDER BY c.sort_order, c.name, p.name
     `
 
     return NextResponse.json(menuItems)
