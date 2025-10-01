@@ -12,7 +12,7 @@ import { CurrencyProvider } from '@/lib/contexts/currency-context'
 import WishlistSync from '@/components/wishlist-sync'
 import CartSync from '@/components/cart-sync'
 import { Toaster } from 'react-hot-toast'
-import CountrySelectionWrapper from '@/components/ui/country-selection-wrapper'
+import ConditionalCountrySelection from '@/components/ui/conditional-country-selection'
 
 import {
   ClerkProvider,
@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     <WishlistSync />
                     <CartSync />
                     <UserNavVisibility />
-                    <CountrySelectionWrapper />
+                    <ConditionalCountrySelection />
                     <Toaster 
                       position="top-center"
                       toastOptions={{

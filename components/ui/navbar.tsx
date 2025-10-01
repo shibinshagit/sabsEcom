@@ -1015,19 +1015,31 @@ function Nav() {
                   <div className="animate-pulse bg-white/20 rounded-full px-3 py-1 h-6 w-20"></div>
                 </div>
               ) : (
-                navigation.slice(0, 6).map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={(e) => handleNavClick(item, e)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                      ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
-                      : "text-white hover:bg-white/20"
-                      }`}
-                  >
-                    {item.name}
-                  </Link>
-                ))
+                navigation.slice(0, 6).map((item) => {
+                  const isSpecial = (item as any).isCategory && categories.find(cat => cat.id === (item as any).categoryId)?.is_special;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={(e) => handleNavClick(item, e)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
+                        : "text-white hover:bg-white/20"
+                        }`}
+                    >
+                      <span className={`flex items-center gap-1 ${
+                        isSpecial 
+                          ? `animate-pulse font-bold ${shop === "A" ? "drop-shadow-[0_0_8px_rgba(251,146,60,0.8)]" : "drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"}` 
+                          : ""
+                      }`}>
+                        {item.name}
+                        {isSpecial && (
+                          <span className="text-yellow-300 animate-pulse drop-shadow-[0_0_4px_rgba(253,224,71,0.8)]">✨</span>
+                        )}
+                      </span>
+                    </Link>
+                  )
+                })
               )}
             </div>
           </div>
@@ -1120,19 +1132,31 @@ function Nav() {
                   <div className="animate-pulse bg-white/20 rounded-full px-3 py-1 h-6 w-16"></div>
                 </div>
               ) : (
-                navigation.slice(0, 6).map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={(e) => handleNavClick(item, e)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                      ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
-                      : "text-white hover:bg-white/20"
-                      }`}
-                  >
-                    {item.name}
-                  </Link>
-                ))
+                navigation.slice(0, 6).map((item) => {
+                  const isSpecial = (item as any).isCategory && categories.find(cat => cat.id === (item as any).categoryId)?.is_special;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={(e) => handleNavClick(item, e)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
+                        : "text-white hover:bg-white/20"
+                        }`}
+                    >
+                      <span className={`flex items-center gap-1 ${
+                        isSpecial 
+                          ? `animate-pulse font-bold ${shop === "A" ? "drop-shadow-[0_0_8px_rgba(251,146,60,0.8)]" : "drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"}` 
+                          : ""
+                      }`}>
+                        {item.name}
+                        {isSpecial && (
+                          <span className="text-yellow-300 animate-pulse drop-shadow-[0_0_4px_rgba(253,224,71,0.8)]">✨</span>
+                        )}
+                      </span>
+                    </Link>
+                  )
+                })
               )}
             </div>
 
@@ -1186,24 +1210,42 @@ function Nav() {
                                     handleNavClick(item, e)
                                     setIsOpen(false)
                                   }}
-                                  className={`block px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
+                                  className={`block px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg relative overflow-hidden ${
                                     isActiveCategoryLink(item)
                                       ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
                                       : `text-gray-600 hover:bg-gray-50`
                                   } ${
                                     category.is_special 
-                                      ? `border-l-4 ${shop === "A" ? "border-orange-500 bg-orange-100/70" : "border-purple-400 bg-purple-50/50"}` 
+                                      ? `border-l-4 ${shop === "A" ? "border-orange-500 bg-gradient-to-r from-orange-100/70 to-amber-50/50" : "border-purple-400 bg-gradient-to-r from-purple-50/50 to-pink-50/30"} shadow-md` 
                                       : ""
                                   }`}
                                 >
-                                  <div className="flex items-center justify-between">
-                                    <span>{category.name}</span>
+                                  {category.is_special && (
+                                    <div className={`absolute inset-0 bg-gradient-to-r ${
+                                      shop === "A" 
+                                        ? "from-orange-200/20 via-amber-200/30 to-yellow-200/20" 
+                                        : "from-purple-200/20 via-pink-200/30 to-indigo-200/20"
+                                    } animate-pulse`}></div>
+                                  )}
+                                  <div className="flex items-center justify-between relative z-10">
+                                    <span className={category.is_special ? "font-semibold" : ""}>{category.name}</span>
                                     {category.is_special && (
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse ${
+                                        shop === "A" 
+                                          ? "bg-gradient-to-r from-orange-400 to-amber-500 text-white" 
+                                          : "bg-gradient-to-r from-purple-400 to-pink-500 text-white"
+                                      }`}>
                                         ✨ Special
                                       </span>
                                     )}
                                   </div>
+                                  {category.is_special && (
+                                    <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${
+                                      shop === "A" 
+                                        ? "from-transparent via-orange-400 to-transparent" 
+                                        : "from-transparent via-purple-400 to-transparent"
+                                    } animate-pulse`}></div>
+                                  )}
                                 </Link>
                               )
                             })}

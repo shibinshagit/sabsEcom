@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertCircle, Save, SettingsIcon, Store, MapPin, CreditCard } from "lucide-react"
+import { AlertCircle, Save, SettingsIcon, Store, MapPin, CreditCard, Zap, Timer, ToggleLeft } from "lucide-react"
+import { useShop } from "@/lib/contexts/shop-context"
 import ImageUploadSingle from "@/components/ui/ImageUploadSingle"
 
 interface Setting {
@@ -29,11 +30,12 @@ interface OpeningHours {
   sunday: string
 }
 
-export default function SettingsPage() {
+export default function AdminSettings() {
   const [settings, setSettings] = useState<Setting[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { shop, setShop } = useShop()
   const [openingHours, setOpeningHours] = useState<OpeningHours>({
     monday: "5:00 PM - 10:00 PM",
     tuesday: "5:00 PM - 10:00 PM",
@@ -43,10 +45,34 @@ export default function SettingsPage() {
     saturday: "5:00 PM - 11:00 PM",
     sunday: "4:00 PM - 9:00 PM",
   })
+  const [shopFeaturesSettings, setShopFeaturesSettings] = useState({
+    popup_enabled: 'true',
+    popup_initial_delay: '10',
+    popup_interval: '15',
+    popup_max_shows: '2',
+    floating_ad_enabled: 'true',
+    floating_ad_scroll_trigger: '400',
+    floating_ad_duration: '2',
+    floating_ad_cooldown: '4',
+    floating_ad_max_shows: '3'
+  })
 
   useEffect(() => {
     fetchSettings()
+    fetchShopFeaturesSettings()
   }, [])
+
+  const fetchShopFeaturesSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/shop-features')
+      if (response.ok) {
+        const data = await response.json()
+        setShopFeaturesSettings(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch shop features settings:', error)
+    }
+  }
 
   const fetchSettings = async () => {
     setLoading(true)
@@ -107,6 +133,45 @@ export default function SettingsPage() {
 
   const getSetting = (key: string): string => {
     return settings.find((s) => s.key === key)?.value || ""
+  }
+
+  const updateShopFeaturesSetting = (key: string, value: string) => {
+    setShopFeaturesSettings(prev => ({
+      ...prev,
+      [key]: value
+    }))
+  }
+
+  const getShopFeaturesSetting = (key: string): string => {
+    return shopFeaturesSettings[key as keyof typeof shopFeaturesSettings] || ""
+  }
+
+  const saveShopFeaturesSettings = async () => {
+    setSaving(true)
+    try {
+      // Save each setting individually
+      const promises = Object.entries(shopFeaturesSettings).map(([key, value]) =>
+        fetch('/api/admin/shop-features', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ key, value }),
+        })
+      )
+
+      await Promise.all(promises)
+      
+      // Show success message
+      setError(null)
+      // You could add a success toast here
+      
+    } catch (error) {
+      console.error('Failed to save shop features settings:', error)
+      setError('Failed to save shop features settings')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleSave = async () => {
@@ -227,6 +292,14 @@ export default function SettingsPage() {
       >
         <SettingsIcon className="w-4 h-4" />
         Appearance
+      </TabsTrigger>
+
+      <TabsTrigger
+        value="shop-features"
+        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+      >
+        <Zap className="w-4 h-4" />
+        Shop Features
       </TabsTrigger>
     </TabsList>
   </div>
@@ -456,6 +529,219 @@ export default function SettingsPage() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="shop-features">
+          <div className="space-y-6">
+            {/* Shop Switch Popup Settings */}
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <ToggleLeft className="w-5 h-5" />
+                  Shop Switch Popup Settings
+                </CardTitle>
+                <p className="text-gray-400 text-sm">
+                  Control when and how often the shop switch popup appears to encourage users to explore both shops
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="popup_enabled" className="text-white">Enable Shop Switch Popup</Label>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <input
+                        type="checkbox"
+                        id="popup_enabled"
+                        checked={getShopFeaturesSetting("popup_enabled") === "true"}
+                        onChange={(e) => updateShopFeaturesSetting("popup_enabled", e.target.checked.toString())}
+                        className="w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500"
+                      />
+                      <span className="text-gray-300 text-sm">Show popup to encourage shop switching</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="popup_initial_delay" className="text-white">Initial Delay (minutes)</Label>
+                    <Input
+                      id="popup_initial_delay"
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={getShopFeaturesSetting("popup_initial_delay") || "10"}
+                      onChange={(e) => updateShopFeaturesSetting("popup_initial_delay", e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white h-10 mt-2"
+                      placeholder="10"
+                    />
+                    <p className="text-gray-400 text-xs mt-1">Wait time before showing first popup</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="popup_interval" className="text-white">Show Interval (minutes)</Label>
+                    <Input
+                      id="popup_interval"
+                      type="number"
+                      min="5"
+                      max="120"
+                      value={getShopFeaturesSetting("popup_interval") || "15"}
+                      onChange={(e) => updateShopFeaturesSetting("popup_interval", e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white h-10 mt-2"
+                      placeholder="15"
+                    />
+                    <p className="text-gray-400 text-xs mt-1">Time between popup appearances</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="popup_max_shows" className="text-white">Max Shows Per Session</Label>
+                    <Input
+                      id="popup_max_shows"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={getShopFeaturesSetting("popup_max_shows") || "2"}
+                      onChange={(e) => updateShopFeaturesSetting("popup_max_shows", e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white h-10 mt-2"
+                      placeholder="2"
+                    />
+                    <p className="text-gray-400 text-xs mt-1">Maximum times to show per user session</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="text-white font-medium mb-2 flex items-center gap-2">
+                    <Timer className="w-4 h-4" />
+                    Current Settings Preview
+                  </h4>
+                  <div className="text-sm text-gray-300 space-y-1">
+                    <p>• Popup will appear after <strong>{getShopFeaturesSetting("popup_initial_delay") || "10"} minutes</strong> of browsing</p>
+                    <p>• Then every <strong>{getShopFeaturesSetting("popup_interval") || "15"} minutes</strong> thereafter</p>
+                    <p>• Maximum <strong>{getShopFeaturesSetting("popup_max_shows") || "2"} times</strong> per session</p>
+                    <p>• Status: <span className={getShopFeaturesSetting("popup_enabled") === "true" ? "text-green-400" : "text-red-400"}>
+                      {getShopFeaturesSetting("popup_enabled") === "true" ? "Enabled" : "Disabled"}
+                    </span></p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Floating Shop Ad Settings */}
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  Floating Shop Ad Settings
+                </CardTitle>
+                <p className="text-gray-400 text-sm">
+                  Configure the floating advertisement that promotes the other shop while users browse
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="floating_ad_enabled" className="text-white">Enable Floating Shop Ad</Label>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <input
+                        type="checkbox"
+                        id="floating_ad_enabled"
+                        checked={getShopFeaturesSetting("floating_ad_enabled") === "true"}
+                        onChange={(e) => updateShopFeaturesSetting("floating_ad_enabled", e.target.checked.toString())}
+                        className="w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500"
+                      />
+                      <span className="text-gray-300 text-sm">Show floating ad to promote other shop</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="floating_ad_scroll_trigger" className="text-white">Scroll Trigger (pixels)</Label>
+                    <Input
+                      id="floating_ad_scroll_trigger"
+                      type="number"
+                      min="100"
+                      max="1000"
+                      value={getShopFeaturesSetting("floating_ad_scroll_trigger") || "400"}
+                      onChange={(e) => updateShopFeaturesSetting("floating_ad_scroll_trigger", e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white h-10 mt-2"
+                      placeholder="400"
+                    />
+                    <p className="text-gray-400 text-xs mt-1">Show ad after scrolling this many pixels</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="floating_ad_duration" className="text-white">Display Duration (minutes)</Label>
+                    <Input
+                      id="floating_ad_duration"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={getShopFeaturesSetting("floating_ad_duration") || "2"}
+                      onChange={(e) => updateShopFeaturesSetting("floating_ad_duration", e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white h-10 mt-2"
+                      placeholder="2"
+                    />
+                    <p className="text-gray-400 text-xs mt-1">How long to show the ad</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="floating_ad_cooldown" className="text-white">Cooldown Period (minutes)</Label>
+                    <Input
+                      id="floating_ad_cooldown"
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={getShopFeaturesSetting("floating_ad_cooldown") || "4"}
+                      onChange={(e) => updateShopFeaturesSetting("floating_ad_cooldown", e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white h-10 mt-2"
+                      placeholder="4"
+                    />
+                    <p className="text-gray-400 text-xs mt-1">Wait time before showing ad again</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="floating_ad_max_shows" className="text-white">Max Shows Per Session</Label>
+                    <Input
+                      id="floating_ad_max_shows"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={getShopFeaturesSetting("floating_ad_max_shows") || "3"}
+                      onChange={(e) => updateShopFeaturesSetting("floating_ad_max_shows", e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white h-10 mt-2"
+                      placeholder="3"
+                    />
+                    <p className="text-gray-400 text-xs mt-1">Maximum times to show per user session</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="text-white font-medium mb-2 flex items-center gap-2">
+                    <Timer className="w-4 h-4" />
+                    Current Settings Preview
+                  </h4>
+                  <div className="text-sm text-gray-300 space-y-1">
+                    <p>• Ad appears after scrolling <strong>{getShopFeaturesSetting("floating_ad_scroll_trigger") || "400"} pixels</strong></p>
+                    <p>• Displays for <strong>{getShopFeaturesSetting("floating_ad_duration") || "2"} minutes</strong></p>
+                    <p>• Cooldown of <strong>{getShopFeaturesSetting("floating_ad_cooldown") || "4"} minutes</strong> between shows</p>
+                    <p>• Maximum <strong>{getShopFeaturesSetting("floating_ad_max_shows") || "3"} times</strong> per session</p>
+                    <p>• Status: <span className={getShopFeaturesSetting("floating_ad_enabled") === "true" ? "text-green-400" : "text-red-400"}>
+                      {getShopFeaturesSetting("floating_ad_enabled") === "true" ? "Enabled" : "Disabled"}
+                    </span></p>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-4 border-t border-gray-700">
+                  <Button
+                    onClick={saveShopFeaturesSettings}
+                    disabled={saving}
+                    className="bg-cyan-600 hover:bg-cyan-700 text-white px-6"
+                  >
+                    {saving ? "Saving..." : "Save Shop Features Settings"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+
+          </div>
         </TabsContent>
       </Tabs>
     </div>

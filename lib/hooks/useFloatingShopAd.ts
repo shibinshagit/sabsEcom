@@ -8,6 +8,14 @@ interface UseFloatingShopAdOptions {
   maxShowsPerSession?: number // Maximum times to show per session
 }
 
+interface ShopFeaturesSettings {
+  floating_ad_enabled: string
+  floating_ad_scroll_trigger: string
+  floating_ad_duration: string
+  floating_ad_cooldown: string
+  floating_ad_max_shows: string
+}
+
 export function useFloatingShopAd({
   showAfterScrollPixels = 400, // Show after scrolling 400px
   displayDurationMinutes = 2, // Show for 2 minutes
@@ -19,14 +27,43 @@ export function useFloatingShopAd({
   const [lastShownTime, setLastShownTime] = useState<number | null>(null)
   const [adStartTime, setAdStartTime] = useState<number | null>(null)
   const [hasScrolledEnough, setHasScrolledEnough] = useState(false)
+  const [settings, setSettings] = useState<ShopFeaturesSettings | null>(null)
   const { shop, setShop } = useShop()
+
+  // Fetch settings from admin panel
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/admin/shop-features')
+        if (response.ok) {
+          const data = await response.json()
+          setSettings(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch shop features settings:', error)
+      }
+    }
+    fetchSettings()
+  }, [])
+
+  // Use admin settings or fallback to defaults
+  const actualScrollTrigger = settings ? parseInt(settings.floating_ad_scroll_trigger) : showAfterScrollPixels
+  const actualDisplayDuration = settings ? parseInt(settings.floating_ad_duration) : displayDurationMinutes
+  const actualCooldownMinutes = settings ? parseInt(settings.floating_ad_cooldown) : cooldownMinutes
+  const actualMaxShowsPerSession = settings ? parseInt(settings.floating_ad_max_shows) : maxShowsPerSession
+  const isEnabled = settings ? settings.floating_ad_enabled === 'true' : true
 
   // Check if we should show the ad
   const shouldShowAd = useCallback(() => {
     const now = Date.now()
     
+    // Don't show if disabled in admin settings
+    if (!isEnabled) {
+      return false
+    }
+    
     // Don't show if we've reached max shows
-    if (showCount >= maxShowsPerSession) {
+    if (showCount >= actualMaxShowsPerSession) {
       return false
     }
 
@@ -43,25 +80,24 @@ export function useFloatingShopAd({
     // Check cooldown period
     if (lastShownTime) {
       const timeSinceLastShow = now - lastShownTime
-      const cooldownMs = cooldownMinutes * 60 * 1000
+      const cooldownMs = actualCooldownMinutes * 60 * 1000
       return timeSinceLastShow >= cooldownMs
     }
 
     return true
-  }, [showCount, maxShowsPerSession, isAdVisible, hasScrolledEnough, lastShownTime, cooldownMinutes])
+  }, [showCount, actualMaxShowsPerSession, isAdVisible, hasScrolledEnough, lastShownTime, actualCooldownMinutes, isEnabled])
 
   // Handle scroll detection
   useEffect(() => {
     const handleScroll = () => {
-      const scrollY = window.scrollY
-      if (scrollY >= showAfterScrollPixels && !hasScrolledEnough) {
+      if (window.scrollY >= actualScrollTrigger) {
         setHasScrolledEnough(true)
       }
     }
 
-    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [showAfterScrollPixels, hasScrolledEnough])
+  }, [actualScrollTrigger, hasScrolledEnough])
 
   // Initialize session tracking
   useEffect(() => {
@@ -108,11 +144,11 @@ export function useFloatingShopAd({
       const hideTimer = setTimeout(() => {
         setIsAdVisible(false)
         setAdStartTime(null)
-      }, displayDurationMinutes * 60 * 1000)
+      }, actualDisplayDuration * 60 * 1000)
 
       return () => clearTimeout(hideTimer)
     }
-  }, [isAdVisible, adStartTime, displayDurationMinutes])
+  }, [isAdVisible, adStartTime, actualDisplayDuration])
 
   const closeAd = useCallback(() => {
     setIsAdVisible(false)

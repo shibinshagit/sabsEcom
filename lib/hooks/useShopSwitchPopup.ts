@@ -7,22 +7,57 @@ interface UseShopSwitchPopupOptions {
   maxShowsPerSession?: number // Maximum times to show per session
 }
 
+interface ShopFeaturesSettings {
+  popup_enabled: string
+  popup_initial_delay: string
+  popup_interval: string
+  popup_max_shows: string
+}
+
 export function useShopSwitchPopup({
   intervalMinutes = 15, // Show every 15 minutes
-  initialDelayMinutes = 10, // Wait 5 minutes before first show
+  initialDelayMinutes = 10, // Wait 10 minutes before first show
   maxShowsPerSession = 2 // Max 2 times per session
 }: UseShopSwitchPopupOptions = {}) {
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [showCount, setShowCount] = useState(0)
   const [lastShownTime, setLastShownTime] = useState<number | null>(null)
+  const [settings, setSettings] = useState<ShopFeaturesSettings | null>(null)
   const { shop, setShop } = useShop()
+
+  // Fetch settings from admin panel
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/admin/shop-features')
+        if (response.ok) {
+          const data = await response.json()
+          setSettings(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch shop features settings:', error)
+      }
+    }
+    fetchSettings()
+  }, [])
+
+  // Use admin settings or fallback to defaults
+  const actualIntervalMinutes = settings ? parseInt(settings.popup_interval) : intervalMinutes
+  const actualInitialDelayMinutes = settings ? parseInt(settings.popup_initial_delay) : initialDelayMinutes
+  const actualMaxShowsPerSession = settings ? parseInt(settings.popup_max_shows) : maxShowsPerSession
+  const isEnabled = settings ? settings.popup_enabled === 'true' : true
 
   // Check if we should show the popup
   const shouldShowPopup = useCallback(() => {
     const now = Date.now()
     
+    // Don't show if disabled in admin settings
+    if (!isEnabled) {
+      return false
+    }
+    
     // Don't show if we've reached max shows
-    if (showCount >= maxShowsPerSession) {
+    if (showCount >= actualMaxShowsPerSession) {
       return false
     }
 
@@ -34,7 +69,7 @@ export function useShopSwitchPopup({
     // Check if enough time has passed since last show
     if (lastShownTime) {
       const timeSinceLastShow = now - lastShownTime
-      const intervalMs = intervalMinutes * 60 * 1000
+      const intervalMs = actualIntervalMinutes * 60 * 1000
       return timeSinceLastShow >= intervalMs
     }
 
@@ -42,12 +77,12 @@ export function useShopSwitchPopup({
     const sessionStartTime = sessionStorage.getItem('shopSwitchSessionStart')
     if (sessionStartTime) {
       const timeSinceStart = now - parseInt(sessionStartTime)
-      const initialDelayMs = initialDelayMinutes * 60 * 1000
+      const initialDelayMs = actualInitialDelayMinutes * 60 * 1000
       return timeSinceStart >= initialDelayMs
     }
 
     return false
-  }, [showCount, maxShowsPerSession, isPopupOpen, lastShownTime, intervalMinutes, initialDelayMinutes])
+  }, [showCount, actualMaxShowsPerSession, isPopupOpen, lastShownTime, actualIntervalMinutes, actualInitialDelayMinutes, isEnabled])
 
   // Initialize session tracking
   useEffect(() => {

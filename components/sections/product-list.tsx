@@ -997,7 +997,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
                   </>
                 ) : (
                   <>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found in Shop {shop}</h3>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found in Shop {shop === "A" ? "Beauty" : "Style"}</h3>
                     <p className="text-gray-500">
                       No products available with {selectedCurrency} pricing. Try switching currency or check the other shop.
                     </p>
