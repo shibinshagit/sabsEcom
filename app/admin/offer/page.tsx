@@ -2,7 +2,7 @@
 
 "use client"
 import { useState, useEffect } from "react"
-import { X, Plus, Trash2, Calendar, Tag, Percent, DollarSign, AlertCircle } from "lucide-react"
+import { X, Plus, Trash2, Calendar, Tag, Percent, DollarSign, AlertCircle, CheckCircle, XCircle, Star } from "lucide-react"
 
 const OfferPage = () => {
   const [showModal, setShowModal] = useState(false)
@@ -13,7 +13,21 @@ const OfferPage = () => {
   const [endDate, setEndDate] = useState("")
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true) 
-  const [error, setError] = useState<string | null>(null) 
+  const [error, setError] = useState<string | null>(null)
+  
+  // New restriction states - separate for each currency
+  const [minOrderValueAED, setMinOrderValueAED] = useState("")
+  const [minOrderValueINR, setMinOrderValueINR] = useState("")
+  const [maxOrderValueAED, setMaxOrderValueAED] = useState("")
+  const [maxOrderValueINR, setMaxOrderValueINR] = useState("")
+  const [usageLimitPerUser, setUsageLimitPerUser] = useState("")
+  const [totalUsageLimit, setTotalUsageLimit] = useState("")
+  const [shopRestriction, setShopRestriction] = useState("")
+  const [userTypeRestriction, setUserTypeRestriction] = useState("")
+  const [allowedCategories, setAllowedCategories] = useState<string[]>([])
+  const [priority, setPriority] = useState("")
+
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([]) 
   
   
   const [savedOffers, setSavedOffers] = useState<
@@ -24,6 +38,18 @@ const OfferPage = () => {
       endDate: string
       offers: { value: string; type: string }[]
       offerType: string
+      // Restriction fields - separate for each currency
+      minOrderValueAED?: string
+      minOrderValueINR?: string
+      maxOrderValueAED?: string
+      maxOrderValueINR?: string
+      usageLimitPerUser?: string
+      totalUsageLimit?: string
+      shopRestriction?: string
+      userTypeRestriction?: string
+      allowedCategories?: string[]
+      priority?: number
+
     }[]
   >([])
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null)
@@ -59,6 +85,16 @@ const OfferPage = () => {
     setEndDate("")
     setOffers([{ value: "" }])
     setOfferType("percentage")
+    setMinOrderValueAED("")
+    setMinOrderValueINR("")
+    setMaxOrderValueAED("")
+    setMaxOrderValueINR("")
+    setUsageLimitPerUser("")
+    setTotalUsageLimit("")
+    setShopRestriction("")
+    setUserTypeRestriction("")
+    setAllowedCategories([])
+    setPriority("")
   }
 
   const handleSubmit = async () => {
@@ -113,6 +149,19 @@ const OfferPage = () => {
           startDate,
           endDate,
           offers: offersWithType,
+          priority: priority ? parseInt(priority) : null,
+          restrictions: {
+            minOrderValueAED: minOrderValueAED.length > 0 ? parseFloat(minOrderValueAED) : null,
+            minOrderValueINR: minOrderValueINR.length > 0 ? parseFloat(minOrderValueINR) : null,
+            maxOrderValueAED: maxOrderValueAED.length > 0 ? parseFloat(maxOrderValueAED) : null,
+            maxOrderValueINR: maxOrderValueINR.length > 0 ? parseFloat(maxOrderValueINR) : null,
+            usageLimitPerUser: usageLimitPerUser ? parseInt(usageLimitPerUser) : null,
+            totalUsageLimit: totalUsageLimit ? parseInt(totalUsageLimit) : null,
+            shopRestriction: shopRestriction || null,
+            userTypeRestriction: userTypeRestriction || null,
+            allowedCategories: allowedCategories.length > 0 ? allowedCategories : null,
+
+          }
         }),
       })
 
@@ -128,19 +177,38 @@ const OfferPage = () => {
         endDate: data.end_date,
         offers: typeof data.offers === "string" ? JSON.parse(data.offers) : data.offers,
         offerType: data.offer_type || offerType,
+        // Include all restriction fields - separate for each currency
+        minOrderValueAED: data.minimum_order_value_aed ? data.minimum_order_value_aed.toString() : "",
+        minOrderValueINR: data.minimum_order_value_inr ? data.minimum_order_value_inr.toString() : "",
+        maxOrderValueAED: data.maximum_order_value_aed ? data.maximum_order_value_aed.toString() : "",
+        maxOrderValueINR: data.maximum_order_value_inr ? data.maximum_order_value_inr.toString() : "",
+        usageLimitPerUser: data.usage_limit_per_user ? data.usage_limit_per_user.toString() : "",
+        totalUsageLimit: data.total_usage_limit ? data.total_usage_limit.toString() : "",
+        shopRestriction: data.shop_restriction || "",
+        userTypeRestriction: data.user_type_restriction || "",
+        allowedCategories: data.allowed_categories ? JSON.parse(data.allowed_categories) : [],
+        priority: data.priority || 0,
+
       }
 
       if (isEditing) {
-        setSavedOffers((prev) => prev.map((offer) => (offer.id === editingOfferId ? newOffer : offer)))
+        // Refresh the entire offers list from server to ensure we have all the latest data
+        await fetchOffers()
         alert("Offer updated successfully!")
+        
+        // Keep the modal open briefly to show success, then close
+        setTimeout(() => {
+          setShowModal(false)
+          resetForm()
+          setEditingOfferId(null)
+        }, 500)
       } else {
         setSavedOffers((prev) => [newOffer, ...prev])
         alert("Offer created successfully!")
+        setShowModal(false)
+        resetForm()
+        setEditingOfferId(null)
       }
-
-      setShowModal(false)
-      resetForm()
-      setEditingOfferId(null)
     } catch (error) {
       console.error("Error submitting offer:", error)
       alert("Failed to submit offer. Please try again.")
@@ -164,6 +232,19 @@ const OfferPage = () => {
       ? offer.offers.map(o => ({ value: o.value }))
       : [{ value: "" }]
     setOffers(offerValues)
+    
+    // Set restriction values
+    setMinOrderValueAED(offer.minOrderValueAED || "")
+    setMinOrderValueINR(offer.minOrderValueINR || "")
+    setMaxOrderValueAED(offer.maxOrderValueAED || "")
+    setMaxOrderValueINR(offer.maxOrderValueINR || "")
+    setUsageLimitPerUser(offer.usageLimitPerUser || "")
+    setTotalUsageLimit(offer.totalUsageLimit || "")
+    setShopRestriction(offer.shopRestriction || "")
+    setUserTypeRestriction(offer.userTypeRestriction || "")
+    setAllowedCategories(offer.allowedCategories || [])
+    setPriority(offer.priority ? offer.priority.toString() : "")
+
     
     setEditingOfferId(offer.id)
     setShowModal(true)
@@ -214,6 +295,18 @@ const OfferPage = () => {
           endDate: offer.end_date,
           offers: typeof offer.offers === "string" ? JSON.parse(offer.offers) : offer.offers || [],
           offerType: offer.offer_type || "percentage",
+          // Include restriction fields - separate for each currency
+          minOrderValueAED: offer.minimum_order_value_aed ? offer.minimum_order_value_aed.toString() : "",
+          minOrderValueINR: offer.minimum_order_value_inr ? offer.minimum_order_value_inr.toString() : "",
+          maxOrderValueAED: offer.maximum_order_value_aed ? offer.maximum_order_value_aed.toString() : "",
+          maxOrderValueINR: offer.maximum_order_value_inr ? offer.maximum_order_value_inr.toString() : "",
+          usageLimitPerUser: offer.usage_limit_per_user ? offer.usage_limit_per_user.toString() : "",
+          totalUsageLimit: offer.total_usage_limit ? offer.total_usage_limit.toString() : "",
+          shopRestriction: offer.shop_restriction || "",
+          userTypeRestriction: offer.user_type_restriction || "",
+          allowedCategories: offer.allowed_categories ? JSON.parse(offer.allowed_categories) : [],
+          priority: offer.priority || 0,
+
         }))
         setSavedOffers(parsedOffers)
       }
@@ -226,8 +319,23 @@ const OfferPage = () => {
     }
   }
 
+  // Fetch categories for restrictions (shop-aware)
+  const fetchCategories = async (shopFilter?: string) => {
+    try {
+      const url = shopFilter ? `/api/categories?shop=${shopFilter}` : '/api/categories'
+      const response = await fetch(url)
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data)
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
   useEffect(() => {
     fetchOffers()
+    fetchCategories()
   }, [])
 
   // Show loading state
@@ -317,6 +425,17 @@ const OfferPage = () => {
                     <span className="mx-2">|</span>
                     <strong>End:</strong> {new Date(offer.endDate).toLocaleDateString()}
                   </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Star size={16} className="text-yellow-400" />
+                    <span className="text-gray-300">
+                      <strong>Priority:</strong> {offer.priority || 'Auto (Date-based)'}
+                    </span>
+                    {offer.priority && offer.priority >= 10000 && (
+                      <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded">
+                        High Priority
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -565,6 +684,254 @@ const OfferPage = () => {
                           }
                         </span>
                       ))}
+                  </div>
+                </div>
+              )}
+              {/* Order Value Restrictions - Separate for AED and INR */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <DollarSign size={18} className="text-blue-600" />
+                  Order Value Restrictions
+                </h3>
+                
+                {/* Minimum Order Values */}
+                <div className="space-y-4">
+                  <h4 className="text-md font-semibold text-gray-700">Minimum Order Value</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <DollarSign size={16} className="text-green-600" />
+                        Minimum Order Value (AED)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 100"
+                        value={minOrderValueAED}
+                        onChange={(e) => setMinOrderValueAED(e.target.value)}
+                        className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                      />
+                      <p className="text-xs text-gray-500">For UAE customers (AED)</p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <DollarSign size={16} className="text-green-600" />
+                        Minimum Order Value (₹)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 2200"
+                        value={minOrderValueINR}
+                        onChange={(e) => setMinOrderValueINR(e.target.value)}
+                        className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                      />
+                      <p className="text-xs text-gray-500">For India customers (INR)</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Maximum Order Values */}
+                <div className="space-y-4">
+                  <h4 className="text-md font-semibold text-gray-700">Maximum Order Value</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <AlertCircle size={16} className="text-red-600" />
+                        Maximum Order Value (AED)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 500"
+                        value={maxOrderValueAED}
+                        onChange={(e) => setMaxOrderValueAED(e.target.value)}
+                        className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                      />
+                      <p className="text-xs text-gray-500">For UAE customers (AED)</p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <AlertCircle size={16} className="text-red-600" />
+                        Maximum Order Value (₹)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 11000"
+                        value={maxOrderValueINR}
+                        onChange={(e) => setMaxOrderValueINR(e.target.value)}
+                        className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                      />
+                      <p className="text-xs text-gray-500">For India customers (INR)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Usage Limits */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <Tag size={16} className="text-purple-600" />
+                    Usage Limit Per User
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g., 1"
+                    value={usageLimitPerUser}
+                    onChange={(e) => setUsageLimitPerUser(e.target.value)}
+                    className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <Percent size={16} className="text-indigo-600" />
+                    Total Usage Limit
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g., 100"
+                    value={totalUsageLimit}
+                    onChange={(e) => setTotalUsageLimit(e.target.value)}
+                    className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                  />
+                </div>
+              </div>
+
+              {/* Shop and User Type Restrictions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <DollarSign size={16} className="text-orange-600" />
+                    Shop Restriction
+                  </label>
+                  <select
+                    value={shopRestriction}
+                    onChange={(e) => {
+                      const newShopRestriction = e.target.value
+                      setShopRestriction(newShopRestriction)
+                      
+                      // Clear existing category selections when shop changes
+                      setAllowedCategories([])
+                      
+                      // Fetch categories for the selected shop
+                      if (newShopRestriction) {
+                        fetchCategories(newShopRestriction)
+                      } else {
+                        fetchCategories() // Fetch all categories if no shop restriction
+                      }
+                    }}
+                    className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-200 text-gray-800 bg-white"
+                  >
+                    <option value="">Both Shops (No Restriction)</option>
+                    <option value="A">Beauty Shop Only</option>
+                    <option value="B">Style Shop Only</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <Tag size={16} className="text-teal-600" />
+                    User Type Restriction
+                  </label>
+                  <select
+                    value={userTypeRestriction}
+                    onChange={(e) => setUserTypeRestriction(e.target.value)}
+                    className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100 transition-all duration-200 text-gray-800 bg-white"
+                  >
+                    <option value="">All Users (No Restriction)</option>
+                    <option value="new">New Users Only</option>
+                    <option value="returning">Returning Users Only</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Priority Section */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Star size={16} className="text-yellow-600" />
+                  Offer Priority
+                  <span className="text-xs text-gray-500 ml-2">(Higher number = Higher priority)</span>
+                </label>
+                <input
+                  type="number"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                  placeholder="Enter priority (e.g., 100 for high priority, 1 for low priority)"
+                  className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 transition-all duration-200 text-gray-800 bg-white"
+                />
+                <p className="text-xs text-gray-600">
+                  💡 <strong>Priority Guide:</strong> Higher numbers appear first when users apply coupons. 
+                  Leave empty for automatic date-based priority (newest offers first).
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Tag size={18} className="text-purple-600" />
+                  Product Category Restrictions
+                </h3>
+                
+                {/* Allowed Categories */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <CheckCircle size={16} className="text-green-600" />
+                    Allowed Categories
+                    {shopRestriction && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                        {shopRestriction === 'A' ? 'Beauty Shop' : 'Style Shop'} Categories Only
+                      </span>
+                    )}
+                  </label>
+                  <div className="border-2 border-gray-200 rounded-xl p-3 bg-white max-h-40 overflow-y-auto">
+                    {categories.length > 0 ? (
+                      categories.map((category) => (
+                        <label key={category.id} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-gray-50 rounded px-2">
+                          <input
+                            type="checkbox"
+                            checked={allowedCategories.includes(category.id.toString())}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAllowedCategories([...allowedCategories, category.id.toString()])
+                              } else {
+                                setAllowedCategories(allowedCategories.filter(id => id !== category.id.toString()))
+                              }
+                            }}
+                            className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          />
+                          <span className="text-sm text-gray-700">{category.name}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        {shopRestriction ? `Loading ${shopRestriction === 'A' ? 'Beauty Shop' : 'Style Shop'} categories...` : 'Loading categories...'}
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {shopRestriction 
+                      ? `Select categories from ${shopRestriction === 'A' ? 'Beauty Shop' : 'Style Shop'}. If none selected, offer applies to all categories in this shop.`
+                      : 'Select specific categories for this offer. If none selected, offer applies to all categories.'
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Special Protection Notice for 100% Off */}
+              {offers.some(offer => offer.value === "100" && offerType === "percentage") && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <AlertCircle className="text-red-600 mt-0.5 flex-shrink-0" size={18} />
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold text-red-800 text-sm sm:text-base">
+                        100% Off Detected - Protection Recommended
+                      </h4>
+                      <p className="text-red-700 text-xs sm:text-sm mt-1">
+                        You have a 100% off offer. Consider setting <strong>Maximum Order Values</strong> for both currencies to prevent abuse of high-value free orders.
+                      </p>
+                      <div className="text-red-600 text-xs mt-2 space-y-1">
+                        <p><strong>Recommended Maximum Values:</strong></p>
+                        <p>• AED: 200-500 (for UAE customers)</p>
+                        <p>• INR: 4,400-11,000 (for India customers)</p>
+                        <p className="text-red-500 mt-1">Set both values to ensure proper protection across all markets!</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

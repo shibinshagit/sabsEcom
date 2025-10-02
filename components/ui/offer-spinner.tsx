@@ -72,23 +72,25 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
   // Check user spin status on component mount
   useEffect(() => {
     const checkUserSpinStatus = () => {
-      // Check if user has already spun
-      const userSpinData = localStorage.getItem('userSpinData')
-      if (userSpinData) {
-        const spinData = JSON.parse(userSpinData)
-        setHasSpun(spinData.hasSpun || false)
-        setHasRedeemed(spinData.hasRedeemed || false)
-        
-        // If user has a saved result, restore it
-        if (spinData.savedResult) {
-          setResult(spinData.savedResult)
-          setOfferCode(spinData.savedOfferCode || "")
+      // Check if user has already spun for the current offer
+      if (currentDbOffer) {
+        const userSpinData = localStorage.getItem(`userSpinData_${currentDbOffer.id}`)
+        if (userSpinData) {
+          const spinData = JSON.parse(userSpinData)
+          setHasSpun(spinData.hasSpun || false)
+          setHasRedeemed(spinData.hasRedeemed || false)
+          
+          // If user has a saved result, restore it
+          if (spinData.savedResult) {
+            setResult(spinData.savedResult)
+            setOfferCode(spinData.savedOfferCode || "")
+          }
         }
       }
     }
     
     checkUserSpinStatus()
-  }, [])
+  }, [currentDbOffer])
 
   // Fetch active offers from database
   useEffect(() => {
@@ -102,7 +104,7 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
 
         const dbOffers: DbOffer[] = await response.json()
 
-        // Get the first active offer (most recent)
+        // Get the highest priority active offer (same ordering as coupon validation)
         const activeOffer = dbOffers[0]
         if (activeOffer) {
           let offerDiscounts: OfferDiscount[]
@@ -213,15 +215,18 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
         setOfferCode(code)
       }
       
-      // Save user spin data to localStorage
+      // Save user spin data to localStorage per offer
       const userSpinData = {
         hasSpun: true,
         hasRedeemed: false,
         savedResult: winningOffer,
         savedOfferCode: code,
-        spinTimestamp: Date.now()
+        spinTimestamp: Date.now(),
+        offerId: currentDbOffer?.id
       }
-      localStorage.setItem('userSpinData', JSON.stringify(userSpinData))
+      if (currentDbOffer) {
+        localStorage.setItem(`userSpinData_${currentDbOffer.id}`, JSON.stringify(userSpinData))
+      }
       
       setIsSpinning(false)
       setCanStop(false)
@@ -282,10 +287,12 @@ const SpinWheel = ({ onClose }: SpinWheelProps) => {
       localStorage.setItem("pendingOffer", JSON.stringify(offerData))
       
       // Update user spin data to mark as redeemed
-      const userSpinData = JSON.parse(localStorage.getItem('userSpinData') || '{}')
-      userSpinData.hasRedeemed = true
-      userSpinData.redemptionTimestamp = Date.now()
-      localStorage.setItem('userSpinData', JSON.stringify(userSpinData))
+      if (currentDbOffer) {
+        const userSpinData = JSON.parse(localStorage.getItem(`userSpinData_${currentDbOffer.id}`) || '{}')
+        userSpinData.hasRedeemed = true
+        userSpinData.redemptionTimestamp = Date.now()
+        localStorage.setItem(`userSpinData_${currentDbOffer.id}`, JSON.stringify(userSpinData))
+      }
       
       setHasRedeemed(true)
       

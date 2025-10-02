@@ -6,8 +6,9 @@ import { ensureOfferTypeSupport } from "@/lib/migrations/ensure-offer-type";
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const id = parseInt(params.id);
-    const { title, startDate, endDate, offers } = await request.json();
+    const awaitedParams = await params;
+    const id = parseInt(awaitedParams.id);
+    const { title, startDate, endDate, offers, priority, restrictions } = await request.json();
 
     if (!title || !startDate || !endDate || !offers || offers.length === 0) {
       return NextResponse.json(
@@ -65,11 +66,29 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     console.log("Updating offer with ID:", id, { title, startDate, endDate, offers });
 
     await ensureOfferTypeSupport();
+    
+    // Import and run currency-specific migration
+    const { ensureCurrencySpecificRestrictions } = await import('@/lib/migrations/ensure-currency-specific-restrictions');
+    await ensureCurrencySpecificRestrictions();
 
     const hasPercentage = offers.some((offer: any) => offer.type === 'percentage');
     const hasCash = offers.some((offer: any) => offer.type === 'cash');
     const primaryOfferType = hasPercentage && hasCash ? 'mixed' : 
                             hasPercentage ? 'percentage' : 'cash';
+
+    // Extract restriction values with defaults - separate for each currency
+    const {
+      minOrderValueAED = null,
+      minOrderValueINR = null,
+      maxOrderValueAED = null,
+      maxOrderValueINR = null,
+      usageLimitPerUser = null,
+      totalUsageLimit = null,
+      shopRestriction = null,
+      userTypeRestriction = null,
+      allowedCategories = null,
+      excludedCategories = null
+    } = restrictions || {};
 
     const [updated] = await sql`
       UPDATE offers
@@ -78,6 +97,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           end_date = ${endDate},
           offers = ${JSON.stringify(offers)},
           offer_type = ${primaryOfferType},
+          priority = ${priority},
+          minimum_order_value_aed = ${minOrderValueAED},
+          minimum_order_value_inr = ${minOrderValueINR},
+          maximum_order_value_aed = ${maxOrderValueAED},
+          maximum_order_value_inr = ${maxOrderValueINR},
+          usage_limit_per_user = ${usageLimitPerUser},
+          total_usage_limit = ${totalUsageLimit},
+          shop_restriction = ${shopRestriction},
+          user_type_restriction = ${userTypeRestriction},
+          allowed_categories = ${allowedCategories ? JSON.stringify(allowedCategories) : null},
+          excluded_categories = ${excludedCategories ? JSON.stringify(excludedCategories) : null},
           updated_at = NOW()
       WHERE id = ${id}
       RETURNING *;

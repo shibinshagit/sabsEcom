@@ -83,6 +83,8 @@ export default function OrderPage() {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
   const [discountAmount, setDiscountAmount] = useState(0)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [isLoadingFromStorage, setIsLoadingFromStorage] = useState(true)
+  const [hasUserInteracted, setHasUserInteracted] = useState(false)
 
   // Load Razorpay script
   useEffect(() => {
@@ -176,8 +178,34 @@ export default function OrderPage() {
   useEffect(() => {
     if (cart.length > 0) {
       dispatch(recalculateTotal(selectedCurrency))
+      
+      // Mark that user has interacted with cart (after initial load)
+      if (!isLoadingFromStorage) {
+        setHasUserInteracted(true)
+      }
+      
+      // Immediately recalculate discount to prevent negative totals
+      if (appliedCoupon) {
+        // Calculate cart total directly from current cart state
+        const cartTotal = cart.reduce((sum, item) => {
+          const price = getCurrencySpecificPrice(item.menuItem, item.selected_variant)
+          return sum + (price * item.quantity)
+        }, 0)
+        
+        // Immediately update discount based on new cart total
+        let newDiscount = 0
+        if (appliedCoupon.type === "cash") {
+          newDiscount = Math.min(parseFloat(appliedCoupon.discount), cartTotal)
+        } else if (appliedCoupon.type === "percentage") {
+          newDiscount = (cartTotal * parseFloat(appliedCoupon.discount)) / 100
+        }
+        
+        // Cap discount at cart total to prevent negative values
+        newDiscount = Math.min(newDiscount, cartTotal)
+        setDiscountAmount(newDiscount)
+      }
     }
-  }, [selectedCurrency, cart, dispatch])
+  }, [selectedCurrency, cart, dispatch, appliedCoupon, isLoadingFromStorage])
 
   useEffect(() => {
     if (invalidCartItems.length > 0) {
@@ -186,6 +214,9 @@ export default function OrderPage() {
       })
     }
   }, [selectedCurrency, invalidCartItems.length])
+
+  // Auto re-validate coupon when cart changes
+
 
   useEffect(() => {
     const savedCoupon = localStorage.getItem("appliedCoupon")
@@ -206,13 +237,114 @@ export default function OrderPage() {
         toast.error('Failed to load saved coupon', { position: 'top-center' })
       }
     }
+    
+    // Set loading from storage to false after initial load
+    setTimeout(() => {
+      setIsLoadingFromStorage(false)
+    }, 2000) // Give enough time for initial validation
   }, [])
 
   useEffect(() => {
     if (appliedCoupon) {
-      calculateDiscount(appliedCoupon, calculateCartTotal())
+      // Add a small delay to prevent immediate re-validation after coupon application
+      const timeoutId = setTimeout(async () => {
+        try {
+          const orderTotal = calculateCartTotal()
+          
+          // Determine current shop - check multiple sources (same logic as manual application)
+          let currentShop = localStorage.getItem('currentShop')
+          if (!currentShop) {
+            const isStyleShop = window.location.href.includes('style') || 
+                               document.title.includes('Style') ||
+                               document.querySelector('title')?.textContent?.includes('Style')
+            currentShop = isStyleShop ? 'B' : 'B' // Default to Style Shop (B)
+          }
+          
+          console.log('Re-validating coupon:', appliedCoupon.code)
+          console.log('Auto revalidation - currentShop:', currentShop)
+          console.log('Order total:', orderTotal)
+          console.log('Cart items:', cart)
+          
+          const response = await fetch('/api/offers/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              offerCode: appliedCoupon.code,
+              orderTotal,
+              currency: selectedCurrency,
+              shopId: currentShop,
+              userType: user?.id ? "returning" : "new",
+              userId: user?.id || "guest",
+              cartItems: cart.map((item: any) => ({
+                id: item.menuItem?.id || item.id,
+                categoryId: item.menuItem?.category_id || item.category_id || item.categoryId,
+                category_id: item.menuItem?.category_id || item.category_id || item.categoryId,
+                quantity: item.quantity,
+                price: item.menuItem?.price || item.price
+              }))
+            })
+          })
+
+          if (!response.ok) {
+            const result = await response.json()
+            
+            // Debug logging
+            console.log('Auto re-validation failed:', result)
+            console.log('Error message:', result.error)
+            
+            // Remove invalid coupon
+            setAppliedCoupon(null)
+            setCouponCode("")
+            setDiscountAmount(0)
+            setCouponError("")
+            localStorage.removeItem("appliedCoupon")
+            
+            // Show simplified message during initial load, detailed message during cart changes
+            if (isLoadingFromStorage || !hasUserInteracted) {
+              toast.error("Coupon removed", { position: 'top-center', duration: 3000 })
+            } else {
+              // Show user-friendly error message for actual cart changes
+              const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
+              let toastMessage = "Coupon removed: "
+              
+              if (result.error && typeof result.error === 'string') {
+                if (result.error.includes("Maximum order value")) {
+                  toastMessage += `Order total exceeds the maximum allowed (${result.maxAmount} ${currencySymbol}).`
+                } else if (result.error.includes("Minimum order value")) {
+                  toastMessage += `Order total is below the minimum required (${result.requiredAmount} ${currencySymbol}).`
+                } else if (result.error.includes("not valid for the products")) {
+                  toastMessage += "Some items in your cart are not eligible for this offer."
+                } else if (result.error.includes("cannot be applied to some products")) {
+                  toastMessage += "Some products are excluded from this offer."
+                } else if (result.error.includes("only valid for")) {
+                  toastMessage += "Some products are not available in the required shop."
+                } else if (result.error.includes("already used this offer")) {
+                  toastMessage += "You have already used this offer the maximum number of times."
+                } else if (result.error.includes("reached its usage limit")) {
+                  toastMessage += "This offer has reached its usage limit."
+                } else {
+                  toastMessage += result.error || "Cart changes made the coupon invalid."
+                }
+              } else {
+                toastMessage += "Cart changes made the coupon invalid."
+              }
+              
+              toast.error(toastMessage, { position: 'top-center', duration: 4000 })
+            }
+          } else {
+            // Coupon is still valid, recalculate discount
+            calculateDiscount(appliedCoupon, orderTotal)
+          }
+        } catch (error) {
+          console.error('Error re-validating coupon:', error)
+          // Keep coupon applied if validation fails due to network issues
+          calculateDiscount(appliedCoupon, calculateCartTotal())
+        }
+      }, 200) // Further reduced to 200ms delay for faster response
+
+      return () => clearTimeout(timeoutId)
     }
-  }, [total, appliedCoupon, selectedCurrency])
+  }, [cart.length, total, appliedCoupon?.code, selectedCurrency, user?.id])
 
   const calculateDiscount = (coupon: CouponData, subtotal: number) => {
     let discount = 0
@@ -255,20 +387,150 @@ export default function OrderPage() {
     }
     setIsApplyingCoupon(true)
     setCouponError("")
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      const validCoupon = validateCouponCode(couponCode.trim())
-      if (!validCoupon) {
-        setCouponError("Invalid or expired coupon code")
-        toast.error('Invalid or expired coupon code', { position: 'top-center' })
+      const orderTotal = calculateCartTotal()
+      // Determine current shop - check multiple sources
+      let currentShop = localStorage.getItem('currentShop')
+      
+      // If not in localStorage, try to detect from URL or default to Style Shop (B)
+      if (!currentShop) {
+        // Check if we're on style shop based on URL or other indicators
+        const isStyleShop = window.location.href.includes('style') || 
+                           document.title.includes('Style') ||
+                           document.querySelector('title')?.textContent?.includes('Style')
+        currentShop = isStyleShop ? 'B' : 'B' // Default to Style Shop (B) since that's where the user is
+      }
+      
+      console.log('Manual coupon application - currentShop:', currentShop)
+      console.log('localStorage currentShop:', localStorage.getItem('currentShop'))
+      console.log('URL:', window.location.href)
+      console.log('Document title:', document.title)
+      
+      // Prepare validation data
+      const validationData = {
+        offerCode: couponCode,
+        orderTotal: orderTotal,
+        shopId: currentShop,
+        userType: user?.id ? "returning" : "new",
+        userId: user?.id || "guest",
+        currency: selectedCurrency, // Add currency for dynamic error messages
+        cartItems: cart.map((item: any) => ({
+          id: item.menuItem?.id || item.id,
+          categoryId: item.menuItem?.category_id || item.category_id || item.categoryId,
+          category_id: item.menuItem?.category_id || item.category_id || item.categoryId,
+          quantity: item.quantity,
+          price: item.menuItem?.price || item.price
+        }))
+      }
+
+      console.log('Validation request data:', validationData)
+      console.log('Cart items with categories:', cart.map((item: any) => ({
+        id: item.menuItem?.id || item.id,
+        name: item.menuItem?.name || item.name,
+        category_id: item.menuItem?.category_id || item.category_id,
+        categoryId: item.menuItem?.category_id || item.categoryId,
+        menuItem: item.menuItem ? 'exists' : 'missing'
+      })))
+
+      // Call the comprehensive validation API
+      const response = await fetch('/api/offers/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(validationData)
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        // Enhanced error messages for different restriction types
+        let errorMessage = result.error || "Invalid offer code"
+        let toastMessage = result.error || 'Invalid offer code'
+        
+        // Customize error messages based on restriction type (in validation priority order)
+        if (result.error) {
+          // 1. Shop restrictions (highest priority - most fundamental)
+          if (result.error.includes("only valid for Beauty Shop")) {
+            errorMessage = "This offer is only valid for Beauty Shop. Switch to Beauty Shop to use this offer."
+            toastMessage = "Offer only valid for Beauty Shop"
+          } else if (result.error.includes("only valid for Style Shop")) {
+            errorMessage = "This offer is only valid for Style Shop. Switch to Style Shop to use this offer."
+            toastMessage = "Offer only valid for Style Shop"
+          } else if (result.error.includes("only valid for") && result.error.includes("products")) {
+            errorMessage = result.error // Shop-product mismatch message
+            toastMessage = "Product not available in required shop"
+          }
+          // 2. User type restrictions
+          else if (result.error.includes("new customers")) {
+            errorMessage = "This offer is exclusively for new customers."
+            toastMessage = "New customers only"
+          } else if (result.error.includes("returning customers")) {
+            errorMessage = "This offer is for returning customers only. Thank you for being a loyal customer!"
+            toastMessage = "Returning customers only"
+          }
+          // 3. Usage limits
+          else if (result.error.includes("already used this offer")) {
+            errorMessage = `${result.error}. Each customer can only use this offer ${result.usageLimit} time(s).`
+            toastMessage = `Offer usage limit reached (${result.usageLimit} times max)`
+          } else if (result.error.includes("reached its usage limit")) {
+            errorMessage = `${result.error}. This popular offer has been fully claimed by other customers.`
+            toastMessage = "Offer fully claimed - try another one!"
+          }
+          // 4. Order value limits
+          else if (result.error.includes("Minimum order value")) {
+            const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
+            const amountNeeded = (result.requiredAmount - orderTotal).toFixed(2)
+            errorMessage = `${result.error}. Add ${amountNeeded} ${currencySymbol} more to your cart.`
+            toastMessage = `Minimum order ${result.requiredAmount} ${currencySymbol} required`
+          } else if (result.error.includes("Maximum order value")) {
+            const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
+            errorMessage = `${result.error}. This offer has a maximum limit of ${result.maxAmount} ${currencySymbol}.`
+            toastMessage = `Order too high! Max ${result.maxAmount} ${currencySymbol} for this offer`
+          }
+          // 5. Category restrictions (lowest priority - most specific)
+          else if (result.error.includes("not valid for the products")) {
+            errorMessage = "This offer cannot be applied to the products in your cart. Try adding eligible products."
+            toastMessage = "Offer not valid for cart items"
+          } else if (result.error.includes("cannot be applied to some products")) {
+            errorMessage = "Some products in your cart are excluded from this offer."
+            toastMessage = "Some cart items excluded from offer"
+          }
+        }
+        
+        setCouponError(errorMessage)
+        toast.error(toastMessage, { position: 'top-center', duration: 4000 })
         setIsApplyingCoupon(false)
         return
       }
-      setAppliedCoupon(validCoupon)
-      calculateDiscount(validCoupon, calculateCartTotal())
-      localStorage.setItem("appliedCoupon", JSON.stringify(validCoupon))
-      toast.success(`Coupon ${validCoupon.code} applied!`, { position: 'top-center' })
-      setCouponError("")
+
+      // If we reach here, the response was ok (HTTP 200)
+      if (result.valid && result.offer) {
+        // Create coupon data compatible with existing system
+        const validCoupon: CouponData = {
+          code: result.offer.code,
+          discount: result.offer.value,
+          type: result.offer.type,
+          title: result.offer.title,
+          offerTitle: result.offer.title,
+          offerId: result.offer.id,
+          timestamp: Date.now(),
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        }
+
+        setAppliedCoupon(validCoupon)
+        setDiscountAmount(result.offer.discountAmount)
+        localStorage.setItem("appliedCoupon", JSON.stringify(validCoupon))
+        
+        // NOTE: Usage tracking should only happen during actual order placement, not coupon application
+        // This prevents consuming usage limits during validation/testing
+        
+        toast.success(`Offer ${validCoupon.code} applied! Saved ${result.offer.discountAmount.toFixed(2)} AED`, { 
+          position: 'top-center' 
+        })
+        setCouponError("")
+      }
     } catch (error) {
       console.error("Error applying coupon:", error)
       setCouponError("Failed to apply coupon. Please try again.")
@@ -381,6 +643,40 @@ export default function OrderPage() {
     }
     try {
       const result = await dispatch(submitOrder(orderData)).unwrap()
+      
+      // Track coupon usage ONLY after successful order placement
+      if (appliedCoupon && user?.id) {
+        try {
+          console.log('Tracking coupon usage after successful order:', appliedCoupon.code)
+          await fetch('/api/offers/track-usage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              offerId: appliedCoupon.offerId,
+              userId: user.id,
+              userEmail: user.email,
+              orderTotal: cartTotal,
+              discountAmount: discountAmount
+            })
+          })
+          console.log('Coupon usage tracked successfully')
+        } catch (trackError) {
+          console.error("Error tracking offer usage after order:", trackError)
+          // Don't fail the order if usage tracking fails
+        }
+      }
+      
+      // Clear coupon state immediately to prevent revalidation on empty cart
+      if (appliedCoupon) {
+        setAppliedCoupon(null)
+        setCouponCode("")
+        setDiscountAmount(0)
+        setCouponError("")
+        localStorage.removeItem("appliedCoupon")
+      }
+      
       await clearCartAfterOrder()
       toast.success(`Order placed successfully! Order ID: ${result.orderId}`, { position: 'top-center' })
       router.push("/orders")
@@ -1203,7 +1499,7 @@ export default function OrderPage() {
                             <AlertTriangle className="w-4 h-4 text-amber-600" />
                             <p className="text-sm text-amber-700">
                               Minimum order: {selectedCurrency === 'AED' ? 'AED 20' : '₹100'}
-                              {orderType === "delivery" && selectedCurrency === 'AED' && (
+                              {/* {orderType === "delivery" && selectedCurrency === 'AED' && (
                                 <span className="block">
                                   Delivery: AED 20 (under 50) • AED 10 (50-199) • FREE (200+)
                                 </span>
@@ -1212,7 +1508,7 @@ export default function OrderPage() {
                                 <span className="block">
                                   Free delivery: ₹3000+
                                 </span>
-                              )}
+                              )} */}
                             </p>
                           </div>
                         </div>

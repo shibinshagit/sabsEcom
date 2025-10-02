@@ -31,15 +31,19 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     }, [selectedCurrency])
 
 const getCurrencySymbol = (currency: Currency, colorClass?: string) => {
+  // Check if colorClass is a hex color (starts with #)
+  const isHexColor = colorClass?.startsWith('#');
+  
   switch (currency) {
     case "AED":
       return (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 1000 870"
-          width="15"
-          height="10"
-          className={`inline-block ${colorClass || ''}`}
+          width="18"
+          height="14"
+          className={`inline-block align-baseline ${!isHexColor ? colorClass || '' : ''}`}
+          style={isHexColor ? { color: colorClass } : undefined}
         >
                     <title>Dirham Symbol</title>
                     <path
@@ -48,9 +52,9 @@ const getCurrencySymbol = (currency: Currency, colorClass?: string) => {
                 </svg>
             );
         case "INR":
-            return <span>₹</span>;
+            return <span style={isHexColor ? { color: colorClass } : undefined} className={!isHexColor ? colorClass || '' : ''}>₹</span>;
         default:
-            return <span>₹</span>;
+            return <span style={isHexColor ? { color: colorClass } : undefined} className={!isHexColor ? colorClass || '' : ''}>₹</span>;
     }
 };
 
@@ -107,8 +111,8 @@ const formatPriceWithSmallDecimals = (
   const symbol = getCurrencySymbol(currency, colorClass); // 👈 pass color
 
   return (
- <span className={`flex items-center gap-1 ${colorClass}`}>
-  {showSymbol && <span>{symbol}</span>}
+ <span className={`flex items-baseline gap-1 ${colorClass}`}>
+  {showSymbol && <span className="flex items-center">{symbol}</span>}
 
   <span className="inline-flex items-end">
     <span className="text-xl font-semibold leading-none">{whole}</span>

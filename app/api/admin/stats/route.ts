@@ -87,13 +87,13 @@ export async function GET() {
     const [{ total_revenue_aed }] = await sql`
       SELECT COALESCE(SUM(final_total), 0) AS total_revenue_aed
       FROM orders
-      WHERE status = 'completed' AND COALESCE(currency, 'AED') = 'AED'
+      WHERE (status = 'completed' OR status = 'delivered') AND COALESCE(currency, 'AED') = 'AED'
     `
 
     const [{ total_revenue_inr }] = await sql`
       SELECT COALESCE(SUM(final_total), 0) AS total_revenue_inr
       FROM orders
-      WHERE status = 'completed' AND COALESCE(currency, 'AED') = 'INR'
+      WHERE (status = 'completed' OR status = 'delivered') AND COALESCE(currency, 'AED') = 'INR'
     `
 
     // Debug query to see what data we have
@@ -112,11 +112,12 @@ export async function GET() {
     const completedOrdersDebug = await sql`
       SELECT
         id,
+        customer_name,
         currency,
         status,
         final_total
       FROM orders
-      WHERE status = 'completed'
+      WHERE (status = 'completed' OR status = 'delivered')
       LIMIT 10
     `
 
@@ -167,7 +168,7 @@ export async function GET() {
           COUNT(*) as total_orders,
           SUM(final_total) as total_spent
         FROM orders
-        WHERE status = 'completed' AND customer_email IS NOT NULL
+        WHERE (status = 'completed' OR status = 'delivered') AND customer_email IS NOT NULL
         GROUP BY customer_email
       ) user_stats ON (u.email = user_stats.customer_email)
       WHERE u.name IS NOT NULL
@@ -194,7 +195,7 @@ export async function GET() {
              SUM(final_total)::numeric   AS revenue,
              COUNT(*)::int               AS orders
       FROM   orders
-      WHERE  status = 'completed'
+      WHERE  (status = 'completed' OR status = 'delivered')
         AND  created_at >= CURRENT_DATE - INTERVAL '12 months'
       GROUP  BY 1
       ORDER  BY month DESC

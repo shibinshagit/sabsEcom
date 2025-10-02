@@ -262,7 +262,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="text-right">
                       <p className="text-white font-bold">{user.total_orders || 0} orders</p>
-                      <p className="text-gray-400 text-sm">₹{user.total_spent || 0}</p>
+                      {/* <p className="text-gray-400 text-sm">₹{user.total_spent || 0}</p> */}
                     </div>
                   </div>
                 ))

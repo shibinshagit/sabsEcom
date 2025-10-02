@@ -13,7 +13,8 @@ import {
   MessageSquare,
   Star,
   Info,
-  BadgePercent
+  BadgePercent,
+  Users
 } from "lucide-react"
 
 const navigation = [
@@ -25,6 +26,7 @@ const navigation = [
   // { name: "About Section", href: "/admin/about", icon: Info },
   // { name: "Hero Slider", href: "/admin/slider", icon: ImageIcon },
   // { name: "Banners", href: "/admin/banners", icon: MessageSquare },
+  { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Settings", href: "/admin/settings", icon: Settings },
   { name: "Spinner-Offers", href: "/admin/offer", icon:BadgePercent}
 ]

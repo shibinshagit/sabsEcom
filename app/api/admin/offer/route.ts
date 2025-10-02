@@ -3,10 +3,16 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 import { ensureOfferTypeSupport } from "@/lib/migrations/ensure-offer-type";
+import { ensureOfferRestrictions } from "@/lib/migrations/ensure-offer-restrictions";
 
 export async function GET() {
   try {
     await ensureOfferTypeSupport();
+    await ensureOfferRestrictions();
+    
+    // Import and run currency-specific migration
+    const { ensureCurrencySpecificRestrictions } = await import('@/lib/migrations/ensure-currency-specific-restrictions');
+    await ensureCurrencySpecificRestrictions();
 
     const offers = await sql`
       SELECT * FROM offers ORDER BY updated_at DESC, created_at DESC;
@@ -25,7 +31,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { title, startDate, endDate, offers } = await request.json();
+    const { title, startDate, endDate, offers, priority, restrictions } = await request.json();
 
     if (!title || !startDate || !endDate || !offers || offers.length === 0) {
       return NextResponse.json(
@@ -76,15 +82,48 @@ export async function POST(request: Request) {
     console.log("Creating offer with data:", { title, startDate, endDate, offers });
 
     await ensureOfferTypeSupport();
+    await ensureOfferRestrictions();
 
     const hasPercentage = offers.some((offer: any) => offer.type === 'percentage');
     const hasCash = offers.some((offer: any) => offer.type === 'cash');
     const primaryOfferType = hasPercentage && hasCash ? 'mixed' : 
                             hasPercentage ? 'percentage' : 'cash';
 
+    // Extract restriction values with defaults - separate for each currency
+    const {
+      minOrderValueAED = null,
+      minOrderValueINR = null,
+      maxOrderValueAED = null,
+      maxOrderValueINR = null,
+      usageLimitPerUser = null,
+      totalUsageLimit = null,
+      shopRestriction = null,
+      userTypeRestriction = null,
+      allowedCategories = null,
+      excludedCategories = null
+    } = restrictions || {};
+
+    // Run currency-specific migration first
+    const { ensureCurrencySpecificRestrictions } = await import('@/lib/migrations/ensure-currency-specific-restrictions');
+    await ensureCurrencySpecificRestrictions();
+
     const [inserted] = await sql`
-      INSERT INTO offers (title, start_date, end_date, offers, offer_type, created_at, updated_at)
-      VALUES (${title}, ${startDate}, ${endDate}, ${JSON.stringify(offers)}, ${primaryOfferType}, NOW(), NOW())
+      INSERT INTO offers (
+        title, start_date, end_date, offers, offer_type, priority,
+        minimum_order_value_aed, minimum_order_value_inr,
+        maximum_order_value_aed, maximum_order_value_inr,
+        usage_limit_per_user, total_usage_limit, shop_restriction, user_type_restriction,
+        allowed_categories, excluded_categories, created_at, updated_at
+      )
+      VALUES (
+        ${title}, ${startDate}, ${endDate}, ${JSON.stringify(offers)}, ${primaryOfferType}, ${priority},
+        ${minOrderValueAED}, ${minOrderValueINR},
+        ${maxOrderValueAED}, ${maxOrderValueINR},
+        ${usageLimitPerUser}, ${totalUsageLimit}, ${shopRestriction}, ${userTypeRestriction},
+        ${allowedCategories ? JSON.stringify(allowedCategories) : null}, 
+        ${excludedCategories ? JSON.stringify(excludedCategories) : null}, 
+        NOW(), NOW()
+      )
       RETURNING *;
     `;
 
