@@ -22,6 +22,21 @@ const scrollbarHideStyle = `
   }
 `
 
+interface OrderStats {
+  statusStats: { [key: string]: number }
+  totalOrders: number
+  todayOrders: number
+  weekOrders: number
+  monthOrders: number
+  pending: number
+  confirmed: number
+  packed: number
+  dispatched: number
+  outForDelivery: number
+  delivered: number
+  cancelled: number
+}
+
 export default function OrdersManagement() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,6 +46,8 @@ export default function OrdersManagement() {
   const [updating, setUpdating] = useState<number | null>(null)
   const [trackingUrls, setTrackingUrls] = useState<{[key: number]: string}>({})
   const [trackingIds, setTrackingIds] = useState<{[key: number]: string}>({})
+  const [orderStats, setOrderStats] = useState<OrderStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
 
 
   interface Order {
@@ -72,7 +89,31 @@ export default function OrdersManagement() {
 
   useEffect(() => {
     fetchOrders()
+    fetchOrderStats()
   }, [])
+
+  const fetchOrderStats = async () => {
+    try {
+      setStatsLoading(true)
+      const response = await fetch("/api/admin/orders/stats", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      setOrderStats(data)
+    } catch (error) {
+      console.error("Failed to fetch order stats:", error)
+    } finally {
+      setStatsLoading(false)
+    }
+  }
 
   const fetchOrders = async () => {
     try {
@@ -381,6 +422,133 @@ export default function OrdersManagement() {
           </Select>
         </div>
       </div>
+
+      {/* Order Statistics Cards */}
+      {statsLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="h-24 bg-gray-800 rounded-lg"></div>
+            </div>
+          ))}
+        </div>
+      ) : orderStats ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {/* Pending Orders */}
+          <Card className="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 border-yellow-600/30 hover:border-yellow-500/50 transition-colors cursor-pointer" 
+                onClick={() => setStatusFilter('pending')}>
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Clock className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div className="text-2xl font-bold text-yellow-400">{orderStats.pending}</div>
+              <div className="text-xs text-yellow-300">Pending</div>
+            </CardContent>
+          </Card>
+
+          {/* Confirmed Orders */}
+          <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border-blue-600/30 hover:border-blue-500/50 transition-colors cursor-pointer"
+                onClick={() => setStatusFilter('confirmed')}>
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <CheckCircle className="w-6 h-6 text-blue-400" />
+              </div>
+              <div className="text-2xl font-bold text-blue-400">{orderStats.confirmed}</div>
+              <div className="text-xs text-blue-300">Confirmed</div>
+            </CardContent>
+          </Card>
+
+          {/* Packed Orders */}
+          <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border-purple-600/30 hover:border-purple-500/50 transition-colors cursor-pointer"
+                onClick={() => setStatusFilter('packed')}>
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Package className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="text-2xl font-bold text-purple-400">{orderStats.packed}</div>
+              <div className="text-xs text-purple-300">Packed</div>
+            </CardContent>
+          </Card>
+
+          {/* Dispatched Orders */}
+          <Card className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 border-orange-600/30 hover:border-orange-500/50 transition-colors cursor-pointer"
+                onClick={() => setStatusFilter('dispatched')}>
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <AlertCircle className="w-6 h-6 text-orange-400" />
+              </div>
+              <div className="text-2xl font-bold text-orange-400">{orderStats.dispatched}</div>
+              <div className="text-xs text-orange-300">Dispatched</div>
+            </CardContent>
+          </Card>
+
+          {/* Out for Delivery */}
+          <Card className="bg-gradient-to-br from-indigo-600/20 to-indigo-800/20 border-indigo-600/30 hover:border-indigo-500/50 transition-colors cursor-pointer"
+                onClick={() => setStatusFilter('out for delivery')}>
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <ExternalLink className="w-6 h-6 text-indigo-400" />
+              </div>
+              <div className="text-2xl font-bold text-indigo-400">{orderStats.outForDelivery}</div>
+              <div className="text-xs text-indigo-300">Out for Delivery</div>
+            </CardContent>
+          </Card>
+
+          {/* Delivered Orders */}
+          <Card className="bg-gradient-to-br from-green-600/20 to-green-800/20 border-green-600/30 hover:border-green-500/50 transition-colors cursor-pointer"
+                onClick={() => setStatusFilter('delivered')}>
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+              <div className="text-2xl font-bold text-green-400">{orderStats.delivered}</div>
+              <div className="text-xs text-green-300">Delivered</div>
+            </CardContent>
+          </Card>
+
+          {/* Cancelled Orders */}
+          <Card className="bg-gradient-to-br from-red-600/20 to-red-800/20 border-red-600/30 hover:border-red-500/50 transition-colors cursor-pointer"
+                onClick={() => setStatusFilter('cancel')}>
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+              <div className="text-2xl font-bold text-red-400">{orderStats.cancelled}</div>
+              <div className="text-xs text-red-300">Cancelled</div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      {/* Summary Stats */}
+      {!statsLoading && orderStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-white">{orderStats.totalOrders}</div>
+              <div className="text-sm text-gray-400">Total Orders</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-white">{orderStats.todayOrders}</div>
+              <div className="text-sm text-gray-400">Today's Orders</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-white">{orderStats.weekOrders}</div>
+              <div className="text-sm text-gray-400">Last 7 Days</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-white">{orderStats.monthOrders}</div>
+              <div className="text-sm text-gray-400">This Month</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Orders Table */}
       <Card className="bg-gray-800/50 border-gray-700">

@@ -129,15 +129,15 @@ export async function GET() {
     const [{ pending_orders }] = await sql`
       SELECT COUNT(*)::int AS pending_orders
       FROM orders
-      WHERE status IN ('pending', 'confirmed', 'preparing')
+      WHERE status IN ('pending')
     `
 
-    const [{ today_reservations }] = await sql`
-      SELECT COUNT(*)::int AS today_reservations
-      FROM reservations
-      WHERE reservation_date = CURRENT_DATE
-        AND status IN ('pending', 'confirmed')
-    `
+    // const [{ today_reservations }] = await sql`
+    //   SELECT COUNT(*)::int AS today_reservations
+    //   FROM reservations
+    //   WHERE reservation_date = CURRENT_DATE
+    //     AND status IN ('pending', 'confirmed')
+    // `
 
     // Recent activity ------------------------------------------------------
     const recentOrders = await sql`
@@ -204,16 +204,16 @@ export async function GET() {
     const totalOrders = total_orders // Declare totalOrders variable
     const pendingOrders = pending_orders // Declare pendingOrders variable
 
-    console.log('Debug data:', debugData)
-    console.log('AED Revenue:', total_revenue_aed, 'INR Revenue:', total_revenue_inr)
-    console.log('Completed orders debug:', completedOrdersDebug)
+    // console.log('Debug data:', debugData)
+    // console.log('AED Revenue:', total_revenue_aed, 'INR Revenue:', total_revenue_inr)
+    // console.log('Completed orders debug:', completedOrdersDebug)
 
     return NextResponse.json({
       totalRevenueAED: Number(total_revenue_aed),
       totalRevenueINR: Number(total_revenue_inr),
       totalOrders,
       pendingOrders,
-      todayReservations: today_reservations,
+      // todayReservations: today_reservations,
       recentOrders,
       recentUsers,
       upcomingReservations,

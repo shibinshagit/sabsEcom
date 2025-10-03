@@ -139,21 +139,13 @@ export async function GET() {
               'unit_price',    oi.unit_price,
               'total_price',   oi.total_price,
               'special_requests', oi.special_requests,
-              'product_image_url', COALESCE(
-                oi.product_image_url,
-                CASE
-                  WHEN p.image_urls IS NOT NULL AND json_array_length(p.image_urls::json) > 0
-                  THEN p.image_urls::json->>0
-                  ELSE NULL
-                END
-              )
+              'product_image_url', oi.product_image_url
             ) ORDER BY oi.id
           ) FILTER (WHERE oi.id IS NOT NULL),
           '[]'::json
         ) AS items
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN products p ON oi.menu_item_id = p.id
       GROUP BY o.id
       ORDER BY o.created_at DESC
     `
@@ -205,9 +197,46 @@ export async function GET() {
         quantity: parseInt(item.quantity || '0'),
         unit_price: parseFloat(item.unit_price || '0'),
         total_price: parseFloat(item.total_price || '0'),
-        special_requests: item.special_requests
+        special_requests: item.special_requests,
+        product_image_url: item.product_image_url
       })) : []
     }))
+
+    // Post-process to fetch product images for all order items
+    for (const order of formattedOrders) {
+      for (const item of order.items) {
+        if (item.menu_item_id && !item.product_image_url) {
+          try {
+            const productResult = await sql`
+              SELECT image_urls 
+              FROM products 
+              WHERE id = ${item.menu_item_id}
+              LIMIT 1
+            `
+            
+            if (productResult.length > 0 && productResult[0].image_urls) {
+              const imageUrls = productResult[0].image_urls
+              if (Array.isArray(imageUrls) && imageUrls.length > 0) {
+                item.product_image_url = imageUrls[0]
+              } else if (typeof imageUrls === 'string' && imageUrls !== '[]' && imageUrls !== 'null') {
+                try {
+                  const parsedUrls = JSON.parse(imageUrls)
+                  if (Array.isArray(parsedUrls) && parsedUrls.length > 0) {
+                    item.product_image_url = parsedUrls[0]
+                  }
+                } catch {
+                  // If parsing fails, treat as single URL
+                  item.product_image_url = imageUrls
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching image for product ${item.menu_item_id}:`, error)
+            // Continue processing other items even if one fails
+          }
+        }
+      }
+    }
 
     return NextResponse.json(formattedOrders, { status: 200 })
   } catch (error) {
