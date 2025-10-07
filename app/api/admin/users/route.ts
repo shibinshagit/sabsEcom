@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 import { requireAdminAuth } from "@/lib/admin-auth"
+import { canManageAdmins, ADMIN_CONFIG } from "@/lib/admin-config"
 import bcrypt from "bcryptjs"
 
 // GET - Fetch all admin users
@@ -8,6 +9,14 @@ export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
     const currentAdmin = await requireAdminAuth(request)
+
+    // Check if user has permission to manage admins (only super admin)
+    if (!canManageAdmins(currentAdmin.role)) {
+      return NextResponse.json(
+        { success: false, message: "Access denied. Only super admin can manage users." },
+        { status: 403 }
+      )
+    }
 
     // Fetch all admin users
     const adminUsers = await sql`
@@ -55,12 +64,28 @@ export async function POST(request: NextRequest) {
     // Verify admin authentication
     const currentAdmin = await requireAdminAuth(request)
 
-    const { name, email, password, role = "admin" } = await request.json()
+    // Check if user has permission to manage admins (only super admin)
+    if (!canManageAdmins(currentAdmin.role)) {
+      return NextResponse.json(
+        { success: false, message: "Access denied. Only super admin can create users." },
+        { status: 403 }
+      )
+    }
+
+    const { name, email, password, role = ADMIN_CONFIG.ROLES.ADMIN } = await request.json()
 
     if (!name || !email || !password) {
       return NextResponse.json(
         { success: false, message: "All fields are required" },
         { status: 400 }
+      )
+    }
+
+    // Validate role - only super admin can create other super admins
+    if (role === ADMIN_CONFIG.ROLES.SUPER_ADMIN && currentAdmin.role !== ADMIN_CONFIG.ROLES.SUPER_ADMIN) {
+      return NextResponse.json(
+        { success: false, message: "Cannot create super admin user" },
+        { status: 403 }
       )
     }
 

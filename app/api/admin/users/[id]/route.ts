@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 import { requireAdminAuth } from "@/lib/admin-auth"
+import { canManageAdmins, canManageUser, ADMIN_CONFIG } from "@/lib/admin-config"
 import bcrypt from "bcryptjs"
 
 // GET - Fetch specific admin user
@@ -11,6 +12,14 @@ export async function GET(
   try {
     const currentAdmin = await requireAdminAuth(request)
     const userId = parseInt(params.id)
+
+    // Check if user has permission to manage admins (only super admin)
+    if (!canManageAdmins(currentAdmin.role)) {
+      return NextResponse.json(
+        { success: false, message: "Access denied. Only super admin can view user details." },
+        { status: 403 }
+      )
+    }
 
     const user = await sql`
       SELECT 
@@ -58,6 +67,14 @@ export async function PUT(
     const currentAdmin = await requireAdminAuth(request)
     const userId = parseInt(params.id)
     const { name, email, role, password } = await request.json()
+
+    // Check if user has permission to manage admins (only super admin)
+    if (!canManageAdmins(currentAdmin.role)) {
+      return NextResponse.json(
+        { success: false, message: "Access denied. Only super admin can update users." },
+        { status: 403 }
+      )
+    }
 
     if (!name || !email) {
       return NextResponse.json(
@@ -153,6 +170,14 @@ export async function DELETE(
   try {
     const currentAdmin = await requireAdminAuth(request)
     const userId = parseInt(params.id)
+
+    // Check if user has permission to manage admins (only super admin)
+    if (!canManageAdmins(currentAdmin.role)) {
+      return NextResponse.json(
+        { success: false, message: "Access denied. Only super admin can delete users." },
+        { status: 403 }
+      )
+    }
 
     // Prevent self-deletion
     if (userId === currentAdmin.id) {

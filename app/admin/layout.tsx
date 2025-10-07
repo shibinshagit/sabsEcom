@@ -17,9 +17,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   // Public admin routes that don't need the full admin layout
+  // Note: /admin/register is removed from public access - only super admin can add users
   const authRoutes = [
     '/admin/login',
-    '/admin/register', 
     '/admin/forgot-password',
     '/admin/reset-password'
   ]

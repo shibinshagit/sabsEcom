@@ -41,9 +41,11 @@ import {
   Mail, 
   Calendar,
   Eye,
-  EyeOff
+  EyeOff,
+  Crown
 } from "lucide-react"
 import toast from "react-hot-toast"
+import { useAdminAuth } from "@/lib/contexts/admin-auth-context"
 
 interface AdminUser {
   id: number
@@ -57,9 +59,13 @@ interface AdminUser {
 }
 
 export default function AdminUsersPage() {
+  const { user: currentUser } = useAdminAuth()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
+  
+  // Check if current user is super admin
+  const isSuperAdmin = currentUser?.role === 'super_admin'
   
   // Create user dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -215,6 +221,22 @@ export default function AdminUsersPage() {
     )
   }
 
+  // Check if user has super admin permissions
+  if (!isSuperAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Access Denied</h2>
+          <p className="text-gray-400 mb-4">Only Super Admin can manage admin users.</p>
+          <p className="text-sm text-gray-500">Contact your Super Admin for access.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -280,6 +302,18 @@ export default function AdminUsersPage() {
                     {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-role" className="text-gray-300">Role</Label>
+                <select
+                  id="create-role"
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm({...createForm, role: e.target.value})}
+                  className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="moderator">Moderator</option>
+                </select>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button
@@ -487,6 +521,18 @@ export default function AdminUsersPage() {
                   {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-role" className="text-gray-300">Role</Label>
+              <select
+                id="edit-role"
+                value={editForm.role}
+                onChange={(e) => setEditForm({...editForm, role: e.target.value})}
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
+              >
+                <option value="admin">Admin</option>
+                <option value="moderator">Moderator</option>
+              </select>
             </div>
             <div className="flex justify-end space-x-2">
               <Button

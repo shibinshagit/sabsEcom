@@ -127,18 +127,17 @@ export default function AdminLogin() {
               </Button>
             </form>
 
-            {/* Sign Up Link */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Don't have an admin account?{" "}
-                <Link 
-                  href="/admin/register" 
-                  className="text-red-600 hover:text-red-700 font-medium"
-                >
-                  Create Account
-                </Link>
+            {/* Contact Super Admin */}
+            <div className="text-center">
+              <p className="text-sm text-gray-500">
+                Need an admin account?{" "}
+                <span className="font-medium text-red-600">
+                  Contact Super Admin
+                </span>
               </p>
             </div>
+
+
           </CardContent>
         </Card>
 

@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     `
 
     // Send password reset email
-    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin/reset-password?token=${resetToken}`
+    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://opencoders.icu'}/admin/reset-password?token=${resetToken}`
     
     const emailHtml = `
       <!DOCTYPE html>

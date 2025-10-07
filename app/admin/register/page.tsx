@@ -224,7 +224,7 @@ export default function AdminRegister() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
-            © 2024 Sabs Online. All rights reserved.
+            © 2025 Sabs Online. All rights reserved.
           </p>
         </div>
       </div>

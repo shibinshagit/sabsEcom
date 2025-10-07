@@ -16,9 +16,9 @@ export default function AdminAuthWrapper({ children }: AdminAuthWrapperProps) {
   const [checkingAccess, setCheckingAccess] = useState(true)
 
   // Public admin routes that don't require authentication
+  // Note: /admin/register is removed from public access - only super admin can add users
   const publicRoutes = [
     '/admin/login',
-    '/admin/register', 
     '/admin/forgot-password',
     '/admin/reset-password'
   ]
