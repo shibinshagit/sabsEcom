@@ -64,7 +64,7 @@ export default function ContactPage() {
                   <div className="flex items-start space-x-3">
                     <MapPin className="w-5 h-5 text-amber-400 mt-1 flex-shrink-0" />
                     <div>
-                      <p className="text-gray-700">23/384/A62 Near KNH Hospital</p>
+                      <p className="text-gray-700">23/384/A62 Prince Tower, Near KNH Hospital</p>
                       <p className="text-gray-700">Railway Station Road Uppala, Kasaragod, India</p>
                     </div>
                   </div>
