@@ -118,7 +118,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
 
           <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin-top: 20px;">
             <h4 style="margin: 0 0 10px 0; color: #0066cc;">📞 Need Help?</h4>
-            <p style="margin: 0; font-size: 14px;">Contact us at <a href="tel:+917012975494" style="color: #f97316;">+91 7012975494</a> for any questions about your order.</p>
+            <p style="margin: 0; font-size: 14px;">Contact us at <a href="tel:+919037888193" style="color: #f97316;">+91 9037888193</a> for any questions about your order.</p>
           </div>
 
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
@@ -148,7 +148,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
 // Function to send admin notification email
 async function sendAdminNotificationEmail(orderData: any, orderId: number, orderNumber: string) {
   try {
-    const adminEmail = 'oursouq01@gmail.com'
+    const adminEmail = 'sabsonlinestore@gmail.com'
     const currency = orderData.currency || 'AED'
     const currencySymbol = currency === 'AED' ? 'AED' : '₹'
 

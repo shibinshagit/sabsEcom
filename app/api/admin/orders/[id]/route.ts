@@ -102,7 +102,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
           ${newStatus === 'delivered' ? `
           <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin-top: 20px;">
             <h4 style="margin: 0 0 10px 0; color: #0066cc;">🌟 We hope you love your order!</h4>
-            <p style="margin: 0; font-size: 14px;">If you have any questions or feedback, please don't hesitate to contact us at <a href="tel:+917012975494" style="color: ${statusInfo.color};">+91 7012975494</a></p>
+            <p style="margin: 0; font-size: 14px;">If you have any questions or feedback, please don't hesitate to contact us at <a href="tel:+919037888193" style="color: ${statusInfo.color};">+91 9037888193</a></p>
           </div>
           ` : ''}
 

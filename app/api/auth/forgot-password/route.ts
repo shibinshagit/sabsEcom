@@ -97,7 +97,7 @@ export async function POST(request: Request) {
           </div>
 
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-            <p style="margin: 0; color: #666; font-size: 14px;">Need help? Contact us at <a href="tel:+917012975494" style="color: #f97316;">+91 7012975494</a></p>
+            <p style="margin: 0; color: #666; font-size: 14px;">Need help? Contact us at <a href="tel:+919037888193" style="color: #f97316;">+91 9037888193</a></p>
             <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">This email was sent by Sabs Online</p>
           </div>
         </div>

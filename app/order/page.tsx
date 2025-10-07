@@ -867,7 +867,7 @@ export default function OrderPage() {
       message += `\n📝 *Special Instructions:*\n${specialInstructions}\n`
     }
     message += `\nPlease confirm this order and let me know the estimated preparation time. Thank you! 🙏`
-    const phoneNumber = "+917012975494"
+    const phoneNumber = "+919037888193"
     const encodedMessage = encodeURIComponent(message)
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
     try {
