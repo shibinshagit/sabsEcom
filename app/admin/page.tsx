@@ -14,6 +14,7 @@ interface DashboardStats {
   todayReservations: number
   recentOrders: Array<{
     id: number
+    order_number: string
     customer_name: string
     total_amount: number
     currency: string
@@ -209,7 +210,7 @@ export default function AdminDashboard() {
                       <span className="font-medium capitalize">{order.status}</span>
                     </div>
                     <div>
-                      <p className="text-white font-medium">Order #{order.id}</p>
+                      <p className="text-white font-medium">Order {order.order_number}</p>
                       <p className="text-gray-400 text-sm">{order.customer_name}</p>
                     </div>
                   </div>

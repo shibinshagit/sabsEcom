@@ -678,7 +678,7 @@ export default function OrderPage() {
       }
       
       await clearCartAfterOrder()
-      toast.success(`Order placed successfully! Order ID: ${result.orderId}`, { position: 'top-center' })
+      toast.success(`Order placed successfully! Order Number: ${result.orderNumber || result.orderId}`, { position: 'top-center' })
       router.push("/orders")
     } catch (error) {
       console.error("Failed to submit order:", error)

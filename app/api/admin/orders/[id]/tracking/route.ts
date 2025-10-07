@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 })
 
 // Function to send status update email to customer (copied from status route)
-async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?: string, trackingId?: string) {
+async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?: string, trackingId?: string, orderNumber?: string) {
   try {
     const customerEmail = order.customer_email
     if (!customerEmail) {
@@ -69,7 +69,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, ${statusInfo.color}, #dc2626); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 28px;">${statusInfo.emoji} ${statusInfo.title}</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order #${order.id}</p>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order ${orderNumber}</p>
         </div>
 
         <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
@@ -92,7 +92,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
 
           <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
             <h3 style="margin: 0 0 10px 0; color: #333;">Order Details</h3>
-            <p style="margin: 5px 0;"><strong>Order ID:</strong> #${order.id}</p>
+            <p style="margin: 5px 0;"><strong>Order Number:</strong> ${orderNumber}</p>
             <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.customer_name}</p>
             <p style="margin: 5px 0;"><strong>Total Amount:</strong> ${currencySymbol} ${parseFloat(order.final_total || order.total_amount).toFixed(2)}</p>
             <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: ${statusInfo.color}; font-weight: bold;">${newStatus.toUpperCase()}</span></p>
@@ -118,7 +118,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: customerEmail,
-      subject: `${statusInfo.emoji} Order #${order.id} - ${statusInfo.title}`,
+      subject: `${statusInfo.emoji} Order ${orderNumber} - ${statusInfo.title}`,
       html: emailHtml,
     }
 
@@ -131,7 +131,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
 }
 
 // Function to send tracking notification email
-async function sendTrackingNotificationEmail(orderData: any, trackingUrl: string, trackingId: string) {
+async function sendTrackingNotificationEmail(orderData: any, trackingUrl: string, trackingId: string, orderNumber?: string) {
   try {
     const currencySymbol = orderData.currency === 'AED' ? 'AED' : '₹'
     
@@ -146,7 +146,7 @@ async function sendTrackingNotificationEmail(orderData: any, trackingUrl: string
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #f97316, #dc2626); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 28px;">🔄 Tracking Information Updated!</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order #${orderData.id}</p>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order ${orderNumber}</p>
         </div>
 
         <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
@@ -169,7 +169,7 @@ async function sendTrackingNotificationEmail(orderData: any, trackingUrl: string
 
           <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
             <h3 style="margin: 0 0 10px 0; color: #333;">Order Details</h3>
-            <p style="margin: 5px 0;"><strong>Order ID:</strong> #${orderData.id}</p>
+            <p style="margin: 5px 0;"><strong>Order Number:</strong> ${orderNumber}</p>
             <p style="margin: 5px 0;"><strong>Customer:</strong> ${orderData.customer_name}</p>
             <p style="margin: 5px 0;"><strong>Total Amount:</strong> ${currencySymbol} ${parseFloat(orderData.final_total || orderData.total_amount).toFixed(2)}</p>
             <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #f97316; font-weight: bold;">${orderData.status.toUpperCase()}</span></p>
@@ -193,7 +193,7 @@ async function sendTrackingNotificationEmail(orderData: any, trackingUrl: string
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: orderData.customer_email,
-      subject: `📦 Your Order #${orderData.id} is On Its Way - Tracking Information`,
+      subject: `📦 Your Order ${orderNumber} is On Its Way - Tracking Information`,
       html: emailHtml,
     }
 
@@ -255,11 +255,11 @@ export async function PUT(
       if (notificationStatuses.includes(order.status.toLowerCase())) {
         if (!hadExistingTracking) {
           // First time adding tracking - send status email with tracking info
-          await sendStatusUpdateEmail(order, order.status.toLowerCase(), finalTrackingUrl, finalTrackingId)
+          await sendStatusUpdateEmail(order, order.status.toLowerCase(), finalTrackingUrl, finalTrackingId, order.order_number)
           console.log(`First-time tracking: Status email (${order.status}) sent for order ${orderId} with new tracking info`)
         } else {
           // Updating existing tracking - send tracking update email
-          await sendTrackingNotificationEmail(order, finalTrackingUrl, finalTrackingId)
+          await sendTrackingNotificationEmail(order, finalTrackingUrl, finalTrackingId, order.order_number)
           console.log(`Tracking UPDATE email sent for order ${orderId} with status: ${order.status}`)
         }
       } else {

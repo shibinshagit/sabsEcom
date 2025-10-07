@@ -52,6 +52,7 @@ export default function OrdersManagement() {
 
   interface Order {
     id: number
+    order_number: string
     customer_name: string
     customer_email: string
     customer_phone: string
@@ -573,7 +574,7 @@ export default function OrdersManagement() {
                 {filteredOrders.map((order) => (
                   <TableRow key={order.id} className="border-gray-700">
                     <TableCell>
-                      <span className="text-white font-mono">#{order.id}</span>
+                      <span className="text-white font-mono">{order.order_number}</span>
                     </TableCell>
                     <TableCell>
                       <div>
@@ -650,9 +651,9 @@ export default function OrdersManagement() {
                               <DialogHeader>
                                 <DialogTitle className="text-2xl font-bold text-white flex items-center gap-3">
                                   <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                                    #{order.id}
+                                    {order.order_number}
                                   </div>
-                                  <span>Order #{order.id} - {order.customer_name}</span>
+                                  <span>Order {order.order_number} - {order.customer_name}</span>
                                   <Badge className={`ml-auto ${getStatusColor(order.status)} text-white px-3 py-1 text-sm font-medium`}>
                                     {order.status.toUpperCase()}
                                   </Badge>

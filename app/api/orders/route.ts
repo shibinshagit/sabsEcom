@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 })
 
 // Function to send order confirmation email
-async function sendOrderConfirmationEmail(orderData: any, orderId: number) {
+async function sendOrderConfirmationEmail(orderData: any, orderId: number, orderNumber: string) {
   try {
     const customerEmail = orderData.customerEmail
     if (!customerEmail) {
@@ -70,7 +70,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number) {
           <h2 style="color: #f97316; margin-bottom: 20px;">Order Details</h2>
 
           <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-            <p style="margin: 5px 0;"><strong>Order ID:</strong> #${orderId}</p>
+            <p style="margin: 5px 0;"><strong>Order Number:</strong> ${orderNumber}</p>
             <p style="margin: 5px 0;"><strong>Customer:</strong> ${orderData.customerName}</p>
             <p style="margin: 5px 0;"><strong>Phone:</strong> ${orderData.customerPhone}</p>
             <p style="margin: 5px 0;"><strong>Order Type:</strong> ${orderData.orderType.charAt(0).toUpperCase() + orderData.orderType.slice(1)}</p>
@@ -133,7 +133,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: customerEmail,
-      subject: `Order Confirmation #${orderId} - Sabs Online`,
+      subject: `Order Confirmation ${orderNumber} - Sabs Online`,
       html: emailHtml,
     }
 
@@ -146,7 +146,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number) {
 }
 
 // Function to send admin notification email
-async function sendAdminNotificationEmail(orderData: any, orderId: number) {
+async function sendAdminNotificationEmail(orderData: any, orderId: number, orderNumber: string) {
   try {
     const adminEmail = 'oursouq01@gmail.com'
     const currency = orderData.currency || 'AED'
@@ -194,14 +194,14 @@ async function sendAdminNotificationEmail(orderData: any, orderId: number) {
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 28px;">🚨 New Order Alert!</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order #${orderId} - Sabs Online</p>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order ${orderNumber} - Sabs Online</p>
         </div>
 
         <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
           <h2 style="color: #dc2626; margin-bottom: 20px;">Order Details</h2>
 
           <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-            <p style="margin: 5px 0;"><strong>Order ID:</strong> #${orderId}</p>
+            <p style="margin: 5px 0;"><strong>Order Number:</strong> ${orderNumber}</p>
             <p style="margin: 5px 0;"><strong>Customer:</strong> ${orderData.customerName}</p>
             <p style="margin: 5px 0;"><strong>Phone:</strong> ${orderData.customerPhone}</p>
             <p style="margin: 5px 0;"><strong>Email:</strong> ${orderData.customerEmail || 'Not provided'}</p>
@@ -274,7 +274,7 @@ async function sendAdminNotificationEmail(orderData: any, orderId: number) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: adminEmail,
-      subject: `🚨 New Order #${orderId} - ${currencySymbol} ${finalTotal.toFixed(2)} (${orderData.customerName})`,
+      subject: `🚨 New Order ${orderNumber} - ${currencySymbol} ${finalTotal.toFixed(2)} (${orderData.customerName})`,
       html: emailHtml,
     }
 
@@ -332,6 +332,7 @@ async function ensureOrdersTableExists() {
       await sql`
         CREATE TABLE orders (
           id SERIAL PRIMARY KEY,
+          order_number VARCHAR(50) UNIQUE NOT NULL DEFAULT '',
           user_id TEXT,
           clerk_user_id TEXT,
           customer_name VARCHAR(255) NOT NULL,
@@ -361,6 +362,7 @@ async function ensureOrdersTableExists() {
     } else {
       // Add missing columns to existing table if needed
       const columnsToAdd = [
+        { name: 'order_number', definition: 'VARCHAR(50) UNIQUE NOT NULL DEFAULT \'\'', check: 'order_number' },
         { name: 'user_id', definition: 'TEXT', check: 'user_id' },
         { name: 'clerk_user_id', definition: 'TEXT', check: 'clerk_user_id' },
         { name: 'payment_method', definition: 'VARCHAR(20) DEFAULT \'cod\'', check: 'payment_method' },
@@ -498,6 +500,36 @@ async function findLinkedUser(email: string, isClerkUser: boolean, userId: strin
   }
 }
 
+// Function to generate professional order number
+async function generateOrderNumber(): Promise<string> {
+  try {
+    // Get the highest existing order number to continue sequence
+    const result = await sql`
+      SELECT order_number 
+      FROM orders 
+      WHERE order_number LIKE 'SAB-%' 
+      ORDER BY CAST(SUBSTRING(order_number FROM 5) AS INTEGER) DESC 
+      LIMIT 1
+    `
+    
+    let nextNumber = 10001 // Start from 10001 for professional appearance
+    
+    if (result.length > 0 && result[0].order_number) {
+      const lastNumber = parseInt(result[0].order_number.replace('SAB-', ''))
+      if (!isNaN(lastNumber)) {
+        nextNumber = lastNumber + 1
+      }
+    }
+    
+    return `SAB-${nextNumber}`
+  } catch (error) {
+    console.error('Error generating order number:', error)
+    // Fallback to timestamp-based number if database query fails
+    const timestamp = Date.now().toString().slice(-6)
+    return `SAB-${10000 + parseInt(timestamp.slice(-4))}`
+  }
+}
+
 // Helper function to get currency-specific pricing
 function getCurrencySpecificPrice(item: any, currency: string) {
   if (currency === 'AED') {
@@ -584,9 +616,14 @@ export async function POST(request: Request) {
       currency: orderData.currency || 'AED'
     })
 
-    // Insert order with ALL required columns including final_total
+    // Generate professional order number
+    const orderNumber = await generateOrderNumber()
+    console.log('Generated order number:', orderNumber)
+
+    // Insert order with ALL required columns including order_number and final_total
     const [order] = await sql`
       INSERT INTO orders (
+        order_number,
         user_id, clerk_user_id, customer_name, customer_email, customer_phone, 
         order_type, payment_method, payment_id, payment_status,
         table_number, delivery_address, 
@@ -594,6 +631,7 @@ export async function POST(request: Request) {
         total_amount, final_total,
         coupon_code, currency, special_instructions, status
       ) VALUES (
+        ${orderNumber},
         ${user?.isClerkUser ? null : user?.userId?.toString() || null},
         ${user?.isClerkUser ? user.userId : null},
         ${orderData.customerName}, 
@@ -615,7 +653,7 @@ export async function POST(request: Request) {
         ${orderData.currency || 'AED'},
         ${orderData.specialInstructions || null},
         'pending'
-      ) RETURNING id
+      ) RETURNING id, order_number
     `
 
     console.log('Order inserted with ID:', order.id)
@@ -662,8 +700,8 @@ export async function POST(request: Request) {
     // Send order confirmation email and admin notification
     try {
       await Promise.all([
-        sendOrderConfirmationEmail(orderData, order.id),
-        sendAdminNotificationEmail(orderData, order.id)
+        sendOrderConfirmationEmail(orderData, order.id, order.order_number),
+        sendAdminNotificationEmail(orderData, order.id, order.order_number)
       ])
     } catch (emailError) {
       console.error('Email sending failed:', emailError)
@@ -673,6 +711,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       orderId: order.id,
+      orderNumber: order.order_number,
       totalAmount: finalTotal,
       paymentStatus,
       currency: orderData.currency || 'AED'

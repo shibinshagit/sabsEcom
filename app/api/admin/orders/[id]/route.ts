@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 })
 
 // Function to send status update email to customer
-async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?: string, trackingId?: string) {
+async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?: string, trackingId?: string, orderNumber?: string) {
   try {
     const customerEmail = order.customer_email
     if (!customerEmail) {
@@ -69,7 +69,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, ${statusInfo.color}, #dc2626); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 28px;">${statusInfo.emoji} ${statusInfo.title}</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order #${order.id}</p>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Order ${orderNumber}</p>
         </div>
 
         <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
@@ -92,7 +92,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
 
           <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
             <h3 style="margin: 0 0 10px 0; color: #333;">Order Details</h3>
-            <p style="margin: 5px 0;"><strong>Order ID:</strong> #${order.id}</p>
+            <p style="margin: 5px 0;"><strong>Order Number:</strong> ${orderNumber}</p>
             <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.customer_name}</p>
             <p style="margin: 5px 0;"><strong>Total Amount:</strong> ${currencySymbol} ${parseFloat(order.final_total || order.total_amount).toFixed(2)}</p>
             <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: ${statusInfo.color}; font-weight: bold;">${newStatus.toUpperCase()}</span></p>
@@ -118,7 +118,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: customerEmail,
-      subject: `${statusInfo.emoji} Order #${order.id} - ${statusInfo.title}`,
+      subject: `${statusInfo.emoji} Order ${orderNumber} - ${statusInfo.title}`,
       html: emailHtml,
     }
 
@@ -131,7 +131,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
 }
 
 // Comprehensive stock management for all status transitions
-async function handleStockUpdate(orderId: number, previousStatus: string, newStatus: string, orderItems: any[]) {
+async function handleStockUpdate(orderId: number, previousStatus: string, newStatus: string, orderItems: any[], orderNumber: string) {
   /*
   STOCK MANAGEMENT RULES:
   1. From pending to any other (except cancel) = REDUCE stock
@@ -168,7 +168,7 @@ async function handleStockUpdate(orderId: number, previousStatus: string, newSta
     return
   }
   
-  console.log(`Stock ${stockAction} for order ${orderId}: ${previousStatus} → ${newStatus}`)
+  console.log(`Stock ${stockAction} for order ${orderNumber}: ${previousStatus} → ${newStatus}`)
   
   for (const item of orderItems) {
     const quantity = parseInt(item.quantity)
@@ -241,7 +241,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const previousStatus = currentOrder.status
     
     // Handle stock management based on status changes
-    await handleStockUpdate(id, previousStatus, status, currentOrder.items)
+    await handleStockUpdate(id, previousStatus, status, currentOrder.items, currentOrder.order_number)
 
     // Update order status, tracking URL, and tracking ID
     const result = await sql`
@@ -254,6 +254,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       WHERE id = ${id}
       RETURNING 
         id,
+        order_number,
         customer_name,
         customer_email,
         customer_phone,
@@ -283,6 +284,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const order = result[0]
     console.log(`Order ${id} status updated from ${previousStatus} to ${status}`)
+    console.log(`Order number for email: ${order.order_number}`)
 
     // Send status update email if status changed OR if tracking is being added for first time
     const hadPreviousTracking = currentOrder.tracking_url || currentOrder.tracking_id
@@ -291,7 +293,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     
     if (status !== previousStatus || isFirstTimeTracking) {
       try {
-        await sendStatusUpdateEmail(order, status, tracking_url, tracking_id)
+        await sendStatusUpdateEmail(order, status, tracking_url, tracking_id, order.order_number)
         if (isFirstTimeTracking) {
           console.log(`First-time tracking email sent for order ${id} with status: ${status}`)
         }

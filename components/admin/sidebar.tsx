@@ -14,7 +14,8 @@ import {
   Star,
   Info,
   BadgePercent,
-  Users
+  Users,
+  Shield
 } from "lucide-react"
 
 const navigation = [
@@ -27,6 +28,7 @@ const navigation = [
   // { name: "Hero Slider", href: "/admin/slider", icon: ImageIcon },
   // { name: "Banners", href: "/admin/banners", icon: MessageSquare },
   { name: "Customers", href: "/admin/customers", icon: Users },
+  { name: "Admin Users", href: "/admin/users", icon: Shield },
   { name: "Settings", href: "/admin/settings", icon: Settings },
   { name: "Spinner-Offers", href: "/admin/offer", icon:BadgePercent}
 ]

@@ -221,6 +221,7 @@ interface OrderItem {
 
 interface Order {
   id: number
+  order_number: string
   status: string
   order_type: string
   customer_name: string
@@ -473,7 +474,7 @@ export default function OrdersPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-base sm:text-lg lg:text-xl">Order #{order.id}</CardTitle>
+                          <CardTitle className="text-base sm:text-lg lg:text-xl">Order {order.order_number}</CardTitle>
                           <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">
                             Customer: <span className="font-medium">{order.customer_name}</span>
                           </p>

@@ -6,6 +6,7 @@ async function ensureSchema() {
     await sql`
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
+        order_number VARCHAR(50) UNIQUE NOT NULL DEFAULT '',
         user_id TEXT,
         clerk_user_id TEXT,
         customer_name VARCHAR(255) NOT NULL,
@@ -59,6 +60,47 @@ async function ensureSchema() {
       )
     `
 
+    // Add order_number column if it doesn't exist
+    try {
+      const orderNumberExists = await sql`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'orders' AND column_name = 'order_number'
+        )
+      `
+      
+      if (!orderNumberExists[0].exists) {
+        await sql`ALTER TABLE orders ADD COLUMN order_number VARCHAR(50) DEFAULT ''`
+        console.log("Added order_number column")
+        
+        // Update existing orders with professional order numbers
+        const ordersWithoutNumbers = await sql`
+          SELECT id FROM orders WHERE order_number = '' ORDER BY id ASC
+        `
+        
+        let startingNumber = 10001
+        for (const order of ordersWithoutNumbers) {
+          const orderNumber = `SAB-${startingNumber}`
+          await sql`
+            UPDATE orders 
+            SET order_number = ${orderNumber}
+            WHERE id = ${order.id}
+          `
+          startingNumber++
+        }
+        
+        // Now add the UNIQUE constraint
+        try {
+          await sql`ALTER TABLE orders ADD CONSTRAINT orders_order_number_unique UNIQUE (order_number)`
+          console.log("Added UNIQUE constraint to order_number column")
+        } catch (error) {
+          console.log("UNIQUE constraint might already exist:", error)
+        }
+      }
+    } catch (error) {
+      console.log("order_number column might already exist or error adding:", error)
+    }
+
     try {
       const columnExists = await sql`
         SELECT EXISTS (
@@ -91,6 +133,7 @@ export async function GET() {
     const orders = await sql`
       SELECT
         o.id,
+        o.order_number,
         o.customer_name,
         o.customer_email,
         o.customer_phone,
@@ -152,6 +195,7 @@ export async function GET() {
 
     const formattedOrders = orders.map(order => ({
       id: parseInt(order.id),
+      order_number: order.order_number,
       customer_name: order.customer_name,
       customer_email: order.customer_email,
       customer_phone: order.customer_phone,

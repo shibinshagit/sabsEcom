@@ -1,26 +1,43 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect } from "react"
 import { useDispatch } from "react-redux"
+import { usePathname } from "next/navigation"
 import type { AppDispatch } from "@/lib/store"
 import { fetchAdminData } from "@/lib/store/slices/adminSlice"
+import { AdminAuthProvider } from "@/lib/contexts/admin-auth-context"
+import AdminAuthWrapper from "@/components/admin/AdminAuthWrapper"
 import AdminSidebar from "@/components/admin/sidebar"
 import AdminHeader from "@/components/admin/header"
 import AdminBottomTabs from "@/components/admin/admin-bottom-tabs"
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch<AppDispatch>()
+  const pathname = usePathname()
+
+  // Public admin routes that don't need the full admin layout
+  const authRoutes = [
+    '/admin/login',
+    '/admin/register', 
+    '/admin/forgot-password',
+    '/admin/reset-password'
+  ]
+
+  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
 
   useEffect(() => {
-    dispatch(fetchAdminData())
-  }, [dispatch])
+    if (!isAuthRoute) {
+      dispatch(fetchAdminData())
+    }
+  }, [dispatch, isAuthRoute])
 
+  // For auth pages, just render the children without admin layout
+  if (isAuthRoute) {
+    return <>{children}</>
+  }
+
+  // For protected admin pages, render with full admin layout
   return (
     <div className="min-h-screen admin-gradient">
       <div className="flex">
@@ -34,5 +51,21 @@ export default function AdminLayout({
       </div>
       <AdminBottomTabs />
     </div>
+  )
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <AdminAuthProvider>
+      <AdminAuthWrapper>
+        <AdminLayoutContent>
+          {children}
+        </AdminLayoutContent>
+      </AdminAuthWrapper>
+    </AdminAuthProvider>
   )
 }

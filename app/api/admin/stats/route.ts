@@ -35,6 +35,11 @@ async function ensureSchema() {
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'AED';
   `
 
+  // Add order_number column if it doesn't exist
+  await sql`
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_number VARCHAR(50);
+  `
+
   // Order items ----------------------------------------------
   await sql`
     CREATE TABLE IF NOT EXISTS order_items (
@@ -142,6 +147,7 @@ export async function GET() {
     // Recent activity ------------------------------------------------------
     const recentOrders = await sql`
       SELECT id,
+             order_number,
              customer_name,
              total_amount,
              COALESCE(currency, 'AED') as currency,
