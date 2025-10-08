@@ -49,6 +49,7 @@ function Nav() {
   const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null)
   const [autoScrollInterval, setAutoScrollInterval] = useState<NodeJS.Timeout | null>(null)
   const [isAutoScrolling, setIsAutoScrolling] = useState(false)
+  const [isShopSwitching, setIsShopSwitching] = useState(false)
 
   const pathname = usePathname()
   const router = useRouter()
@@ -336,7 +337,17 @@ function Nav() {
   }
 
   const handleShopToggle = (selectedShop: "A" | "B") => {
-    setShop(selectedShop)
+    if (selectedShop === shop || isShopSwitching) return
+    
+    setIsShopSwitching(true)
+    
+    // Add a slight delay for visual feedback
+    setTimeout(() => {
+      setShop(selectedShop)
+      setTimeout(() => {
+        setIsShopSwitching(false)
+      }, 300) // Match the CSS transition duration
+    }, 150)
   }
 
   const handleLoginClick = () => {
@@ -370,9 +381,12 @@ function Nav() {
         <Banner page={currentPage} />
       </div>
       <nav
-        className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${shop === "A"
-          ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
-          : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
+        className={`sticky top-0 z-40 shadow-lg transition-all duration-500 ease-in-out ${isScrolled ? "shadow-xl" : ""} ${
+          isShopSwitching 
+            ? "bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 scale-[0.98] opacity-90" 
+            : shop === "A"
+            ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
+            : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
           }`}
         style={{ top: "var(--banner-height, 0px)" }}
       >
@@ -769,22 +783,38 @@ function Nav() {
                     left: shop === "A" ? "4px" : "calc(50% + 0px)",
                   }}
                 />
-                <div className="relative flex">
+                <div className="relative flex bg-white/20 rounded-full p-1 backdrop-blur-sm">
+                  {/* Animated background slider */}
+                  <div 
+                    className={`absolute top-1 w-10 h-10 bg-white rounded-full shadow-lg transition-all duration-300 ease-out ${
+                      shop === "A" ? "left-1" : "left-11"
+                    } ${isShopSwitching ? "scale-110 shadow-xl" : ""}`}
+                  />
+                  
                   <button
                     onClick={() => handleShopToggle("A")}
-                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative z-10 ${shop === "A" ? "text-orange-600" : "text-white hover:text-gray-200"
-                      }`}
+                    disabled={isShopSwitching}
+                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 relative z-10 ${
+                      shop === "A" 
+                        ? "text-orange-600 scale-110" 
+                        : "text-white hover:text-gray-200 hover:scale-105"
+                    } ${isShopSwitching ? "opacity-50" : ""}`}
                     title="Beauty Products"
                   >
-                    <Sparkles className="w-5 h-5" />
+                    <Sparkles className={`w-4 h-4 transition-all duration-300 ${shop === "A" ? "animate-pulse" : ""}`} />
                   </button>
+                  
                   <button
                     onClick={() => handleShopToggle("B")}
-                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative z-10 ${shop === "B" ? "text-purple-600" : "text-white hover:text-gray-200"
-                      }`}
+                    disabled={isShopSwitching}
+                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 relative z-10 ${
+                      shop === "B" 
+                        ? "text-purple-600 scale-110" 
+                        : "text-white hover:text-gray-200 hover:scale-105"
+                    } ${isShopSwitching ? "opacity-50" : ""}`}
                     title="Style Accessories"
                   >
-                    <Watch className="w-5 h-5" />
+                    <Watch className={`w-4 h-4 transition-all duration-300 ${shop === "B" ? "animate-pulse" : ""}`} />
                   </button>
                 </div>
               </div>
