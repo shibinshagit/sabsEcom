@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Eye, Clock, CheckCircle, AlertCircle, Package, CreditCard, Smartphone, Link, Trash2, ExternalLink } from "lucide-react"
+import { Eye, Clock, CheckCircle, AlertCircle, Package, CreditCard, Smartphone, Link, Trash2, ExternalLink, Copy, Mail, MapPin, MessageCircle, Phone } from "lucide-react"
 import Image from "next/image"
+import toast from "react-hot-toast"
 
 // CSS for hiding scrollbars
 const scrollbarHideStyle = `
@@ -651,7 +652,7 @@ export default function OrdersManagement() {
                               <DialogHeader>
                                 <DialogTitle className="text-2xl font-bold text-white flex items-center gap-3">
                                   <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                                    {order.order_number}
+                                  {order.customer_name.charAt(0).toUpperCase()}
                                   </div>
                                   <span>Order {order.order_number} - {order.customer_name}</span>
                                   <Badge className={`ml-auto ${getStatusColor(order.status)} text-white px-3 py-1 text-sm font-medium`}>
@@ -676,46 +677,146 @@ export default function OrdersManagement() {
                                 <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                      <h4 className="text-lg font-bold text-white mb-4">
-                                        Customer Information
-                                      </h4>
-                                      <div className="space-y-3">
-                                        <div className="flex items-center gap-3">
-                                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                            {selectedOrder.customer_name.charAt(0).toUpperCase()}
-                                          </div>
-                                          <div>
-                                            <p className="font-semibold text-white">{selectedOrder.customer_name}</p>
-                                            <p className="text-gray-400 text-sm">{selectedOrder.customer_phone}</p>
-                                          </div>
+                                      <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-lg font-bold text-white">
+                                          Customer Information
+                                        </h4>
+                                        <div className="flex gap-2">
+                                          <Button
+                                            onClick={() => {
+                                              const customerInfo = `${selectedOrder.customer_name}
+                                                ${selectedOrder.delivery_address || selectedOrder.customer_address || ''}`;
+                                              
+                                              navigator.clipboard.writeText(customerInfo).then(() => {
+                                                toast.success('Name & Address copied!', { position: 'top-center' });
+                                              }).catch(() => {
+                                                toast.error('Failed to copy to clipboard', { position: 'top-center' });
+                                              });
+                                            }}
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-xs h-8 px-3 border-gray-600 text-gray-300 hover:bg-gray-700"
+                                          >
+                                            <Copy className="w-3 h-3 mr-1" />
+                                            Copy Basic
+                                          </Button>
+                                          
+                                          <Button
+                                            onClick={() => {
+                                              const customerInfo = `${selectedOrder.customer_name}
+                                                ${selectedOrder.delivery_address || selectedOrder.customer_address || ''}
+                                                ${selectedOrder.customer_phone}${selectedOrder.customer_email ? `
+                                                ${selectedOrder.customer_email}` : ''}`;
+                                              
+                                              navigator.clipboard.writeText(customerInfo).then(() => {
+                                                toast.success('Full contact info copied!', { position: 'top-center' });
+                                              }).catch(() => {
+                                                toast.error('Failed to copy to clipboard', { position: 'top-center' });
+                                              });
+                                            }}
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-xs h-8 px-3 border-blue-600 text-blue-300 hover:bg-blue-600/10"
+                                          >
+                                            <Copy className="w-3 h-3 mr-1" />
+                                            Copy All
+                                          </Button>
                                         </div>
-                                        {selectedOrder.customer_email && (
-                                          <p className="text-gray-400 text-sm pl-11">{selectedOrder.customer_email}</p>
-                                        )}
                                       </div>
 
-                                      {/* Address Information */}
-                                      {selectedOrder.delivery_address && (
-                                        <div className="mt-5">
-                                          <h5 className="font-semibold text-white mb-2">
-                                            Delivery Address
-                                          </h5>
-                                          <div className="bg-gray-700 border border-gray-600 rounded-lg p-3 text-sm text-gray-300">
-                                            {selectedOrder.delivery_address}
+                                      {/* Combined Customer Information Card */}
+                                      <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4 space-y-3">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                            {selectedOrder.customer_name.charAt(0).toUpperCase()}
+                                          </div>
+                                          <div className="flex-1">
+                                            <p className="font-semibold text-white text-lg">{selectedOrder.customer_name}</p>
+                                            <div className="flex items-center gap-4 mt-1">
+                                              <a 
+                                                href={`tel:${selectedOrder.customer_phone}`}
+                                                className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1"
+                                              >
+                                                <Smartphone className="w-3 h-3" />
+                                                {selectedOrder.customer_phone}
+                                              </a>
+                                              {selectedOrder.customer_email && (
+                                                <a 
+                                                  href={`mailto:${selectedOrder.customer_email}`}
+                                                  className="text-green-400 hover:text-green-300 text-sm flex items-center gap-1"
+                                                >
+                                                  <Mail className="w-3 h-3" />
+                                                  Email
+                                                </a>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
-                                      )}
 
-                                      {selectedOrder.customer_address && (
-                                        <div className="mt-4">
-                                          <h5 className="font-semibold text-white mb-2">
-                                            Customer Address
-                                          </h5>
-                                          <div className="bg-gray-700 border border-gray-600 rounded-lg p-3 text-sm text-gray-300">
-                                            {selectedOrder.customer_address}
+                                        {/* Combined Address Information */}
+                                        {(selectedOrder.delivery_address || selectedOrder.customer_address) && (
+                                          <div className="border-t border-gray-600 pt-3">
+                                            <div className="flex items-start gap-2">
+                                              <MapPin className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                                              <div className="flex-1">
+                                                <p className="text-orange-400 font-medium text-sm mb-1">Delivery Address:</p>
+                                                <p className="text-gray-300 text-sm leading-relaxed">
+                                                  {selectedOrder.delivery_address || selectedOrder.customer_address}
+                                                </p>
+                                                {selectedOrder.delivery_address && selectedOrder.customer_address && 
+                                                 selectedOrder.delivery_address !== selectedOrder.customer_address && (
+                                                  <div className="mt-2 pt-2 border-t border-gray-600">
+                                                    <p className="text-gray-400 font-medium text-xs mb-1">Customer Address:</p>
+                                                    <p className="text-gray-400 text-xs leading-relaxed">
+                                                      {selectedOrder.customer_address}
+                                                    </p>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
                                           </div>
+                                        )}
+
+                                        {/* Quick Actions */}
+                                        <div className="border-t border-gray-600 pt-3 flex gap-2">
+                                          <Button
+                                            onClick={() => window.open(`tel:${selectedOrder.customer_phone}`, '_self')}
+                                            size="sm"
+                                            variant="outline"
+                                            className="flex-1 text-xs h-8 border-green-600 text-green-400 hover:bg-green-600/10"
+                                          >
+                                            <Phone className="w-3 h-3 mr-1" />
+                                            Call
+                                          </Button>
+                                          <Button
+                                            onClick={() => {
+                                              const address = selectedOrder.delivery_address || selectedOrder.customer_address;
+                                              if (address) {
+                                                window.open(`https://maps.google.com/?q=${encodeURIComponent(address)}`, '_blank');
+                                              }
+                                            }}
+                                            size="sm"
+                                            variant="outline"
+                                            className="flex-1 text-xs h-8 border-blue-600 text-blue-400 hover:bg-blue-600/10"
+                                            disabled={!selectedOrder.delivery_address && !selectedOrder.customer_address}
+                                          >
+                                            <MapPin className="w-3 h-3 mr-1" />
+                                            Map
+                                          </Button>
+                                          <Button
+                                            onClick={() => {
+                                              const message = `Hi ${selectedOrder.customer_name}, your order ${selectedOrder.order_number} is being processed. We'll update you soon!`;
+                                              window.open(`https://wa.me/${selectedOrder.customer_phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+                                            }}
+                                            size="sm"
+                                            variant="outline"
+                                            className="flex-1 text-xs h-8 border-green-600 text-green-400 hover:bg-green-600/10"
+                                          >
+                                            <MessageCircle className="w-3 h-3 mr-1" />
+                                            WhatsApp
+                                          </Button>
                                         </div>
-                                      )}
+                                      </div>
                                     </div>
 
                                     <div>

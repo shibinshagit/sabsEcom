@@ -81,7 +81,7 @@ export async function PUT(
           ? features.split(',').map(f => f.trim()).filter(Boolean)
           : [])
 
-    console.log('Arrays being updated:', { imageUrlsArray, featuresArray }) // Debug log
+    // console.log('Arrays being updated:', { imageUrlsArray, featuresArray })
 
     // Update product with proper handling for mixed column types
     const [product] = await sql`

@@ -161,7 +161,8 @@ export default function Footer() {
               <div className="flex items-start space-x-4">
                 <MapPin className={`w-6 h-6 ${theme.accent} mt-1 flex-shrink-0`} />
                 <div>
-                  <p className={`${theme.text} text-lg`}>23/384/A62 Near KNH Hospital</p>
+                  <p className={`${theme.text} text-lg`}>23/384/A62 Prince Tower</p>
+                  <p className={`${theme.text} text-lg`}>Near KNH Hospital</p>
                   <p className={`${theme.text} text-lg`}>Railway Station Road Uppala</p>
                   <p className={`${theme.text} text-lg`}>Kasaragod, India</p>
                 </div>

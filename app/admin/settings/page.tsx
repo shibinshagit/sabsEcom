@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertCircle, Save, SettingsIcon, Store, MapPin, CreditCard, Zap, Timer, ToggleLeft } from "lucide-react"
+import { AlertCircle, Save, SettingsIcon, Store, MapPin, CreditCard, Zap, Timer, ToggleLeft, CheckCircle, ExternalLink } from "lucide-react"
 import { useShop } from "@/lib/contexts/shop-context"
 import ImageUploadSingle from "@/components/ui/ImageUploadSingle"
 
@@ -55,6 +55,13 @@ export default function AdminSettings() {
     floating_ad_duration: '2',
     floating_ad_cooldown: '4',
     floating_ad_max_shows: '3'
+  })
+  
+  // URL validation state
+  const [urlValidation, setUrlValidation] = useState<{[key: string]: {isValid: boolean, isChecking: boolean}}>({
+    social_facebook: { isValid: true, isChecking: false },
+    social_instagram: { isValid: true, isChecking: false },
+    social_twitter: { isValid: true, isChecking: false }
   })
 
   useEffect(() => {
@@ -144,6 +151,54 @@ export default function AdminSettings() {
 
   const getShopFeaturesSetting = (key: string): string => {
     return shopFeaturesSettings[key as keyof typeof shopFeaturesSettings] || ""
+  }
+
+  // URL validation functions
+  const validateUrl = (url: string): boolean => {
+    if (!url.trim()) return true // Empty URLs are valid (optional)
+    try {
+      const urlObj = new URL(url)
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
+
+  const validateSocialUrl = async (key: string, url: string) => {
+    if (!url.trim()) {
+      setUrlValidation(prev => ({
+        ...prev,
+        [key]: { isValid: true, isChecking: false }
+      }))
+      return
+    }
+
+    setUrlValidation(prev => ({
+      ...prev,
+      [key]: { isValid: true, isChecking: true }
+    }))
+
+    // Basic URL format validation
+    const isValidFormat = validateUrl(url)
+    
+    // Platform-specific validation
+    let isValidPlatform = true
+    if (key === 'social_facebook' && url) {
+      isValidPlatform = url.includes('facebook.com') || url.includes('fb.com')
+    } else if (key === 'social_instagram' && url) {
+      isValidPlatform = url.includes('instagram.com')
+    } else if (key === 'social_twitter' && url) {
+      isValidPlatform = url.includes('twitter.com') || url.includes('x.com')
+    }
+
+    const isValid = isValidFormat && isValidPlatform
+
+    setTimeout(() => {
+      setUrlValidation(prev => ({
+        ...prev,
+        [key]: { isValid, isChecking: false }
+      }))
+    }, 500) // Small delay to show checking state
   }
 
   const saveShopFeaturesSettings = async () => {
@@ -448,33 +503,132 @@ export default function AdminSettings() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="social_facebook">Facebook URL</Label>
-                    <Input
-                      id="social_facebook"
-                      value={getSetting("social_facebook")}
-                      onChange={(e) => updateSetting("social_facebook", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white h-12"
-                      placeholder="https://facebook.com/yourpage"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="social_facebook"
+                        value={getSetting("social_facebook")}
+                        onChange={(e) => {
+                          updateSetting("social_facebook", e.target.value)
+                          validateSocialUrl("social_facebook", e.target.value)
+                        }}
+                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${
+                          !urlValidation.social_facebook.isValid ? 'border-red-500' : 
+                          getSetting("social_facebook") && urlValidation.social_facebook.isValid ? 'border-green-500' : ''
+                        }`}
+                        placeholder="https://facebook.com/yourpage"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {urlValidation.social_facebook.isChecking ? (
+                          <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                        ) : getSetting("social_facebook") ? (
+                          urlValidation.social_facebook.isValid ? (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                          )
+                        ) : null}
+                      </div>
+                    </div>
+                    {getSetting("social_facebook") && urlValidation.social_facebook.isValid && (
+                      <Button
+                        onClick={() => window.open(getSetting("social_facebook"), '_blank')}
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 text-xs h-7 border-blue-600 text-blue-400 hover:bg-blue-600/10"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Check Link
+                      </Button>
+                    )}
+                    {getSetting("social_facebook") && !urlValidation.social_facebook.isValid && (
+                      <p className="text-red-400 text-xs mt-1">Please enter a valid Facebook URL</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="social_instagram">Instagram URL</Label>
-                    <Input
-                      id="social_instagram"
-                      value={getSetting("social_instagram")}
-                      onChange={(e) => updateSetting("social_instagram", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white h-12"
-                      placeholder="https://instagram.com/yourprofile"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="social_instagram"
+                        value={getSetting("social_instagram")}
+                        onChange={(e) => {
+                          updateSetting("social_instagram", e.target.value)
+                          validateSocialUrl("social_instagram", e.target.value)
+                        }}
+                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${
+                          !urlValidation.social_instagram.isValid ? 'border-red-500' : 
+                          getSetting("social_instagram") && urlValidation.social_instagram.isValid ? 'border-green-500' : ''
+                        }`}
+                        placeholder="https://instagram.com/yourprofile"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {urlValidation.social_instagram.isChecking ? (
+                          <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                        ) : getSetting("social_instagram") ? (
+                          urlValidation.social_instagram.isValid ? (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                          )
+                        ) : null}
+                      </div>
+                    </div>
+                    {getSetting("social_instagram") && urlValidation.social_instagram.isValid && (
+                      <Button
+                        onClick={() => window.open(getSetting("social_instagram"), '_blank')}
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 text-xs h-7 border-pink-600 text-pink-400 hover:bg-pink-600/10"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Check Link
+                      </Button>
+                    )}
+                    {getSetting("social_instagram") && !urlValidation.social_instagram.isValid && (
+                      <p className="text-red-400 text-xs mt-1">Please enter a valid Instagram URL</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="social_twitter">Twitter URL</Label>
-                    <Input
-                      id="social_twitter"
-                      value={getSetting("social_twitter")}
-                      onChange={(e) => updateSetting("social_twitter", e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white h-12"
-                      placeholder="https://twitter.com/yourprofile"
-                    />
+                    <Label htmlFor="social_twitter">Twitter/X URL</Label>
+                    <div className="relative">
+                      <Input
+                        id="social_twitter"
+                        value={getSetting("social_twitter")}
+                        onChange={(e) => {
+                          updateSetting("social_twitter", e.target.value)
+                          validateSocialUrl("social_twitter", e.target.value)
+                        }}
+                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${
+                          !urlValidation.social_twitter.isValid ? 'border-red-500' : 
+                          getSetting("social_twitter") && urlValidation.social_twitter.isValid ? 'border-green-500' : ''
+                        }`}
+                        placeholder="https://twitter.com/yourprofile"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {urlValidation.social_twitter.isChecking ? (
+                          <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                        ) : getSetting("social_twitter") ? (
+                          urlValidation.social_twitter.isValid ? (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                          )
+                        ) : null}
+                      </div>
+                    </div>
+                    {getSetting("social_twitter") && urlValidation.social_twitter.isValid && (
+                      <Button
+                        onClick={() => window.open(getSetting("social_twitter"), '_blank')}
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 text-xs h-7 border-blue-600 text-blue-400 hover:bg-blue-600/10"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Check Link
+                      </Button>
+                    )}
+                    {getSetting("social_twitter") && !urlValidation.social_twitter.isValid && (
+                      <p className="text-red-400 text-xs mt-1">Please enter a valid Twitter/X URL</p>
+                    )}
                   </div>
                 </div>
               </div>

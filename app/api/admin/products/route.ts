@@ -112,7 +112,7 @@ export async function POST(request: Request) {
           ? features.split(',').map(f => f.trim()).filter(Boolean)
           : [])
 
-    console.log('Arrays being inserted:', { imageUrlsArray, featuresArray }) // Debug log
+    // console.log('Arrays being inserted:', { imageUrlsArray, featuresArray }) 
 
     // Create product with proper handling for mixed column types
     const [product] = await sql`
