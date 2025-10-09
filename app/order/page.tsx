@@ -29,6 +29,8 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import toast from 'react-hot-toast'
 
+const WHATSAPP_ORDER_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_ORDER_NUMBER
+
 // Declare Razorpay global
 declare global {
   interface Window {
@@ -867,7 +869,11 @@ export default function OrderPage() {
       message += `\n📝 *Special Instructions:*\n${specialInstructions}\n`
     }
     message += `\nPlease confirm this order and let me know the estimated preparation time. Thank you! 🙏`
-    const phoneNumber = "+919037888193"
+    const phoneNumber = WHATSAPP_ORDER_NUMBER
+    if (!phoneNumber) {
+      toast.error('WhatsApp number not configured. Please contact support.', { position: 'top-center' })
+      return
+    }
     const encodedMessage = encodeURIComponent(message)
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
     try {

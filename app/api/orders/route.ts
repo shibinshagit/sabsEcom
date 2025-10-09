@@ -17,6 +17,9 @@ const transporter = nodemailer.createTransport({
   },
 })
 
+// //Order Alert mail
+// ORDER_ALERT_MAIL : process.env.ORDER_ALERT_MAIL
+
 // Function to send order confirmation email
 async function sendOrderConfirmationEmail(orderData: any, orderId: number, orderNumber: string) {
   try {
@@ -148,7 +151,12 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
 // Function to send admin notification email
 async function sendAdminNotificationEmail(orderData: any, orderId: number, orderNumber: string) {
   try {
-    const adminEmail = 'sabsorder@gmail.com'
+    const adminEmail = process.env.ORDER_ALERT_MAIL
+    
+    if (!adminEmail) {
+      console.error('ORDER_ALERT_MAIL environment variable not configured')
+      return
+    }
     const currency = orderData.currency || 'AED'
     const currencySymbol = currency === 'AED' ? 'AED ' : '₹'
     const countryFlag = currency === 'AED' ? '🇦🇪' : '🇮🇳'
