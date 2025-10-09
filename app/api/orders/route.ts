@@ -151,7 +151,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
 // Function to send admin notification email
 async function sendAdminNotificationEmail(orderData: any, orderId: number, orderNumber: string) {
   try {
-    const adminEmail = process.env.ORDER_ALERT_MAIL
+    const adminEmail = process.env.ORDER_ALERT_MAIL || "sabsorder@gmail.com"
     
     if (!adminEmail) {
       console.error('ORDER_ALERT_MAIL environment variable not configured')

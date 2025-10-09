@@ -11,7 +11,7 @@ export const ADMIN_CONFIG = {
   MAX_ADMIN_USERS: parseInt(process.env.MAX_ADMIN_USERS || "5"),
   
   // Super admin configuration
-  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || "admin@sabs.online",
+  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || "sabsorder@gmail.com",
   SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@2025",
   
   // Admin roles

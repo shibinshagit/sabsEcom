@@ -869,7 +869,8 @@ export default function OrderPage() {
       message += `\n📝 *Special Instructions:*\n${specialInstructions}\n`
     }
     message += `\nPlease confirm this order and let me know the estimated preparation time. Thank you! 🙏`
-    const phoneNumber = WHATSAPP_ORDER_NUMBER
+    const phoneNumber = WHATSAPP_ORDER_NUMBER || "+919037888193"
+    
     if (!phoneNumber) {
       toast.error('WhatsApp number not configured. Please contact support.', { position: 'top-center' })
       return
