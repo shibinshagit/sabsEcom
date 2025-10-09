@@ -49,7 +49,6 @@ function Nav() {
   const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null)
   const [autoScrollInterval, setAutoScrollInterval] = useState<NodeJS.Timeout | null>(null)
   const [isAutoScrolling, setIsAutoScrolling] = useState(false)
-  const [isShopSwitching, setIsShopSwitching] = useState(false)
 
   const pathname = usePathname()
   const router = useRouter()
@@ -337,17 +336,7 @@ function Nav() {
   }
 
   const handleShopToggle = (selectedShop: "A" | "B") => {
-    if (selectedShop === shop || isShopSwitching) return
-    
-    setIsShopSwitching(true)
-    
-    // Add a slight delay for visual feedback
-    setTimeout(() => {
-      setShop(selectedShop)
-      setTimeout(() => {
-        setIsShopSwitching(false)
-      }, 300) // Match the CSS transition duration
-    }, 150)
+    setShop(selectedShop)
   }
 
   const handleLoginClick = () => {
@@ -381,12 +370,9 @@ function Nav() {
         <Banner page={currentPage} />
       </div>
       <nav
-        className={`sticky top-0 z-40 shadow-lg transition-all duration-500 ease-in-out ${isScrolled ? "shadow-xl" : ""} ${
-          isShopSwitching 
-            ? "bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 scale-[0.98] opacity-90" 
-            : shop === "A"
-            ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
-            : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
+        className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${shop === "A"
+          ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
+          : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
           }`}
         style={{ top: "var(--banner-height, 0px)" }}
       >
@@ -774,48 +760,71 @@ function Nav() {
                 )}
               </div>
 
-              <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1 border border-white/30 transition-all duration-300 flex-shrink-0 ml-4">
+              <div className="relative bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-orange-900/30 backdrop-blur-md rounded-full p-1.5 border border-white/20 transition-all duration-500 flex-shrink-0 ml-4 shadow-2xl hover:shadow-purple-500/25">
+                {/* Animated Background Glow */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 blur-xl animate-pulse"></div>
+                
+                {/* Active Slider with Enhanced Glow */}
                 <div
-                  className="absolute top-1 bg-white rounded-full transition-all duration-300 ease-out shadow-lg"
+                  className={`absolute top-1.5 rounded-full transition-all duration-500 ease-out shadow-2xl ${
+                    shop === "A" 
+                      ? "bg-gradient-to-r from-orange-400 to-pink-500 shadow-orange-500/50" 
+                      : "bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-500/50"
+                  }`}
                   style={{
-                    width: "calc(50% - 4px)",
-                    height: "calc(100% - 8px)",
-                    left: shop === "A" ? "4px" : "calc(50% + 0px)",
+                    width: "calc(50% - 6px)",
+                    height: "calc(100% - 12px)",
+                    left: shop === "A" ? "6px" : "calc(50% + 0px)",
+                    boxShadow: shop === "A" 
+                      ? "0 0 20px rgba(251, 146, 60, 0.6), 0 0 40px rgba(251, 146, 60, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)" 
+                      : "0 0 20px rgba(147, 51, 234, 0.6), 0 0 40px rgba(147, 51, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)"
                   }}
                 />
-                <div className="relative flex bg-white/20 rounded-full p-1 backdrop-blur-sm">
-                  {/* Animated background slider */}
-                  <div 
-                    className={`absolute top-1 w-10 h-10 bg-white rounded-full shadow-lg transition-all duration-300 ease-out ${
-                      shop === "A" ? "left-1" : "left-11"
-                    } ${isShopSwitching ? "scale-110 shadow-xl" : ""}`}
-                  />
-                  
+                
+                <div className="relative flex">
                   <button
                     onClick={() => handleShopToggle("A")}
-                    disabled={isShopSwitching}
-                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 relative z-10 ${
+                    className={`group flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
                       shop === "A" 
-                        ? "text-orange-600 scale-110" 
-                        : "text-white hover:text-gray-200 hover:scale-105"
-                    } ${isShopSwitching ? "opacity-50" : ""}`}
+                        ? "text-white drop-shadow-lg" 
+                        : "text-white/70 hover:text-white hover:drop-shadow-lg"
+                    }`}
                     title="Beauty Products"
                   >
-                    <Sparkles className={`w-4 h-4 transition-all duration-300 ${shop === "A" ? "animate-pulse" : ""}`} />
+                    <Sparkles className={`w-6 h-6 transition-all duration-300 ${
+                      shop === "A" 
+                        ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" 
+                        : "group-hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]"
+                    }`} />
+                    {shop === "A" && (
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-400/20 to-pink-500/20 animate-ping"></div>
+                    )}
                   </button>
-                  
                   <button
                     onClick={() => handleShopToggle("B")}
-                    disabled={isShopSwitching}
-                    className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 relative z-10 ${
+                    className={`group flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
                       shop === "B" 
-                        ? "text-purple-600 scale-110" 
-                        : "text-white hover:text-gray-200 hover:scale-105"
-                    } ${isShopSwitching ? "opacity-50" : ""}`}
+                        ? "text-white drop-shadow-lg" 
+                        : "text-white/70 hover:text-white hover:drop-shadow-lg"
+                    }`}
                     title="Style Accessories"
                   >
-                    <Watch className={`w-4 h-4 transition-all duration-300 ${shop === "B" ? "animate-pulse" : ""}`} />
+                    <Watch className={`w-6 h-6 transition-all duration-300 ${
+                      shop === "B" 
+                        ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" 
+                        : "group-hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]"
+                    }`} />
+                    {shop === "B" && (
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-600/20 animate-ping"></div>
+                    )}
                   </button>
+                </div>
+                
+                {/* Floating Particles Effect */}
+                <div className="absolute inset-0 overflow-hidden rounded-full pointer-events-none">
+                  <div className={`absolute w-1 h-1 bg-white rounded-full animate-bounce ${shop === "A" ? "left-4 top-2" : "right-4 top-2"}`} style={{animationDelay: "0s"}}></div>
+                  <div className={`absolute w-1 h-1 bg-white/60 rounded-full animate-bounce ${shop === "A" ? "left-6 bottom-3" : "right-6 bottom-3"}`} style={{animationDelay: "0.5s"}}></div>
+                  <div className={`absolute w-0.5 h-0.5 bg-white/40 rounded-full animate-bounce ${shop === "A" ? "left-8 top-4" : "right-8 top-4"}`} style={{animationDelay: "1s"}}></div>
                 </div>
               </div>
             </div>

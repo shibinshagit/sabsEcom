@@ -65,35 +65,70 @@ export default function BottomTabs() {
               if (item.type === "toggle") {
                 return (
                   <div key="toggle" className="flex flex-col items-center">
-                    <div className={`relative flex rounded-full p-1 backdrop-blur-md border shadow-sm transition-all duration-300 ${
-                      shop === "A" 
-                        ? "bg-white/40 border-white/50" 
-                        : "bg-white/30 border-purple-200/50"
-                    }`}>
-                      <button
-                        onClick={() => handleShopToggle("cosmetics")}
-                        className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 ${
-                          shopType === "cosmetics"
-                            ? "bg-gradient-to-r from-[#f6d365] to-[#fda085] text-white shadow"
-                            : shop === "A"
-                            ? "text-gray-600 hover:text-gray-800"
-                            : "text-gray-300 hover:text-white"
+                    <div className="relative bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-orange-900/30 backdrop-blur-md rounded-full p-1 border border-white/20 transition-all duration-500 shadow-2xl hover:shadow-purple-500/25">
+                      {/* Animated Background Glow */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 blur-lg animate-pulse"></div>
+                      
+                      {/* Active Slider with Enhanced Glow */}
+                      <div
+                        className={`absolute top-1 rounded-full transition-all duration-500 ease-out shadow-xl ${
+                          shopType === "cosmetics" 
+                            ? "bg-gradient-to-r from-orange-400 to-pink-500 shadow-orange-500/50" 
+                            : "bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-500/50"
                         }`}
-                      >
-                        <Sparkles size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleShopToggle("accessories")}
-                        className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 ${
-                          shopType === "accessories"
-                            ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow"
-                            : shop === "A"
-                            ? "text-gray-600 hover:text-gray-800"
-                            : "text-gray-300 hover:text-white"
-                        }`}
-                      >
-                        <Watch size={16} />
-                      </button>
+                        style={{
+                          width: "calc(50% - 4px)",
+                          height: "calc(100% - 8px)",
+                          left: shopType === "cosmetics" ? "4px" : "calc(50% + 0px)",
+                          boxShadow: shopType === "cosmetics" 
+                            ? "0 0 15px rgba(251, 146, 60, 0.6), 0 0 30px rgba(251, 146, 60, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)" 
+                            : "0 0 15px rgba(147, 51, 234, 0.6), 0 0 30px rgba(147, 51, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)"
+                        }}
+                      />
+                      
+                      <div className="relative flex">
+                        <button
+                          onClick={() => handleShopToggle("cosmetics")}
+                          className={`group flex items-center justify-center w-10 h-10 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
+                            shopType === "cosmetics" 
+                              ? "text-white drop-shadow-lg" 
+                              : "text-white/70 hover:text-white hover:drop-shadow-lg"
+                          }`}
+                        >
+                          <Sparkles className={`w-4 h-4 transition-all duration-300 ${
+                            shopType === "cosmetics" 
+                              ? "drop-shadow-[0_0_6px_rgba(255,255,255,0.8)] animate-pulse" 
+                              : "group-hover:drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
+                          }`} />
+                          {shopType === "cosmetics" && (
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-400/20 to-pink-500/20 animate-ping"></div>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleShopToggle("accessories")}
+                          className={`group flex items-center justify-center w-10 h-10 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
+                            shopType === "accessories" 
+                              ? "text-white drop-shadow-lg" 
+                              : "text-white/70 hover:text-white hover:drop-shadow-lg"
+                          }`}
+                        >
+                          <Watch className={`w-4 h-4 transition-all duration-300 ${
+                            shopType === "accessories" 
+                              ? "drop-shadow-[0_0_6px_rgba(255,255,255,0.8)] animate-pulse" 
+                              : "group-hover:drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
+                          }`} />
+                          {shopType === "accessories" && (
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-600/20 animate-ping"></div>
+                          )}
+                        </button>
+                      </div>
+                      
+                      {/* Floating Particles Effect */}
+                      <div className="absolute inset-0 overflow-hidden rounded-full pointer-events-none">
+                        <div className={`absolute w-0.5 h-0.5 bg-white rounded-full animate-bounce ${shopType === "cosmetics" ? "left-3 top-1.5" : "right-3 top-1.5"}`} style={{animationDelay: "0s"}}></div>
+                        <div className={`absolute w-0.5 h-0.5 bg-white/60 rounded-full animate-bounce ${shopType === "cosmetics" ? "left-4 bottom-2" : "right-4 bottom-2"}`} style={{animationDelay: "0.5s"}}></div>
+                        <div className={`absolute w-0.5 h-0.5 bg-white/40 rounded-full animate-bounce ${shopType === "cosmetics" ? "left-5 top-2.5" : "right-5 top-2.5"}`} style={{animationDelay: "1s"}}></div>
+                      </div>
                     </div>
                     <span className={`mt-1 text-xs font-medium transition-colors duration-300 ${
                       shop === "A" ? "text-orange-700" : "text-purple-200"
@@ -219,7 +254,8 @@ export default function BottomTabs() {
               }
 
               // Regular nav items
-              const Icon = item.icon!
+              if (!item.href || !item.icon) return null
+              const Icon = item.icon
               return (
                 <Link
                   key={item.href}

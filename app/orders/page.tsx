@@ -7,7 +7,7 @@ import { useLoginModal } from '@/lib/stores/useLoginModal'
 import Footer from "@/components/ui/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, Send, Box, ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
+import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, Send, Box, ChevronDown, ChevronUp, ExternalLink, PackageCheck, Zap, MapPin, Home } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { format } from "path"
@@ -306,60 +306,112 @@ export default function OrdersPage() {
     }
   }
 
+  
+  const getDisplayStatus = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "pending":
+        return "Order Received"
+      case "confirmed":
+        return "Confirmed"
+      case "packed":
+        return "Packed"
+      case "dispatched":
+        return "Dispatched"
+      case "out for delivery":
+        return "Out for Delivery"
+      case "delivered":
+      case "completed":
+        return "Delivered"
+      case "cancelled":
+      case "cancel":
+        return "Cancelled"
+      // case "preparing":
+      //   return "Preparing"
+      // case "ready":
+      //   return "Ready"
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case "confirmed":
-      case "completed":
-        return "bg-green-100 text-green-800"
       case "pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 hover:from-emerald-200 hover:to-green-200 transition-all duration-300 shadow-lg hover:shadow-xl border border-emerald-200"
+      case "confirmed":
+        return "bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 hover:from-blue-200 hover:to-cyan-200 transition-all duration-300 shadow-md hover:shadow-lg border border-blue-200"
+      case "packed":
+        return "bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800 hover:from-purple-200 hover:to-indigo-200 transition-all duration-300 shadow-md hover:shadow-lg border border-purple-200"
+      case "dispatched":
+        return "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 hover:from-amber-200 hover:to-yellow-200 transition-all duration-300 shadow-md hover:shadow-lg border border-amber-200"
+      case "out for delivery":
+        return "bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 hover:from-orange-200 hover:to-red-200 transition-all duration-300 shadow-md hover:shadow-lg border border-orange-200"
+      case "delivered":
+      case "completed":
+        return "bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 hover:from-green-200 hover:to-emerald-200 transition-all duration-300 shadow-md hover:shadow-lg border border-green-200"
       case "cancelled":
-        return "bg-red-100 text-red-800"
-      case "preparing":
-        return "bg-blue-100 text-blue-800"
-      case "ready":
-        return "bg-purple-100 text-purple-800"
-      case "out-for-delivery":
-        return "bg-orange-100 text-orange-800"
+      case "cancel":
+        return "bg-gradient-to-r from-red-100 to-pink-100 text-red-800 hover:from-red-200 hover:to-pink-200 transition-all duration-300 shadow-md hover:shadow-lg border border-red-200"
+      // case "preparing":
+      //   return "bg-gradient-to-r from-sky-100 to-blue-100 text-sky-800 hover:from-sky-200 hover:to-blue-200 transition-all duration-300 shadow-md hover:shadow-lg border border-sky-200"
+      // case "ready":
+      //   return "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-800 hover:from-teal-200 hover:to-cyan-200 transition-all duration-300 shadow-md hover:shadow-lg border border-teal-200"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 hover:from-gray-200 hover:to-slate-200 transition-all duration-300 shadow-md hover:shadow-lg border border-gray-200"
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
+      case "pending":
+        return <CheckCircle className="w-4 h-4 text-emerald-600 drop-shadow-sm" />
       case "confirmed":
+        return <Zap className="w-4 h-4 text-blue-600 drop-shadow-sm" />
+      case "packed":
+        return <PackageCheck className="w-4 h-4 text-purple-600 drop-shadow-sm" />
+      case "dispatched":
+        return <Send className="w-4 h-4 text-amber-600 drop-shadow-sm" />
+      case "out for delivery":
+        return <Truck className="w-4 h-4 text-orange-600 drop-shadow-sm" />
+      case "delivered":
       case "completed":
-        return <CheckCircle className="w-4 h-4" />
+        return <Home className="w-4 h-4 text-green-600 drop-shadow-sm" />
       case "cancelled":
-        return <XCircle className="w-4 h-4" />
-      case "preparing":
-        return <ChefHat className="w-4 h-4" />
-      case "out-for-delivery":
-        return <Truck className="w-4 h-4" />
+      case "cancel":
+        return <XCircle className="w-4 h-4 text-red-600 drop-shadow-sm" />
+      // case "preparing":
+      //   return <ChefHat className="w-4 h-4 text-sky-600 drop-shadow-sm" />
+      // case "ready":
+      //   return <Clock className="w-4 h-4 text-teal-600 drop-shadow-sm" />
       default:
-        return <Clock className="w-4 h-4" />
+        return <Clock className="w-4 h-4 text-gray-600 drop-shadow-sm" />
     }
   }
 
   const getStatusDescription = (status: string) => {
     switch (status.toLowerCase()) {
       case "pending":
-        return "Your order has been received and is being processed"
+        return "✅ We've received your order and it's being processed"
       case "confirmed":
-        return "Your order has been confirmed and is being prepared"
-      case "preparing":
-        return "Our chefs are preparing your delicious meal"
-      case "ready":
-        return "Your order is ready for pickup/delivery"
-      case "out-for-delivery":
-        return "Your order is on its way to you"
+        return "⚡ Your order has been confirmed and is moving forward"
+      case "packed":
+        return "📦 Your order has been carefully packed and sealed"
+      case "dispatched":
+        return "🚀 Your order has been dispatched from our facility"
+      case "out for delivery":
+        return "🚛 Your order is on its way to you"
+      case "delivered":
       case "completed":
-        return "Your order has been completed. Enjoy your meal!"
+        return "🏠 Your order has been delivered. Enjoy!"
       case "cancelled":
-        return "This order has been cancelled"
+      case "cancel":
+        return "❌ This order has been cancelled"
+      // case "preparing":
+      //   return "👨‍🍳 Our team is preparing your order with care"
+      // case "ready":
+      //   return "⏰ Your order is ready for pickup/delivery"
       default:
-        return "Order status update"
+        return "📋 Order status update"
     }
   }
 
@@ -498,9 +550,9 @@ export default function OrdersPage() {
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <Badge className={`${getStatusColor(order.status)} text-xs sm:text-sm px-2 py-1`}>
+                        <Badge className={`${getStatusColor(order.status)} text-xs sm:text-sm px-2 py-1 cursor-pointer`}>
                           {getStatusIcon(order.status)}
-                          <span className="ml-1 capitalize">{order.status}</span>
+                          <span className="ml-1">{getDisplayStatus(order.status)}</span>
                         </Badge>
                       </div>
                     </div>
