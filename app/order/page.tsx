@@ -829,13 +829,13 @@ export default function OrderPage() {
 
     // Create WhatsApp template
     let message = `*SABS ONLINE ORDER* ${orderNumber}\n`
-    message += `═══════════════════\n\n`
+    message += `═════════════════\n\n`
     
     // Customer Info Section
     message += `*CUSTOMER INFO*\n`
     message += `Name: ${customerName === "Customer" ? "_Please provide your name_" : customerName}\n`
     if (customerPhone) message += `Phone: ${customerPhone}\n`
-    else message += `Phone: _Please provide your phone number_\n`
+    else message += `Phone: _Phone number not provided_\n`
     if (customerEmail) message += `Email: ${customerEmail}\n`
     message += `\n`
 
@@ -847,12 +847,13 @@ export default function OrderPage() {
       if (customerInfo.deliveryAddress) {
         message += `Address: ${customerInfo.deliveryAddress}\n`
       } else {
-        message += `Address: _Please provide delivery address_\n`
+        message += `Address: _Delivery address not provided_\n`
       }
     }
     message += `\n`
 
     // Items Section 
+    message += `═════════════════\n`
     message += `*ITEMS ORDERED*\n`
     validCartItems.forEach((item, index) => {
       const itemPrice = getCurrencySpecificPrice(item.menuItem, item.selected_variant)
@@ -869,10 +870,10 @@ export default function OrderPage() {
       message += `${index + 1}. *${itemName}${formattedVariant}*\n`
       message += `    Qty: ${item.quantity} x ${priceText}${stockWarning}\n`
     })
-    message += `\n`
-    message += `\n`
+
 
     // Bill Summary 
+    message += `═════════════════\n`
     message += `*BILL SUMMARY*\n`
     const subtotalText = selectedCurrency === 'AED' ? `AED ${cartTotal.toFixed(2)}` : `Rs ${cartTotal.toFixed(2)}`
     message += `Items Total: ${subtotalText}\n`
@@ -889,9 +890,9 @@ export default function OrderPage() {
       message += `Discount (${appliedCoupon?.code}): -${discountText}\n`
     }
     
-    message += `═══════════════════\n`
+    message += `═════════════════\n`
     message += `*TOTAL: ${totalText}*\n`
-    message += `═══════════════════\n\n`
+    message += `═════════════════\n\n`
 
     // Special Instructions
     if (specialInstructions) {
