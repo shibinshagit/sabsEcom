@@ -908,14 +908,30 @@ export default function OrderPage() {
       toast.error('WhatsApp number not configured. Please contact support.', { position: 'top-center' })
       return
     }
-    const encodedMessage = encodeURIComponent(message)
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
+    // Clean phone number (remove any spaces or special chars except +)
+    const cleanPhoneNumber = phoneNumber.replace(/[^\d+]/g, '')
+    
+    // Create WhatsApp URL with proper encoding for production
+    const whatsappUrl = `https://wa.me/${cleanPhoneNumber}`
+    
+    // Use URL constructor for better encoding handling
+    const url = new URL(whatsappUrl)
+    url.searchParams.set('text', message)
+    
     try {
-      window.open(whatsappUrl, "_blank")
+      // Open WhatsApp with the properly encoded URL
+      window.open(url.toString(), "_blank")
       toast.success('Order sent via WhatsApp! Check your WhatsApp app.', { position: 'top-center' })
     } catch (error) {
       console.error('Failed to open WhatsApp:', error)
-      toast.error('Failed to open WhatsApp. Please try again.', { position: 'top-center' })
+      // Fallback: try direct wa.me link without encoding
+      try {
+        const fallbackUrl = `https://wa.me/${cleanPhoneNumber}`
+        window.open(fallbackUrl, "_blank")
+        toast.success('WhatsApp opened! Please copy and paste your order details.', { position: 'top-center' })
+      } catch (fallbackError) {
+        toast.error('Failed to open WhatsApp. Please try again.', { position: 'top-center' })
+      }
     }
   }
 
