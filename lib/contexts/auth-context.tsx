@@ -10,6 +10,7 @@ interface User {
   isVerified: boolean
   createdAt?: string
   isClerkUser?: boolean
+  dbId?: number // Database ID for Clerk users
 }
 
 interface AuthContextType {
@@ -31,17 +32,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { user: clerkUser, isLoaded: clerkLoaded } = useClerkUser()
   const { signOut: clerkSignOut } = useClerkAuth()
 
+  // Function to sync Clerk user to database
+  const syncClerkUserToDatabase = async (clerkUser: any) => {
+    try {
+      const response = await fetch("/api/auth/sync-clerk-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clerkId: clerkUser.id,
+          email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || "",
+          name: clerkUser.fullName || clerkUser.firstName || "",
+          phone: clerkUser.phoneNumbers?.[0]?.phoneNumber || ""
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log(`✅ Clerk user ${data.action} in database:`, data.user.email)
+        return data.user
+      } else {
+        console.error("❌ Failed to sync Clerk user to database")
+      }
+    } catch (error) {
+      console.error("❌ Error syncing Clerk user:", error)
+    }
+    return null
+  }
+
   useEffect(() => {  
   if (clerkLoaded && clerkUser) {
-    setUser({
-      id: clerkUser.id,
-      email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || "",
-      name: clerkUser.fullName || clerkUser.firstName || "",
-      isVerified: true,
-      isClerkUser: true,
-      createdAt: undefined,
+    // Sync Clerk user to database first
+    syncClerkUserToDatabase(clerkUser).then((dbUser) => {
+      setUser({
+        id: clerkUser.id,
+        email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || "",
+        name: clerkUser.fullName || clerkUser.firstName || "",
+        isVerified: true,
+        isClerkUser: true,
+        createdAt: dbUser?.created_at || undefined,
+        dbId: dbUser?.id, // Store database ID for reference
+      })
+      setLoading(false)
     })
-    setLoading(false)
   } else if (clerkLoaded && !clerkUser) {
     console.log('🔍 No Clerk user, checking manual auth...')
     fetch("/api/auth/me", { credentials: 'include' }) 

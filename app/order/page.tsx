@@ -819,56 +819,89 @@ export default function OrderPage() {
       return
     }
 
-    // WhatsApp ordering is always enabled - customer can provide details in WhatsApp chat
+    // WhatsApp ordering
     const customerName = user?.name || customerInfo.name || "Customer"
-    const customerPhone = customerInfo.phone || "Not provided"
-    const customerEmail = user?.email || customerInfo.email || "Not provided"
+    const customerPhone = customerInfo.phone || ""
+    const customerEmail = user?.email || customerInfo.email || ""
+    const finalTotal = cartTotal + deliveryFee - discountAmount
+    const totalText = selectedCurrency === 'AED' ? `AED ${finalTotal.toFixed(2)}` : `₹${finalTotal.toFixed(2)}`
+    const orderNumber = `#${Date.now().toString().slice(-6)}`
 
-    let message = `🛍️ *New Order from Sabs Online*\n\n`
-    message += `👤 *Customer Details:*\n`
-    message += `Name: ${customerName === "Customer" ? "Please provide your name" : customerName}\n`
-    message += `Phone: ${customerPhone === "Not provided" ? "Please provide your phone number" : customerPhone}\n`
-    message += `Email: ${customerEmail === "Not provided" ? "Please provide your email (optional)" : customerEmail}\n\n`
-    message += `📋 *Order Type:* ${orderType.charAt(0).toUpperCase() + orderType.slice(1)}\n`
-    message += `💳 *Payment Method:* ${paymentMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}\n`
-    message += `💰 *Currency:* ${selectedCurrency}\n`
+    // Create WhatsApp template
+    let message = `*SABS ONLINE ORDER* ${orderNumber}\n`
+    message += `═══════════════════\n\n`
+    
+    // Customer Info Section
+    message += `*CUSTOMER INFO*\n`
+    message += `Name: ${customerName === "Customer" ? "_Please provide your name_" : customerName}\n`
+    if (customerPhone) message += `Phone: ${customerPhone}\n`
+    else message += `Phone: _Please provide your phone number_\n`
+    if (customerEmail) message += `Email: ${customerEmail}\n`
+    message += `\n`
+
+    // Order Details Section
+    message += `*ORDER DETAILS*\n`
+    message += `Type: ${orderType === 'delivery' ? 'Delivery' : 'Pickup'}\n`
+    message += `Payment: ${paymentMethod === 'upi' ? 'UPI' : 'COD'}\n`
     if (orderType === "delivery") {
       if (customerInfo.deliveryAddress) {
-        message += `📍 *Delivery Address:* ${customerInfo.deliveryAddress}\n`
+        message += `Address: ${customerInfo.deliveryAddress}\n`
       } else {
-        message += `📍 *Delivery Address:* Please provide your delivery address\n`
+        message += `Address: _Please provide delivery address_\n`
       }
     }
-    message += `\n🛒 *Order Items:*\n`
+    message += `\n`
+
+    // Items Section 
+    message += `*ITEMS ORDERED*\n`
     validCartItems.forEach((item, index) => {
       const itemPrice = getCurrencySpecificPrice(item.menuItem, item.selected_variant)
       const variantName = item.selected_variant?.name || ''
       const itemName = item.menuItem.name
-      const stockInfo = item.selected_variant && item.selected_variant.stock_quantity <= 5 ?
-        ` (${item.selected_variant.stock_quantity === 0 ? 'OUT OF STOCK' : `${item.selected_variant.stock_quantity} left`})` : ''
-      const priceText = selectedCurrency === 'AED' ? `AED ${itemPrice.toFixed(2)}` : `₹${itemPrice.toFixed(2)}`
-      message += `${index + 1}. ${itemName}${variantName && variantName !== 'Default' ? ` - ${variantName}` : ''} x${item.quantity}${stockInfo} - ${priceText}\n`
+      const priceText = selectedCurrency === 'AED' ? `AED ${itemPrice.toFixed(2)}` : `Rs ${itemPrice.toFixed(2)}`
+      
+      // Stock warning - simplified for mobile
+      const stockWarning = item.selected_variant && item.selected_variant.stock_quantity <= 5 ?
+        (item.selected_variant.stock_quantity === 0 ? ' OUT OF STOCK' : ` ${item.selected_variant.stock_quantity} left`) : ''
+      
+      // Format item name with proper bold syntax
+      const formattedVariant = variantName && variantName !== 'Default' ? ` (${variantName})` : ''
+      message += `${index + 1}. *${itemName}${formattedVariant}*\n`
+      message += `    Qty: ${item.quantity} x ${priceText}${stockWarning}\n`
     })
-    const finalTotal = cartTotal + deliveryFee - discountAmount
-    message += `\n💰 *Order Summary:*\n`
-    const subtotalText = selectedCurrency === 'AED' ? `AED ${cartTotal.toFixed(2)}` : `₹${cartTotal.toFixed(2)}`
-    message += `Subtotal: ${subtotalText}\n`
+    message += `\n`
+    message += `\n`
+
+    // Bill Summary 
+    message += `*BILL SUMMARY*\n`
+    const subtotalText = selectedCurrency === 'AED' ? `AED ${cartTotal.toFixed(2)}` : `Rs ${cartTotal.toFixed(2)}`
+    message += `Items Total: ${subtotalText}\n`
+    
     if (deliveryFee > 0) {
-      const deliveryText = selectedCurrency === 'AED' ? `AED ${deliveryFee.toFixed(2)}` : `₹${deliveryFee.toFixed(2)}`
-      message += `Delivery Fee: ${deliveryText}\n`
+      const deliveryText = selectedCurrency === 'AED' ? `AED ${deliveryFee.toFixed(2)}` : `Rs ${deliveryFee.toFixed(2)}`
+      message += `Delivery: ${deliveryText}\n`
     } else if (orderType === "delivery") {
-      message += `Delivery Fee: FREE! 🎉\n`
+      message += `Delivery: FREE!\n`
     }
+    
     if (discountAmount > 0) {
-      const discountText = selectedCurrency === 'AED' ? `AED ${discountAmount.toFixed(2)}` : `₹${discountAmount.toFixed(2)}`
+      const discountText = selectedCurrency === 'AED' ? `AED ${discountAmount.toFixed(2)}` : `Rs ${discountAmount.toFixed(2)}`
       message += `Discount (${appliedCoupon?.code}): -${discountText}\n`
     }
-    const totalText = selectedCurrency === 'AED' ? `AED ${finalTotal.toFixed(2)}` : `₹${finalTotal.toFixed(2)}`
-    message += `*Total: ${totalText}*\n`
+    
+    message += `═══════════════════\n`
+    message += `*TOTAL: ${totalText}*\n`
+    message += `═══════════════════\n\n`
+
+    // Special Instructions
     if (specialInstructions) {
-      message += `\n📝 *Special Instructions:*\n${specialInstructions}\n`
+      message += `*SPECIAL NOTES*\n${specialInstructions}\n\n`
     }
-    message += `\nPlease confirm this order and let me know the estimated preparation time. Thank you! 🙏`
+
+    // Call to Action 
+    message += `Please *CONFIRM* this order\n`
+    message += `When will this be dispatched?\n\n`
+    message += `Thank you!`
     const phoneNumber = WHATSAPP_ORDER_NUMBER || "+919037888193"
     
     if (!phoneNumber) {
