@@ -162,13 +162,23 @@ async function sendAdminNotificationEmail(orderData: any, orderId: number, order
     const countryFlag = currency === 'AED' ? '🇦🇪' : '🇮🇳'
     const countryName = currency === 'AED' ? 'UAE' : 'India'
 
-    const subtotal = orderData.originalAmount - (currency === 'AED' ? 20 : 70) || 0
+    // Calculate correct subtotal from items
+    let subtotal = 0
+    orderData.items.forEach((item: any) => {
+      const itemPrice = parseFloat(item.unitPrice) || 0
+      subtotal += itemPrice * item.quantity
+    })
+
+    // Calculate delivery fee based on subtotal and currency
     const deliveryFee = orderData.orderType === 'delivery' ?
       (currency === 'AED' ?
         (subtotal >= 200 ? 0 : (subtotal >= 50 ? 10 : 20)) :
         (subtotal >= 3000 ? 0 : 70)
       ) : 0
-    const finalTotal = orderData.totalAmount || (subtotal + deliveryFee - (orderData.discountAmount || 0))
+
+    // Calculate final total with proper discount handling
+    const discountAmount = orderData.discountAmount || 0
+    const finalTotal = subtotal + deliveryFee - discountAmount
 
     // Create compact order items HTML
     let itemsHtml = ''
@@ -294,7 +304,7 @@ async function sendAdminNotificationEmail(orderData: any, orderId: number, order
                   ` : ''}
                   ${orderData.discountAmount > 0 ? `
                   <div style="margin-bottom: 4px;">
-                    <span style="color: #6b7280;">Discount: </span>
+                    <span style="color: #6b7280;">Discount${orderData.couponCode ? ' (' + orderData.couponCode + ')' : ''}: </span>
                     <span style="color: #10b981; font-weight: 600;">-${currencySymbol}${orderData.discountAmount.toFixed(2)}</span>
                   </div>
                   ` : ''}
