@@ -46,11 +46,11 @@ export default function AdminSettings() {
     sunday: "4:00 PM - 9:00 PM",
   })
   const [shopFeaturesSettings, setShopFeaturesSettings] = useState({
-    popup_enabled: 'true',
+    popup_enabled: 'false',
     popup_initial_delay: '10',
     popup_interval: '15',
     popup_max_shows: '2',
-    floating_ad_enabled: 'true',
+    floating_ad_enabled: 'false',
     floating_ad_scroll_trigger: '400',
     floating_ad_duration: '2',
     floating_ad_cooldown: '4',

@@ -21,11 +21,11 @@ export async function GET() {
 
     // Convert to key-value object with defaults
     const settingsObj = {
-      popup_enabled: 'true',
+      popup_enabled: 'false',
       popup_initial_delay: '10',
       popup_interval: '15', 
       popup_max_shows: '2',
-      floating_ad_enabled: 'true',
+      floating_ad_enabled: 'false',
       floating_ad_scroll_trigger: '400',
       floating_ad_duration: '2',
       floating_ad_cooldown: '4',

@@ -8,6 +8,7 @@ import { addToCart } from "@/lib/store/slices/orderSlice"
 import { addToWishlistAPI, removeFromWishlistAPI } from '@/lib/store/slices/wishlistSlice'
 import { useCurrency } from "@/lib/contexts/currency-context"
 import { useAuth } from "@/lib/contexts/auth-context"
+import { useShop } from "@/lib/contexts/shop-context"
 import { Button } from "@/components/ui/button"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,6 +22,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import toast from 'react-hot-toast'
 import LoginModal from "@/components/auth/login-modal"
 import RecommendedProducts from "@/components/sections/recommended-products"
+import { Metadata } from 'next'
 
 interface Variant {
   id: number
@@ -62,12 +64,15 @@ interface Product {
   variants: Variant[]
 }
 
+
+
 export default function ProductPage() {
   const { user, isAuthenticated } = useAuth()
   const params = useParams()
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const { selectedCurrency, formatPriceWithSmallDecimals } = useCurrency()
+  const { shop, setShop } = useShop()
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
 
   const [product, setProduct] = useState<Product | null>(null)
@@ -164,6 +169,14 @@ export default function ProductPage() {
       const response = await fetch(`/api/admin/products/${params.id}`)
       if (response.ok) {
         const data = await response.json()
+        
+        // Auto-switch shop if product is only available in a different shop
+        if (data.shop_category && data.shop_category !== 'Both' && data.shop_category !== shop) {
+          console.log(`Auto-switching from Shop ${shop} to Shop ${data.shop_category} for product: ${data.name}`)
+          setShop(data.shop_category)
+          // toast.success(`Switched to Shop ${data.shop_category === 'A' ? 'Beauty' : 'Style'} to view this product`)
+        }
+        
         setProduct(data)
         // Set default variant based on currency availability
         const defaultVariant = data.variants?.find((v: Variant) => 
@@ -172,10 +185,16 @@ export default function ProductPage() {
         setSelectedVariant(defaultVariant || null)
       } else {
         console.error("Product not found")
+        // Redirect to 404 page if product doesn't exist
+        router.push('/not-found')
       }
     } catch (error) {
       console.error("Error fetching product:", error)
       toast.error('Failed to load product')
+      // Redirect to home page on error
+      setTimeout(() => {
+        router.push('/')
+      }, 2000)
     } finally {
       setLoading(false)
     }

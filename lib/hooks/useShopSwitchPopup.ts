@@ -29,7 +29,9 @@ export function useShopSwitchPopup({
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch('/api/admin/shop-features')
+        const response = await fetch('/api/admin/shop-features', {
+          cache: 'no-store' // Ensure fresh data
+        })
         if (response.ok) {
           const data = await response.json()
           setSettings(data)
@@ -38,14 +40,31 @@ export function useShopSwitchPopup({
         console.error('Failed to fetch shop features settings:', error)
       }
     }
+    
     fetchSettings()
+    
+    // Refresh settings every 30 seconds to catch admin changes
+    const interval = setInterval(fetchSettings, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   // Use admin settings or fallback to defaults
   const actualIntervalMinutes = settings ? parseInt(settings.popup_interval) : intervalMinutes
   const actualInitialDelayMinutes = settings ? parseInt(settings.popup_initial_delay) : initialDelayMinutes
   const actualMaxShowsPerSession = settings ? parseInt(settings.popup_max_shows) : maxShowsPerSession
-  const isEnabled = settings ? settings.popup_enabled === 'true' : true
+  const isEnabled = settings ? settings.popup_enabled === 'true' : false
+
+  // Clear session storage and close popup when disabled
+  useEffect(() => {
+    if (settings && !isEnabled) {
+      setIsPopupOpen(false)
+      setShowCount(0)
+      setLastShownTime(null)
+      sessionStorage.removeItem('shopSwitchSessionStart')
+      sessionStorage.removeItem('shopSwitchShowCount')
+      sessionStorage.removeItem('shopSwitchLastShown')
+    }
+  }, [isEnabled, settings])
 
   // Check if we should show the popup
   const shouldShowPopup = useCallback(() => {

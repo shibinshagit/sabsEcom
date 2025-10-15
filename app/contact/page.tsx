@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
 import { Mail, Phone, MapPin, Send, Facebook, Instagram, Twitter, Clock } from "lucide-react"
-import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import Link from "next/link"
 import Image from "next/image"
@@ -29,7 +28,6 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-amber-100 flex flex-col items-center justify-center py-12 px-2">
-  <Navbar /> 
       <div className="max-w-5xl w-full mx-auto">
         <div className="rounded-3xl border-0 bg-white/90 backdrop-blur-xl shadow-2xl p-0 relative overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-8">
@@ -48,12 +46,42 @@ export default function ContactPage() {
                 <h1 className="font-playfair text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500 bg-clip-text text-transparent animate-shop-swap text-center">{settings.restaurant_name}</h1>
                 <p className="text-gray-600 text-lg text-center max-w-xs animate-fade-in">Step into a world of elegance and self-care, where quality, experience, and empowerment come together to redefine your beauty journey.</p>
               </div>
+              {/* Dynamic Social Media Icons */}
               <div className="flex space-x-6 mt-4">
-                <a href="#" className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"><Facebook /></a>
-                <a href="#" className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"><Instagram /></a>
-                <a href="#" className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"><Twitter /></a>
+                {settings.social_facebook && (
+                  <a 
+                    href={settings.social_facebook} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"
+                  >
+                    <Facebook />
+                  </a>
+                )}
+                {settings.social_instagram && (
+                  <a 
+                    href={settings.social_instagram} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"
+                  >
+                    <Instagram />
+                  </a>
+                )}
+                {settings.social_twitter && (
+                  <a 
+                    href={settings.social_twitter} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"
+                  >
+                    <Twitter />
+                  </a>
+                )}
               </div>
-              <div className="mt-2 text-sm text-gray-400">Follow us on social media for updates & offers!</div>
+              {(settings.social_facebook || settings.social_instagram || settings.social_twitter) && (
+                <div className="mt-2 text-sm text-gray-400">Follow us on social media for updates & offers!</div>
+              )}
             </div>
             {/* Right: Info & Links */}
             <div className="flex flex-col justify-center p-10 gap-8">
@@ -70,7 +98,7 @@ export default function ContactPage() {
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                    <p className="text-gray-700">+91 777 000 3639</p>
+                    <p className="text-gray-700">+91 9037888193</p>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Mail className="w-5 h-5 text-amber-400 flex-shrink-0" />
@@ -104,8 +132,8 @@ export default function ContactPage() {
                 {/* <Link href="/reservations" className="text-gray-700 hover:text-amber-500 font-medium transition-colors">Reservations</Link>
                 <Link href="/orders" className="text-gray-700 hover:text-amber-500 font-medium transition-colors">Orders</Link>
                 <Link href="/#about" className="text-gray-700 hover:text-amber-500 font-medium transition-colors">About</Link> */}
-                <Link href="/privacy" className="text-gray-700 hover:text-amber-500 font-medium transition-colors">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-700 hover:text-amber-500 font-medium transition-colors">Terms of Service</Link>
+                <Link href="/privacy-policy" className="text-gray-700 hover:text-amber-500 font-medium transition-colors">Privacy Policy</Link>
+                <Link href="/terms-of-service" className="text-gray-700 hover:text-amber-500 font-medium transition-colors">Terms of Service</Link>
               </div>
               <div className="mt-8 text-center text-gray-400 text-xs">© {new Date().getFullYear()} {settings.restaurant_name}. All rights reserved.</div>
             </div>

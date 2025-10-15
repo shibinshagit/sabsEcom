@@ -34,7 +34,9 @@ export function useFloatingShopAd({
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch('/api/admin/shop-features')
+        const response = await fetch('/api/admin/shop-features', {
+          cache: 'no-store' // Ensure fresh data
+        })
         if (response.ok) {
           const data = await response.json()
           setSettings(data)
@@ -43,7 +45,12 @@ export function useFloatingShopAd({
         console.error('Failed to fetch shop features settings:', error)
       }
     }
+    
     fetchSettings()
+    
+    // Refresh settings every 30 seconds to catch admin changes
+    const interval = setInterval(fetchSettings, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   // Use admin settings or fallback to defaults
@@ -51,7 +58,21 @@ export function useFloatingShopAd({
   const actualDisplayDuration = settings ? parseInt(settings.floating_ad_duration) : displayDurationMinutes
   const actualCooldownMinutes = settings ? parseInt(settings.floating_ad_cooldown) : cooldownMinutes
   const actualMaxShowsPerSession = settings ? parseInt(settings.floating_ad_max_shows) : maxShowsPerSession
-  const isEnabled = settings ? settings.floating_ad_enabled === 'true' : true
+  const isEnabled = settings ? settings.floating_ad_enabled === 'true' : false
+
+  // Clear session storage and close ad when disabled
+  useEffect(() => {
+    if (settings && !isEnabled) {
+      setIsAdVisible(false)
+      setAdStartTime(null)
+      setShowCount(0)
+      setLastShownTime(null)
+      setHasScrolledEnough(false)
+      sessionStorage.removeItem('floatingAdSessionStart')
+      sessionStorage.removeItem('floatingAdShowCount')
+      sessionStorage.removeItem('floatingAdLastShown')
+    }
+  }, [isEnabled, settings])
 
   // Check if we should show the ad
   const shouldShowAd = useCallback(() => {
