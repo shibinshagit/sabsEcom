@@ -56,7 +56,7 @@ function Nav() {
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const { settings } = useSettings()
   const { user, logout, isAuthenticated } = useAuth()
-  const { shop, setShop } = useShop()
+  const { shop, setShop, isLoading: shopLoading, isShopSwitchEnabled } = useShop()
   const { user: clerkUser } = useUser()
   const { selectedCurrency, setSelectedCurrency, getCurrencySymbol } = useCurrency()
   const searchParams = useSearchParams()
@@ -701,7 +701,9 @@ function Nav() {
                           : ''
                       }`}
                       style={{
-                        maxWidth: categories.length > 5 ? '900px' : 'auto',
+                        maxWidth: categories.length > 5 
+                          ? (isShopSwitchEnabled ? '900px' : '1100px') // Expand when shop switcher is hidden
+                          : 'auto',
                         scrollBehavior: 'smooth',
                         WebkitOverflowScrolling: 'touch'
                       }}
@@ -760,73 +762,77 @@ function Nav() {
                 )}
               </div>
 
-              <div className="relative bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-orange-900/30 backdrop-blur-md rounded-full p-1.5 border border-white/20 transition-all duration-500 flex-shrink-0 ml-4 shadow-2xl hover:shadow-purple-500/25">
-                {/* Animated Background Glow */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 blur-xl animate-pulse"></div>
-                
-                {/* Active Slider with Enhanced Glow */}
-                <div
-                  className={`absolute top-1.5 rounded-full transition-all duration-500 ease-out shadow-2xl ${
-                    shop === "A" 
-                      ? "bg-gradient-to-r from-orange-400 to-pink-500 shadow-orange-500/50" 
-                      : "bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-500/50"
-                  }`}
-                  style={{
-                    width: "calc(50% - 6px)",
-                    height: "calc(100% - 12px)",
-                    left: shop === "A" ? "6px" : "calc(50% + 0px)",
-                    boxShadow: shop === "A" 
-                      ? "0 0 20px rgba(251, 146, 60, 0.6), 0 0 40px rgba(251, 146, 60, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)" 
-                      : "0 0 20px rgba(147, 51, 234, 0.6), 0 0 40px rgba(147, 51, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)"
-                  }}
-                />
-                
-                <div className="relative flex">
-                  <button
-                    onClick={() => handleShopToggle("A")}
-                    className={`group flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
+              {/* Show entire shop switcher only if enabled in admin settings */}
+              {isShopSwitchEnabled && (
+                <div className="relative bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-orange-900/30 backdrop-blur-md rounded-full p-1.5 border border-white/20 transition-all duration-500 flex-shrink-0 ml-4 shadow-2xl hover:shadow-purple-500/25">
+                  {/* Animated Background Glow */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 blur-xl animate-pulse"></div>
+                  
+                  {/* Active Slider with Enhanced Glow */}
+                  <div
+                    className={`absolute top-1.5 rounded-full transition-all duration-500 ease-out shadow-2xl ${
                       shop === "A" 
-                        ? "text-white drop-shadow-lg" 
-                        : "text-white/70 hover:text-white hover:drop-shadow-lg"
+                        ? "bg-gradient-to-r from-orange-400 to-pink-500 shadow-orange-500/50" 
+                        : "bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-500/50"
                     }`}
-                    title="Beauty Products"
-                  >
-                    <Sparkles className={`w-6 h-6 transition-all duration-300 ${
-                      shop === "A" 
-                        ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" 
-                        : "group-hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]"
-                    }`} />
-                    {shop === "A" && (
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-400/20 to-pink-500/20 animate-ping"></div>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleShopToggle("B")}
-                    className={`group flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
-                      shop === "B" 
-                        ? "text-white drop-shadow-lg" 
-                        : "text-white/70 hover:text-white hover:drop-shadow-lg"
-                    }`}
-                    title="Style Accessories"
-                  >
-                    <Watch className={`w-6 h-6 transition-all duration-300 ${
-                      shop === "B" 
-                        ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" 
-                        : "group-hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]"
-                    }`} />
-                    {shop === "B" && (
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-600/20 animate-ping"></div>
-                    )}
-                  </button>
+                    style={{
+                      width: "calc(50% - 6px)",
+                      height: "calc(100% - 12px)",
+                      left: shop === "A" ? "6px" : "calc(50% + 0px)",
+                      boxShadow: shop === "A" 
+                        ? "0 0 20px rgba(251, 146, 60, 0.6), 0 0 40px rgba(251, 146, 60, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)" 
+                        : "0 0 20px rgba(147, 51, 234, 0.6), 0 0 40px rgba(147, 51, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)"
+                    }}
+                  />
+                  
+                  {/* Shop switcher buttons */}
+                  <div className="relative flex">
+                    <button
+                      onClick={() => handleShopToggle("A")}
+                      className={`group flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
+                        shop === "A" 
+                          ? "text-white drop-shadow-lg" 
+                          : "text-white/70 hover:text-white hover:drop-shadow-lg"
+                      }`}
+                      title="Beauty Products"
+                    >
+                      <Sparkles className={`w-6 h-6 transition-all duration-300 ${
+                        shop === "A" 
+                          ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" 
+                          : "group-hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]"
+                      }`} />
+                      {shop === "A" && (
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-400/20 to-pink-500/20 animate-ping"></div>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleShopToggle("B")}
+                      className={`group flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
+                        shop === "B" 
+                          ? "text-white drop-shadow-lg" 
+                          : "text-white/70 hover:text-white hover:drop-shadow-lg"
+                      }`}
+                      title="Style Accessories"
+                    >
+                      <Watch className={`w-6 h-6 transition-all duration-300 ${
+                        shop === "B" 
+                          ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" 
+                          : "group-hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]"
+                      }`} />
+                      {shop === "B" && (
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-600/20 animate-ping"></div>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {/* Floating Particles Effect */}
+                  <div className="absolute inset-0 overflow-hidden rounded-full pointer-events-none">
+                    <div className={`absolute w-1 h-1 bg-white rounded-full animate-bounce ${shop === "A" ? "left-4 top-2" : "right-4 top-2"}`} style={{animationDelay: "0s"}}></div>
+                    <div className={`absolute w-1 h-1 bg-white/60 rounded-full animate-bounce ${shop === "A" ? "left-6 bottom-3" : "right-6 bottom-3"}`} style={{animationDelay: "0.5s"}}></div>
+                    <div className={`absolute w-0.5 h-0.5 bg-white/40 rounded-full animate-bounce ${shop === "A" ? "left-8 top-4" : "right-8 top-4"}`} style={{animationDelay: "1s"}}></div>
+                  </div>
                 </div>
-                
-                {/* Floating Particles Effect */}
-                <div className="absolute inset-0 overflow-hidden rounded-full pointer-events-none">
-                  <div className={`absolute w-1 h-1 bg-white rounded-full animate-bounce ${shop === "A" ? "left-4 top-2" : "right-4 top-2"}`} style={{animationDelay: "0s"}}></div>
-                  <div className={`absolute w-1 h-1 bg-white/60 rounded-full animate-bounce ${shop === "A" ? "left-6 bottom-3" : "right-6 bottom-3"}`} style={{animationDelay: "0.5s"}}></div>
-                  <div className={`absolute w-0.5 h-0.5 bg-white/40 rounded-full animate-bounce ${shop === "A" ? "left-8 top-4" : "right-8 top-4"}`} style={{animationDelay: "1s"}}></div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

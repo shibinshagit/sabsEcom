@@ -15,7 +15,9 @@ export async function GET() {
         'floating_ad_scroll_trigger',
         'floating_ad_duration', 
         'floating_ad_cooldown',
-        'floating_ad_max_shows'
+        'floating_ad_max_shows',
+        'default_shop',
+        'shop_switch_enabled'
       )
     `
 
@@ -29,7 +31,9 @@ export async function GET() {
       floating_ad_scroll_trigger: '400',
       floating_ad_duration: '2',
       floating_ad_cooldown: '4',
-      floating_ad_max_shows: '3'
+      floating_ad_max_shows: '3',
+      default_shop: 'A',
+      shop_switch_enabled: 'true'
     }
 
     // Override with database values
@@ -61,7 +65,9 @@ export async function POST(request: Request) {
       'floating_ad_scroll_trigger',
       'floating_ad_duration', 
       'floating_ad_cooldown',
-      'floating_ad_max_shows'
+      'floating_ad_max_shows',
+      'default_shop',
+      'shop_switch_enabled'
     ]
 
     if (!validKeys.includes(key)) {

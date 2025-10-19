@@ -54,7 +54,9 @@ export default function AdminSettings() {
     floating_ad_scroll_trigger: '400',
     floating_ad_duration: '2',
     floating_ad_cooldown: '4',
-    floating_ad_max_shows: '3'
+    floating_ad_max_shows: '3',
+    default_shop: 'A',
+    shop_switch_enabled: 'true'
   })
   
   // URL validation state
@@ -687,6 +689,65 @@ export default function AdminSettings() {
 
         <TabsContent value="shop-features">
           <div className="space-y-6">
+            {/* General Shop Settings */}
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Store className="w-5 h-5" />
+                  General Shop Settings
+                </CardTitle>
+                <p className="text-gray-400 text-sm">
+                  Configure default shop behavior and shop switching functionality
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="default_shop" className="text-white">Default Shop</Label>
+                    <select
+                      id="default_shop"
+                      value={getShopFeaturesSetting("default_shop") || "A"}
+                      onChange={(e) => updateShopFeaturesSetting("default_shop", e.target.value)}
+                      className="w-full bg-gray-700 border-gray-600 text-white h-10 mt-2 rounded-md px-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    >
+                      <option value="A">Shop A - Beauty Products</option>
+                      <option value="B">Shop B - Style Accessories</option>
+                    </select>
+                    <p className="text-gray-400 text-xs mt-1">Shop that users see when they first visit the site</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="shop_switch_enabled" className="text-white">Enable Shop Switching</Label>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <input
+                        type="checkbox"
+                        id="shop_switch_enabled"
+                        checked={getShopFeaturesSetting("shop_switch_enabled") === "true"}
+                        onChange={(e) => updateShopFeaturesSetting("shop_switch_enabled", e.target.checked.toString())}
+                        className="w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500"
+                      />
+                      <span className="text-gray-300 text-sm">Allow users to switch between shops</span>
+                    </div>
+                    <p className="text-gray-400 text-xs mt-1">Controls the shop switcher in the header</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-700/50 p-4 rounded-lg">
+                  <h4 className="text-white font-medium mb-2 flex items-center gap-2">
+                    <Store className="w-4 h-4" />
+                    Current Shop Configuration
+                  </h4>
+                  <div className="text-sm text-gray-300 space-y-1">
+                    <p>• Default Shop: <strong>{getShopFeaturesSetting("default_shop") === "B" ? "Shop B - Style Accessories" : "Shop A - Beauty Products"}</strong></p>
+                    <p>• Shop Switching: <span className={getShopFeaturesSetting("shop_switch_enabled") === "true" ? "text-green-400" : "text-red-400"}>
+                      {getShopFeaturesSetting("shop_switch_enabled") === "true" ? "Enabled" : "Disabled"}
+                    </span></p>
+                    <p>• Current Admin Shop: <strong>Shop {shop} - {shop === "A" ? "Beauty Products" : "Style Accessories"}</strong></p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Shop Switch Popup Settings */}
             <Card className="bg-gray-800/50 border-gray-700">
               <CardHeader>
