@@ -27,10 +27,10 @@ export default function BottomTabs() {
 
   const navItems = [
     { href: "/products", icon: Home, label: "Home", isActive: pathname === "/" },
-    { href: "/orders", icon: ShoppingBag, label: "Orders", isActive: pathname === "/orders", badge: cartCount || null },
+    { href: "/orders", icon: ShoppingBag, label: "Orders", isActive: pathname === "/orders" },
     // Only include shop toggle if enabled in admin settings
     ...(isShopSwitchEnabled ? [{ type: "toggle" }] : []),
-    { href: "/order", icon: ShoppingCart, label: "Cart", isActive: pathname === "/order" },
+    { href: "/order", icon: ShoppingCart, label: "Cart", isActive: pathname === "/order", badge: cartCount || null },
     { type: "profile" }, 
   ]
 

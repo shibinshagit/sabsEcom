@@ -1103,104 +1103,202 @@ export default function OrderPage() {
                     }
 
                     return (
-                      <div key={item.menuItem.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-6 border rounded-xl bg-gradient-to-r from-white to-gray-50 shadow-sm hover:shadow-md transition-shadow">
-                        <Image
-                          src={
-                            item.menuItem.image_url ||
-                            item.menuItem.image_urls?.[0] ||
-                            `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(itemName)}`
-                          }
-                          alt={itemName}
-                          width={90}
-                          height={90}
-                          className="rounded-xl object-cover w-20 h-20 sm:w-24 sm:h-24 shadow-sm"
-                        />
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="font-bold text-lg text-gray-900 leading-tight">{itemName}</h3>
+                      <div key={item.menuItem.id} className="border rounded-xl bg-gradient-to-r from-white to-gray-50 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                        {/* Mobile Layout */}
+                        <div className="block sm:hidden p-4 space-y-3">
+                          <div className="flex gap-3">
+                            <Image
+                              src={
+                                item.menuItem.image_url ||
+                                item.menuItem.image_urls?.[0] ||
+                                `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(itemName)}`
+                              }
+                              alt={itemName}
+                              width={80}
+                              height={80}
+                              className="rounded-lg object-cover w-20 h-20 flex-shrink-0 shadow-sm"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-base text-gray-900 leading-tight truncate">{itemName}</h3>
                               {variantName && variantName !== 'Default' && (
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                                    {variantName}
-                                  </span>
-                                </div>
+                                <span className="inline-block text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium mt-1">
+                                  {variantName}
+                                </span>
                               )}
-                            </div>
-                            <div className="text-right">
-                              {isAvailable && itemPrice > 0 ? (
-                                <>
+                              <div className="mt-2">
+                                {isAvailable && itemPrice > 0 ? (
                                   <p className="font-bold text-lg text-gray-900">
                                     {formatPriceWithSmallDecimals(itemPrice, itemPrice, selectedCurrency, true, '#000')}
+                                    <span className="text-sm text-gray-500 font-normal ml-1">per item</span>
                                   </p>
-                                  <p className="text-sm text-gray-500">per item</p>
-                                </>
-                              ) : (
-                                <>
-                                  <p className="font-bold text-lg text-red-600">
-                                    Unavailable
+                                ) : (
+                                  <p className="font-bold text-base text-red-600">
+                                    Unavailable in {selectedCurrency === 'AED' ? 'UAE' : 'India'}
                                   </p>
-                                  <p className="text-sm text-red-500">in {selectedCurrency === 'AED' ? 'UAE' : 'India'}</p>
-                                </>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
                           
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-600 font-medium">Quantity:</span>
-                              <div className="flex items-center gap-2 bg-white rounded-lg border shadow-sm">
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-600 font-medium">Qty:</span>
+                              <div className="flex items-center bg-white rounded-lg border shadow-sm">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleQuantityChange(item.menuItem.id, item.quantity - 1)}
-                                  className="p-2 hover:bg-gray-100 rounded-l-lg"
+                                  className="p-1.5 hover:bg-gray-100 rounded-l-lg"
                                   aria-label="Decrease quantity"
                                 >
-                                  <Minus className="w-4 h-4" />
+                                  <Minus className="w-3 h-3" />
                                 </Button>
-                                <span className="w-12 text-center font-semibold text-lg bg-gray-50 py-1">
+                                <span className="w-8 text-center font-semibold text-sm bg-gray-50 py-1.5">
                                   {item.quantity}
                                 </span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleQuantityChange(item.menuItem.id, item.quantity + 1)}
-                                  className="p-2 hover:bg-gray-100 rounded-r-lg"
+                                  className="p-1.5 hover:bg-gray-100 rounded-r-lg"
                                   aria-label="Increase quantity"
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  <Plus className="w-3 h-3" />
                                 </Button>
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
                               <div className="text-right">
-                                <p className="font-bold text-xl text-orange-600">
+                                <p className="font-bold text-lg text-orange-600">
                                   {formatPriceWithSmallDecimals(itemPrice * item.quantity, itemPrice * item.quantity, selectedCurrency, true, '#000')}
                                 </p>
-                                <p className="text-sm text-gray-500">total</p>
+                                <p className="text-xs text-gray-500">total</p>
                               </div>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleQuantityChange(item.menuItem.id, 0)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 p-2 rounded-lg"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 p-1.5 rounded-lg"
                                 aria-label="Remove item"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </div>
-
+                          
+                          {/* Stock Warning for Mobile */}
                           {item.selected_variant && item.selected_variant.stock_quantity <= 5 && (
-                            <div className="flex items-center gap-2 bg-orange-50 p-2 rounded-lg">
+                            <div className="flex items-center gap-2 bg-orange-50 p-2 rounded-lg mt-2">
                               <AlertTriangle className="w-4 h-4 text-orange-500" />
                               <p className="text-sm text-orange-700 font-medium">
                                 {item.selected_variant.stock_quantity === 0 ? 'Out of Stock' : `Only ${item.selected_variant.stock_quantity} left in stock`}
                               </p>
                             </div>
                           )}
+                        </div>
+
+                        {/* Desktop Layout */}
+                        <div className="hidden sm:flex sm:items-center gap-4 p-6">
+                          <Image
+                            src={
+                              item.menuItem.image_url ||
+                              item.menuItem.image_urls?.[0] ||
+                              `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(itemName)}`
+                            }
+                            alt={itemName}
+                            width={90}
+                            height={90}
+                            className="rounded-xl object-cover w-24 h-24 shadow-sm flex-shrink-0"
+                          />
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-bold text-lg text-gray-900 leading-tight">{itemName}</h3>
+                                {variantName && variantName !== 'Default' && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                      {variantName}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                {isAvailable && itemPrice > 0 ? (
+                                  <>
+                                    <p className="font-bold text-lg text-gray-900">
+                                      {formatPriceWithSmallDecimals(itemPrice, itemPrice, selectedCurrency, true, '#000')}
+                                    </p>
+                                    <p className="text-sm text-gray-500">per item</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="font-bold text-lg text-red-600">
+                                      Unavailable
+                                    </p>
+                                    <p className="text-sm text-red-500">in {selectedCurrency === 'AED' ? 'UAE' : 'India'}</p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm text-gray-600 font-medium">Quantity:</span>
+                                <div className="flex items-center gap-2 bg-white rounded-lg border shadow-sm">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleQuantityChange(item.menuItem.id, item.quantity - 1)}
+                                    className="p-2 hover:bg-gray-100 rounded-l-lg"
+                                    aria-label="Decrease quantity"
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </Button>
+                                  <span className="w-12 text-center font-semibold text-lg bg-gray-50 py-1">
+                                    {item.quantity}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleQuantityChange(item.menuItem.id, item.quantity + 1)}
+                                    className="p-2 hover:bg-gray-100 rounded-r-lg"
+                                    aria-label="Increase quantity"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <p className="font-bold text-xl text-orange-600">
+                                    {formatPriceWithSmallDecimals(itemPrice * item.quantity, itemPrice * item.quantity, selectedCurrency, true, '#000')}
+                                  </p>
+                                  <p className="text-sm text-gray-500">total</p>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleQuantityChange(item.menuItem.id, 0)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 p-2 rounded-lg"
+                                  aria-label="Remove item"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            {/* Stock Warning for Desktop */}
+                            {item.selected_variant && item.selected_variant.stock_quantity <= 5 && (
+                              <div className="flex items-center gap-2 bg-orange-50 p-2 rounded-lg">
+                                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                                <p className="text-sm text-orange-700 font-medium">
+                                  {item.selected_variant.stock_quantity === 0 ? 'Out of Stock' : `Only ${item.selected_variant.stock_quantity} left in stock`}
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )
