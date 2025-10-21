@@ -44,6 +44,7 @@ export default function OrdersManagement() {
   const [error, setError] = useState<string | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
+  const [searchQuery, setSearchQuery] = useState("")
   const [updating, setUpdating] = useState<number | null>(null)
   const [trackingUrls, setTrackingUrls] = useState<{[key: number]: string}>({})
   const [trackingIds, setTrackingIds] = useState<{[key: number]: string}>({})
@@ -361,7 +362,49 @@ export default function OrdersManagement() {
     }
   }
 
-  const filteredOrders = orders.filter((order) => statusFilter === "all" || order.status === statusFilter)
+  const filteredOrders = orders.filter((order) => {
+    // Status filter
+    const statusMatch = statusFilter === "all" || order.status === statusFilter
+    
+    // Enhanced search filter - search across multiple fields
+    if (searchQuery === "") {
+      return statusMatch
+    }
+    
+    const query = searchQuery.toLowerCase()
+    
+    // Customer information search
+    const customerMatch = 
+      order.customer_name.toLowerCase().includes(query) ||
+      order.customer_email.toLowerCase().includes(query) ||
+      order.customer_phone.toLowerCase().includes(query)
+    
+    // Order information search
+    const orderMatch = 
+      order.order_number.toLowerCase().includes(query) ||
+      (order.payment_id && order.payment_id.toLowerCase().includes(query)) ||
+      (order.coupon_code && order.coupon_code.toLowerCase().includes(query)) ||
+      order.payment_method.toLowerCase().includes(query) ||
+      order.payment_status.toLowerCase().includes(query)
+    
+    // Product/items search
+    const productMatch = order.items.some(item => 
+      item.menu_item_name.toLowerCase().includes(query) ||
+      (item.variant_name && item.variant_name.toLowerCase().includes(query)) ||
+      (item.special_requests && item.special_requests.toLowerCase().includes(query))
+    )
+    
+    // Address search
+    const addressMatch = 
+      (order.delivery_address && order.delivery_address.toLowerCase().includes(query)) ||
+      (order.customer_address && order.customer_address.toLowerCase().includes(query))
+    
+    // Special instructions search
+    const instructionsMatch = 
+      order.special_instructions && order.special_instructions.toLowerCase().includes(query)
+    
+    return statusMatch && (customerMatch || orderMatch || productMatch || addressMatch || instructionsMatch)
+  })
 
   if (loading) {
     return (
@@ -401,29 +444,88 @@ export default function OrdersManagement() {
     <>
       <style jsx>{scrollbarHideStyle}</style>
       <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-white">Orders</h1>
-        <div className="flex items-center space-x-4">
-          <Button onClick={fetchOrders} className="bg-blue-600 hover:bg-blue-700">
-            Refresh ({filteredOrders.length})
-          </Button>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48 bg-gray-700 border-gray-600 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-700 border-gray-600">
-              <SelectItem value="all" className="text-white">All Orders</SelectItem>
-              <SelectItem value="pending" className="text-white">Pending</SelectItem>
-              <SelectItem value="confirmed" className="text-white">Confirmed</SelectItem>
-              <SelectItem value="packed" className="text-white">Packed</SelectItem>
-              <SelectItem value="dispatched" className="text-white">Dispatched</SelectItem>
-              <SelectItem value="out for delivery" className="text-white">Out for Delivery</SelectItem>
-              <SelectItem value="delivered" className="text-white">Delivered</SelectItem>
-              <SelectItem value="cancel" className="text-white">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+        <div className="flex-shrink-0">
+          <h1 className="text-3xl font-bold text-white">Orders</h1>
+          <p className="text-gray-400 text-sm mt-1">Manage and track all customer orders</p>
+        </div>
+        
+        {/* Right-aligned search and controls */}
+        <div className="flex flex-col gap-4 lg:min-w-0 lg:flex-1 lg:max-w-2xl lg:ml-8">
+          {/* Search Controls Row */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Main Search Input */}
+            <div className="relative flex-1">
+              <Input
+                type="text"
+                placeholder="Search customers, orders, products, payment IDs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 pr-8"
+              />
+              {searchQuery && (
+                <Button
+                  onClick={() => setSearchQuery("")}
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 text-gray-400 hover:text-white"
+                >
+                  ×
+                </Button>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <Button onClick={fetchOrders} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
+                Refresh ({filteredOrders.length})
+              </Button>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48 bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-700 border-gray-600">
+                  <SelectItem value="all" className="text-white">All Orders</SelectItem>
+                  <SelectItem value="pending" className="text-white">Pending</SelectItem>
+                  <SelectItem value="confirmed" className="text-white">Confirmed</SelectItem>
+                  <SelectItem value="packed" className="text-white">Packed</SelectItem>
+                  <SelectItem value="dispatched" className="text-white">Dispatched</SelectItem>
+                  <SelectItem value="out for delivery" className="text-white">Out for Delivery</SelectItem>
+                  <SelectItem value="delivered" className="text-white">Delivered</SelectItem>
+                  <SelectItem value="cancel" className="text-white">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Search Results Indicator */}
+      {searchQuery && (
+        <Card className="bg-blue-900/20 border-blue-600/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <span className="text-blue-300 font-medium">
+                  Search Results for "{searchQuery}"
+                </span>
+                <Badge variant="outline" className="text-blue-300 border-blue-400">
+                  {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'} found
+                </Badge>
+              </div>
+              <Button
+                onClick={() => setSearchQuery("")}
+                variant="ghost"
+                size="sm"
+                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
+              >
+                Clear Search
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Order Statistics Cards */}
       {statsLoading ? (
