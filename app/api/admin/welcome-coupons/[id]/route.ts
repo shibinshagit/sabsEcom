@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+// ===========================
+// GET /api/admin/welcome-coupons/[id]
+// ===========================
+export async function GET(
+  _: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await context.params;
+
     const [coupon] = await sql`
       SELECT *
       FROM welcome_coupons
-      WHERE id = ${params.id};
+      WHERE id = ${id};
     `;
 
     if (!coupon) {
@@ -20,8 +28,15 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+// ===========================
+// PUT /api/admin/welcome-coupons/[id]
+// ===========================
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await context.params;
     const data = await request.json();
 
     const {
@@ -29,18 +44,24 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       title,
       description,
       discountType,
-      discountValue,
-      maximumDiscount,
+      discountValueInr,
+      discountValueAed,
+      maxPurchaseInr,
+      maxPurchaseAed,
+      minimumPurchaseInr,
+      minimumPurchaseAed,
       validFrom,
       validTo,
       isActive,
-      minimumPurchaseInr,
-      minimumPurchaseAed,
       userTypeRestriction,
     } = data;
 
-    if (!code || !title || !discountType || !discountValue) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    // BASIC VALIDATION
+    if (!code || !title || !discountType) {
+      return NextResponse.json(
+        { error: "code, title and discountType are required" },
+        { status: 400 }
+      );
     }
 
     if (!["flat", "percent"].includes(discountType)) {
@@ -50,23 +71,42 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       );
     }
 
+    // PERCENT VALIDATION
     if (discountType === "percent") {
-      if (discountValue < 1 || discountValue > 100) {
+      if (
+        (discountValueInr !== null &&
+          discountValueInr !== undefined &&
+          (discountValueInr < 1 || discountValueInr > 100)) ||
+        (discountValueAed !== null &&
+          discountValueAed !== undefined &&
+          (discountValueAed < 1 || discountValueAed > 100))
+      ) {
         return NextResponse.json(
-          { error: "Percentage discount must be between 1 and 100" },
-          { status: 400 }
-        );
-      }
-
-      if (!maximumDiscount) {
-        return NextResponse.json(
-          { error: "maximumDiscount is required for percentage coupons" },
+          { error: "Percentage values must be between 1 and 100" },
           { status: 400 }
         );
       }
     }
 
+    // USER TYPE VALIDATION
+    if (
+      userTypeRestriction &&
+      !["all", "new", "returning"].includes(userTypeRestriction)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid userTypeRestriction" },
+        { status: 400 }
+      );
+    }
+
     const userType = userTypeRestriction ?? "all";
+
+    // NORMALIZE VALUES
+    const minINR = minimumPurchaseInr ?? 0;
+    const minAED = minimumPurchaseAed ?? 0;
+    const maxINR = maxPurchaseInr ?? null;
+    const maxAED = maxPurchaseAed ?? null;
+    const active = isActive ?? true;
 
     const [updated] = await sql`
       UPDATE welcome_coupons
@@ -75,16 +115,24 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         title = ${title},
         description = ${description},
         discount_type = ${discountType},
-        discount_value = ${discountValue},
-        maximum_discount = ${maximumDiscount},
-        minimum_purchase_inr = ${minimumPurchaseInr ?? 0},
-        minimum_purchase_aed = ${minimumPurchaseAed ?? 0},
+
+        discount_value_inr = ${discountValueInr},
+        discount_value_aed = ${discountValueAed},
+
+        minimum_purchase_inr = ${minINR},
+        minimum_purchase_aed = ${minAED},
+
+        max_purchase_inr = ${maxINR},
+        max_purchase_aed = ${maxAED},
+
         user_type_restriction = ${userType},
+
         valid_from = ${validFrom},
         valid_to = ${validTo},
-        is_active = ${isActive ?? true},
+        is_active = ${active},
+
         updated_at = NOW()
-      WHERE id = ${params.id}
+      WHERE id = ${id}
       RETURNING *;
     `;
 
@@ -99,11 +147,19 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+// ===========================
+// DELETE /api/admin/welcome-coupons/[id]
+// ===========================
+export async function DELETE(
+  _: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await context.params;
+
     const result = await sql`
       DELETE FROM welcome_coupons
-      WHERE id = ${params.id}
+      WHERE id = ${id}
       RETURNING id;
     `;
 

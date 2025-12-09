@@ -48,7 +48,7 @@ const formatDateTime = (dateString: string) => {
     const ampm = hours >= 12 ? 'PM' : 'AM';
     
     hours = hours % 12;
-    hours = hours ? hours : 12; // Convert 0 to 12
+    hours = hours ? hours : 12;
     
     const minutesStr = minutes < 10 ? '0' + minutes : minutes;
     const timeStr = `${hours}:${minutesStr} ${ampm}`;
@@ -85,9 +85,9 @@ const isTablet = () => {
 };
 
 export default function WelcomeCouponsPage() {
-  const [coupons, setCoupons] = useState([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isTabletView, setIsTabletView] = useState(false);
   
@@ -97,12 +97,14 @@ export default function WelcomeCouponsPage() {
     code: "",
     title: "",
     description: "",
-    discountType: "flat",
-    discountValue: "",
-    maximumDiscount: "",
+    discountType: "flat" as "flat" | "percent",
+    discountValueInr: "",
+    discountValueAed: "",
+    maxPurchaseInr: "",
+    maxPurchaseAed: "",
     minimumPurchaseInr: "",
     minimumPurchaseAed: "",
-    userTypeRestriction: "all",
+    userTypeRestriction: "all" as "all" | "new" | "returning",
     validFrom: "",
     validTo: "",
     isActive: true,
@@ -116,7 +118,7 @@ export default function WelcomeCouponsPage() {
       setIsTabletView(window.innerWidth >= 640 && window.innerWidth < 1024);
     };
     
-    handleResize(); // Initial check
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -125,9 +127,10 @@ export default function WelcomeCouponsPage() {
     try {
       const res = await fetch("/api/admin/welcome-coupons");
       const data = await res.json();
-      setCoupons(data);
+      setCoupons(data || []);
     } catch (error) {
       console.error("Failed to load coupons:", error);
+      setCoupons([]);
     }
   }
 
@@ -138,18 +141,20 @@ export default function WelcomeCouponsPage() {
   function handleSelect(coupon: any) {
     setSelected(coupon.id);
     setForm({
-      code: coupon.code,
-      title: coupon.title,
-      description: coupon.description,
-      discountType: coupon.discount_type,
-      discountValue: coupon.discount_value,
-      maximumDiscount: coupon.maximum_discount || "",
-      minimumPurchaseInr: coupon.minimum_purchase_inr || "",
-      minimumPurchaseAed: coupon.minimum_purchase_aed || "",
+      code: coupon.code || "",
+      title: coupon.title || "",
+      description: coupon.description || "",
+      discountType: coupon.discount_type || "flat",
+      discountValueInr: coupon.discount_value_inr?.toString() || "",
+      discountValueAed: coupon.discount_value_aed?.toString() || "",
+      maxPurchaseInr: coupon.max_purchase_inr?.toString() || "",
+      maxPurchaseAed: coupon.max_purchase_aed?.toString() || "",
+      minimumPurchaseInr: coupon.minimum_purchase_inr?.toString() || "",
+      minimumPurchaseAed: coupon.minimum_purchase_aed?.toString() || "",
       userTypeRestriction: coupon.user_type_restriction || "all",
       validFrom: formatDateForInput(coupon.valid_from),
       validTo: formatDateForInput(coupon.valid_to),
-      isActive: coupon.is_active,
+      isActive: coupon.is_active ?? true,
     });
     setShowForm(true);
   }
@@ -159,27 +164,53 @@ export default function WelcomeCouponsPage() {
   }
 
   async function handleSubmit() {
-    // Validation
+    // Basic validation
     if (!form.code.trim()) {
       alert("Coupon code is required");
       return;
     }
     
-    if (!form.title.trim()) {
-      alert("Title is required");
+    if (!form.discountType) {
+      alert("Discount type is required");
       return;
     }
     
-    if (!form.discountValue || Number(form.discountValue) <= 0) {
-      alert("Discount value must be greater than 0");
+    // Discount validation based on type
+    if (form.discountType === "percent") {
+      // Validate percentage ranges
+      if (form.discountValueInr) {
+        const inrValue = Number(form.discountValueInr);
+        if (inrValue < 1 || inrValue > 100) {
+          alert("INR percentage discount must be between 1 and 100");
+          return;
+        }
+      }
+      if (form.discountValueAed) {
+        const aedValue = Number(form.discountValueAed);
+        if (aedValue < 1 || aedValue > 100) {
+          alert("AED percentage discount must be between 1 and 100");
+          return;
+        }
+      }
+    } else if (form.discountType === "flat") {
+      // Validate flat amounts
+      if (form.discountValueInr && Number(form.discountValueInr) <= 0) {
+        alert("INR flat discount must be a positive number");
+        return;
+      }
+      if (form.discountValueAed && Number(form.discountValueAed) <= 0) {
+        alert("AED flat discount must be a positive number");
+        return;
+      }
+    }
+    
+    // At least one discount value should be provided
+    if (!form.discountValueInr && !form.discountValueAed) {
+      alert("Please provide at least one discount value (INR or AED)");
       return;
     }
     
-    if (form.discountType === "percent" && Number(form.discountValue) > 100) {
-      alert("Percentage discount cannot exceed 100%");
-      return;
-    }
-    
+    // Date validation
     if (!form.validFrom || !form.validTo) {
       alert("Please set both start and end dates");
       return;
@@ -192,15 +223,22 @@ export default function WelcomeCouponsPage() {
 
     setLoading(true);
 
+    // Prepare request body matching backend structure
     const body = {
-      ...form,
-      discountValue: Number(form.discountValue),
-      maximumDiscount:
-        form.discountType === "percent"
-          ? Number(form.maximumDiscount)
-          : null,
+      code: form.code,
+      title: form.title || null,
+      description: form.description || null,
+      discountType: form.discountType,
+      discountValueInr: form.discountValueInr ? Number(form.discountValueInr) : null,
+      discountValueAed: form.discountValueAed ? Number(form.discountValueAed) : null,
+      maxPurchaseInr: form.maxPurchaseInr ? Number(form.maxPurchaseInr) : null,
+      maxPurchaseAed: form.maxPurchaseAed ? Number(form.maxPurchaseAed) : null,
       minimumPurchaseInr: Number(form.minimumPurchaseInr) || 0,
       minimumPurchaseAed: Number(form.minimumPurchaseAed) || 0,
+      userTypeRestriction: form.userTypeRestriction,
+      validFrom: form.validFrom,
+      validTo: form.validTo,
+      isActive: form.isActive,
     };
 
     const url = selected
@@ -219,7 +257,8 @@ export default function WelcomeCouponsPage() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to save coupon");
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to save coupon");
       }
 
       setSelected(null);
@@ -240,7 +279,8 @@ export default function WelcomeCouponsPage() {
     }
     
     try {
-      await fetch(`/api/admin/welcome-coupons/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/welcome-coupons/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
       loadCoupons();
     } catch (error) {
       alert("Failed to delete coupon");
@@ -258,6 +298,19 @@ export default function WelcomeCouponsPage() {
     if (isMobile) return "grid-cols-1";
     if (isTabletView) return "grid-cols-2";
     return "grid-cols-1 md:grid-cols-2";
+  };
+
+  // Helper to display discount value
+  const getDiscountDisplay = (coupon: any) => {
+    if (coupon.discount_type === "flat") {
+      const inr = coupon.discount_value_inr ? `₹${coupon.discount_value_inr}` : null;
+      const aed = coupon.discount_value_aed ? `AED ${coupon.discount_value_aed}` : null;
+      return [inr, aed].filter(Boolean).join(" / ");
+    } else {
+      const inr = coupon.discount_value_inr ? `${coupon.discount_value_inr}%` : null;
+      const aed = coupon.discount_value_aed ? `${coupon.discount_value_aed}%` : null;
+      return [inr, aed].filter(Boolean).join(" / ");
+    }
   };
 
   return (
@@ -315,7 +368,7 @@ export default function WelcomeCouponsPage() {
               <div className="space-y-2">
                 <Label htmlFor="code" className="text-gray-700 flex items-center gap-2">
                   <Hash className="h-4 w-4" />
-                  Coupon Code
+                  Coupon Code *
                 </Label>
                 <Input
                   id="code"
@@ -324,6 +377,7 @@ export default function WelcomeCouponsPage() {
                   onChange={(e) => updateForm("code", e.target.value.toUpperCase().replace(/\s/g, ''))}
                   className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500"
                   maxLength={20}
+                  required
                 />
                 <p className="text-xs text-gray-500">
                   Code will be auto-uppercased, no spaces allowed
@@ -349,14 +403,14 @@ export default function WelcomeCouponsPage() {
                 <Textarea
                   id="description"
                   placeholder="Describe the coupon offer and terms..."
-                  value={form.description}
+                  value={form.description || ""}
                   onChange={(e) => updateForm("description", e.target.value)}
                   rows={3}
                   className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 resize-none"
                   maxLength={200}
                 />
                 <p className="text-xs text-gray-500 text-right">
-                  {form.description.length}/200 characters
+                  {(form.description || "").length}/200 characters
                 </p>
               </div>
 
@@ -364,14 +418,14 @@ export default function WelcomeCouponsPage() {
               <div className="space-y-2">
                 <Label htmlFor="discountType" className="text-gray-700 flex items-center gap-2">
                   <Percent className="h-4 w-4" />
-                  Discount Type
+                  Discount Type *
                 </Label>
                 <Select
                   value={form.discountType}
-                  onValueChange={(value) => updateForm("discountType", value)}
+                  onValueChange={(value: "flat" | "percent") => updateForm("discountType", value)}
                 >
                   <SelectTrigger id="discountType" className="bg-white border-gray-300 text-gray-900">
-                    <SelectValue />
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-gray-300">
                     <SelectItem value="flat">Flat Amount</SelectItem>
@@ -380,30 +434,30 @@ export default function WelcomeCouponsPage() {
                 </Select>
               </div>
 
-              {/* Discount Value */}
+              {/* Spacer */}
+              <div className="col-span-full">
+                <p className="text-sm font-medium text-gray-700 mb-2">Discount Values</p>
+                <p className="text-xs text-gray-500 mb-4">
+                  Provide at least one value (INR or AED)
+                </p>
+              </div>
+
+              {/* INR Discount Value */}
               <div className="space-y-2">
-                <Label htmlFor="discountValue" className="text-gray-700">
-                  {form.discountType === "flat" ? (
-                    <>
-                      <IndianRupee className="h-4 w-4 inline mr-1" />
-                      Discount Amount
-                    </>
-                  ) : (
-                    <>
-                      <Percent className="h-4 w-4 inline mr-1" />
-                      Discount %
-                    </>
-                  )}
+                <Label htmlFor="discountValueInr" className="text-gray-700 flex items-center gap-2">
+                  <IndianRupee className="h-4 w-4" />
+                  {form.discountType === "flat" ? "Flat Discount (INR)" : "Percentage Discount (INR)"}
                 </Label>
                 <div className="relative">
                   <Input
-                    id="discountValue"
+                    id="discountValueInr"
                     type="number"
-                    min="0"
-                    step={form.discountType === "flat" ? "1" : "0.1"}
+                    min={form.discountType === "percent" ? "1" : "0.01"}
+                    max={form.discountType === "percent" ? "100" : undefined}
+                    step={form.discountType === "percent" ? "0.1" : "1"}
                     placeholder={form.discountType === "flat" ? "50" : "10"}
-                    value={form.discountValue}
-                    onChange={(e) => updateForm("discountValue", e.target.value)}
+                    value={form.discountValueInr}
+                    onChange={(e) => updateForm("discountValueInr", e.target.value)}
                     className="bg-white border-gray-300 text-gray-900 pl-8 focus:ring-2 focus:ring-blue-500"
                   />
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
@@ -414,35 +468,94 @@ export default function WelcomeCouponsPage() {
                     )}
                   </div>
                 </div>
+                {form.discountType === "percent" && (
+                  <p className="text-xs text-gray-500">Must be between 1 and 100</p>
+                )}
               </div>
 
-              {/* Maximum Discount (Percentage only) */}
-              {form.discountType === "percent" && (
-                <div className="space-y-2 col-span-full">
-                  <Label htmlFor="maximumDiscount" className="text-gray-700">
-                    <IndianRupee className="h-4 w-4 inline mr-1" />
-                    Maximum Discount Cap
-                  </Label>
+              {/* AED Discount Value */}
+              <div className="space-y-2">
+                <Label htmlFor="discountValueAed" className="text-gray-700 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  {form.discountType === "flat" ? "Flat Discount (AED)" : "Percentage Discount (AED)"}
+                </Label>
+                <div className="relative">
                   <Input
-                    id="maximumDiscount"
+                    id="discountValueAed"
                     type="number"
-                    min="0"
-                    placeholder="e.g., 500"
-                    value={form.maximumDiscount}
-                    onChange={(e) => updateForm("maximumDiscount", e.target.value)}
-                    className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500"
+                    min={form.discountType === "percent" ? "1" : "0.01"}
+                    max={form.discountType === "percent" ? "100" : undefined}
+                    step={form.discountType === "percent" ? "0.1" : "1"}
+                    placeholder={form.discountType === "flat" ? "50" : "10"}
+                    value={form.discountValueAed}
+                    onChange={(e) => updateForm("discountValueAed", e.target.value)}
+                    className="bg-white border-gray-300 text-gray-900 pl-8 focus:ring-2 focus:ring-blue-500"
                   />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    {form.discountType === "flat" ? (
+                      <DollarSign className="h-4 w-4" />
+                    ) : (
+                      <Percent className="h-4 w-4" />
+                    )}
+                  </div>
                 </div>
-              )}
+                {form.discountType === "percent" && (
+                  <p className="text-xs text-gray-500">Must be between 1 and 100</p>
+                )}
+              </div>
+
+              {/* Maximum Purchase Amounts */}
+              <div className="space-y-2 col-span-full">
+                <p className="text-sm font-medium text-gray-700">Maximum Purchase Limits (Optional)</p>
+                <p className="text-xs text-gray-500 mb-4">
+                  Maximum cart value this coupon can be applied to
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxPurchaseInr" className="text-gray-700 flex items-center gap-2">
+                  <IndianRupee className="h-4 w-4" />
+                  Max Purchase (INR)
+                </Label>
+                <Input
+                  id="maxPurchaseInr"
+                  type="number"
+                  min="0"
+                  placeholder="No limit"
+                  value={form.maxPurchaseInr}
+                  onChange={(e) => updateForm("maxPurchaseInr", e.target.value)}
+                  className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxPurchaseAed" className="text-gray-700 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Max Purchase (AED)
+                </Label>
+                <Input
+                  id="maxPurchaseAed"
+                  type="number"
+                  min="0"
+                  placeholder="No limit"
+                  value={form.maxPurchaseAed}
+                  onChange={(e) => updateForm("maxPurchaseAed", e.target.value)}
+                  className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
               {/* Minimum Purchase Amounts */}
+              <div className="space-y-2 col-span-full">
+                <p className="text-sm font-medium text-gray-700">Minimum Purchase Requirements</p>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="minInr" className="text-gray-700 flex items-center gap-2">
+                <Label htmlFor="minimumPurchaseInr" className="text-gray-700 flex items-center gap-2">
                   <IndianRupee className="h-4 w-4" />
                   Min Purchase (INR)
                 </Label>
                 <Input
-                  id="minInr"
+                  id="minimumPurchaseInr"
                   type="number"
                   min="0"
                   placeholder="0"
@@ -454,12 +567,12 @@ export default function WelcomeCouponsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="minAed" className="text-gray-700 flex items-center gap-2">
+                <Label htmlFor="minimumPurchaseAed" className="text-gray-700 flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
                   Min Purchase (AED)
                 </Label>
                 <Input
-                  id="minAed"
+                  id="minimumPurchaseAed"
                   type="number"
                   min="0"
                   placeholder="0"
@@ -478,7 +591,7 @@ export default function WelcomeCouponsPage() {
                 </Label>
                 <Select
                   value={form.userTypeRestriction}
-                  onValueChange={(value) => updateForm("userTypeRestriction", value)}
+                  onValueChange={(value: "all" | "new" | "returning") => updateForm("userTypeRestriction", value)}
                 >
                   <SelectTrigger id="userType" className="bg-white border-gray-300 text-gray-900">
                     <SelectValue />
@@ -495,7 +608,7 @@ export default function WelcomeCouponsPage() {
               <div className="space-y-2">
                 <Label htmlFor="validFrom" className="text-gray-700 flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Valid From
+                  Valid From *
                 </Label>
                 <div className="space-y-1">
                   <div className="relative">
@@ -505,6 +618,7 @@ export default function WelcomeCouponsPage() {
                       value={form.validFrom}
                       onChange={(e) => updateForm("validFrom", e.target.value)}
                       className="bg-white border-gray-300 text-gray-900 pr-10 focus:ring-2 focus:ring-blue-500"
+                      required
                     />
                     <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
@@ -524,7 +638,7 @@ export default function WelcomeCouponsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="validTo" className="text-gray-700">Valid To</Label>
+                <Label htmlFor="validTo" className="text-gray-700">Valid To *</Label>
                 <div className="space-y-1">
                   <div className="relative">
                     <Input
@@ -533,6 +647,7 @@ export default function WelcomeCouponsPage() {
                       value={form.validTo}
                       onChange={(e) => updateForm("validTo", e.target.value)}
                       className="bg-white border-gray-300 text-gray-900 pr-10 focus:ring-2 focus:ring-blue-500"
+                      required
                     />
                     <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
@@ -604,7 +719,7 @@ export default function WelcomeCouponsPage() {
         </Card>
       )}
 
-      {/* Coupons List - Only show when form is NOT open */}
+      {/* Coupons List */}
       {!showForm && (
         <Card className="bg-white border-gray-200 shadow-xl">
           <CardHeader className="border-b border-gray-200">
@@ -646,9 +761,9 @@ export default function WelcomeCouponsPage() {
                     <CardContent className="p-4 sm:p-6">
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         
-                        {/* Left Section - Coupon Details */}
+                        {/* Left Section */}
                         <div className="flex-1">
-                          {/* Header with Code and Badges */}
+                          {/* Header */}
                           <div className="flex flex-wrap items-center gap-2 mb-3">
                             <code className="text-base sm:text-lg font-bold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200">
                               {c.code}
@@ -672,53 +787,67 @@ export default function WelcomeCouponsPage() {
                           </div>
 
                           {/* Title and Description */}
-                          <h3 className="font-semibold text-lg text-gray-900 mb-1">{c.title}</h3>
-                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">{c.description}</p>
+                          <h3 className="font-semibold text-lg text-gray-900 mb-1">{c.title || "Untitled Coupon"}</h3>
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">{c.description || "No description"}</p>
 
-                          {/* Coupon Details Grid - Responsive */}
+                          {/* Details Grid */}
                           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'} gap-4`}>
                             
                             {/* Discount Info */}
                             <div className="space-y-1">
                               <p className="text-xs text-gray-500 uppercase tracking-wider">Discount</p>
                               <div className="flex items-center gap-2">
-                                {c.discount_type === "flat" ? (
-                                  <IndianRupee className="h-4 w-4 text-blue-600" />
-                                ) : (
-                                  <Percent className="h-4 w-4 text-blue-600" />
-                                )}
                                 <span className="font-bold text-lg text-gray-900">
-                                  {c.discount_type === "flat" 
-                                    ? `₹${c.discount_value} off`
-                                    : `${c.discount_value}% off`}
+                                  {getDiscountDisplay(c)}
+                                </span>
+                                <span className="text-sm text-gray-600">
+                                  ({c.discount_type === "flat" ? "Flat" : "Percent"})
                                 </span>
                               </div>
-                              {c.discount_type === "percent" && c.maximum_discount && (
-                                <p className="text-sm text-gray-600">
-                                  Max: ₹{c.maximum_discount}
-                                </p>
-                              )}
                             </div>
 
-                            {/* Minimum Purchase */}
+                            {/* Purchase Limits */}
                             <div className="space-y-1">
-                              <p className="text-xs text-gray-500 uppercase tracking-wider">Min Purchase</p>
-                              <div className="flex flex-wrap gap-2">
-                                {c.minimum_purchase_inr > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <IndianRupee className="h-3 w-3 text-gray-500" />
-                                    <span className="text-sm text-gray-700">₹{c.minimum_purchase_inr}</span>
-                                  </div>
-                                )}
-                                {c.minimum_purchase_aed > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <DollarSign className="h-3 w-3 text-gray-500" />
-                                    <span className="text-sm text-gray-700">AED {c.minimum_purchase_aed}</span>
-                                  </div>
-                                )}
-                                {(c.minimum_purchase_inr === 0 && c.minimum_purchase_aed === 0) && (
-                                  <span className="text-sm text-gray-600">No minimum</span>
-                                )}
+                              <p className="text-xs text-gray-500 uppercase tracking-wider">Purchase Limits</p>
+                              <div className="space-y-1">
+                                {/* Minimum */}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs text-gray-600">Min:</span>
+                                  {(c.minimum_purchase_inr > 0 || c.minimum_purchase_aed > 0) ? (
+                                    <>
+                                      {c.minimum_purchase_inr > 0 && (
+                                        <span className="text-sm text-gray-700">₹{c.minimum_purchase_inr}</span>
+                                      )}
+                                      {c.minimum_purchase_inr > 0 && c.minimum_purchase_aed > 0 && (
+                                        <span className="text-xs text-gray-400 mx-1">•</span>
+                                      )}
+                                      {c.minimum_purchase_aed > 0 && (
+                                        <span className="text-sm text-gray-700">AED {c.minimum_purchase_aed}</span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-sm text-gray-600">No minimum</span>
+                                  )}
+                                </div>
+                                {/* Maximum */}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs text-gray-600">Max:</span>
+                                  {(c.max_purchase_inr || c.max_purchase_aed) ? (
+                                    <>
+                                      {c.max_purchase_inr && (
+                                        <span className="text-sm text-gray-700">₹{c.max_purchase_inr}</span>
+                                      )}
+                                      {c.max_purchase_inr && c.max_purchase_aed && (
+                                        <span className="text-xs text-gray-400 mx-1">•</span>
+                                      )}
+                                      {c.max_purchase_aed && (
+                                        <span className="text-sm text-gray-700">AED {c.max_purchase_aed}</span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-sm text-gray-600">No limit</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
@@ -739,7 +868,7 @@ export default function WelcomeCouponsPage() {
                               </div>
                             </div>
 
-                            {/* Created Date */}
+                            {/* Dates */}
                             <div className="space-y-1">
                               <p className="text-xs text-gray-500 uppercase tracking-wider">Created</p>
                               <p className="text-sm text-gray-700">
@@ -749,11 +878,18 @@ export default function WelcomeCouponsPage() {
                                   year: 'numeric'
                                 }) : 'N/A'}
                               </p>
+                              <p className="text-xs text-gray-500 mt-1">Updated: {
+                                c.updated_at ? new Date(c.updated_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                }) : 'N/A'
+                              }</p>
                             </div>
                           </div>
                         </div>
 
-                        {/* Right Section - Actions */}
+                        {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-2">
                           <Button
                             variant="outline"
@@ -762,7 +898,7 @@ export default function WelcomeCouponsPage() {
                             className="border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                           >
                             <Pencil className="h-4 w-4 mr-2" />
-                            {isMobile ? "Edit" : "Edit Coupon"}
+                            {isMobile ? "Edit" : "Edit"}
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -813,4 +949,3 @@ export default function WelcomeCouponsPage() {
     </div>
   );
 }
-

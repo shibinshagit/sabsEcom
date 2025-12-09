@@ -3,33 +3,23 @@ import { sql } from "@/lib/database";
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      userId, 
+    const {
+      userId,
       userEmail,
-      couponCode, 
-      orderTotal, 
+      couponCode,
+      orderTotal,
       currency = "AED",
-      shopId = "B" 
+      shopId = "B",
     } = await request.json();
 
-    console.log('Welcome coupon validation request:', { 
-      userId, 
-      userEmail, 
-      couponCode, 
-      orderTotal, 
-      currency, 
-      shopId 
-    });
-
-    // Validation
-    if (!couponCode || couponCode.trim() === "") {
+    // Basic checks
+    if (!couponCode || !couponCode.trim()) {
       return NextResponse.json(
         { valid: false, error: "Coupon code is required" },
         { status: 400 }
       );
     }
 
-    // Welcome coupons require authentication
     if (!userId) {
       return NextResponse.json(
         { valid: false, error: "Please login to use welcome coupons" },
@@ -37,64 +27,89 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch the welcome coupon (case-insensitive)
-    const couponData = await sql`
-      SELECT *
+    // Fetch coupon
+    const rows = await sql`
+      SELECT
+        id,
+        code,
+        title,
+        description,
+        discount_type,
+        discount_value_inr,
+        discount_value_aed,
+        minimum_purchase_inr,
+        minimum_purchase_aed,
+        max_purchase_inr,
+        max_purchase_aed,
+        user_type_restriction,
+        is_active,
+        valid_from,
+        valid_to
       FROM welcome_coupons
       WHERE UPPER(code) = UPPER(${couponCode})
         AND is_active = TRUE
       LIMIT 1
     `;
 
-    if (couponData.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json(
-        { valid: false, error: "Invalid or inactive welcome coupon code" },
+        { valid: false, error: "Invalid or inactive welcome coupon" },
         { status: 400 }
       );
     }
 
-    const coupon = couponData[0];
-    console.log('Found welcome coupon:', { 
-      id: coupon.id, 
-      code: coupon.code, 
-      type: coupon.type || coupon.discount_type, // Check both possible field names
-      discount_type: coupon.discount_type,
-      allFields: coupon
-    });
+    const coupon = rows[0];
 
-    // Check date validity
+    // ------------------- DATE VALIDATION -------------------
     const now = new Date();
-    
-    if (coupon.valid_from) {
-      const validFrom = new Date(coupon.valid_from);
-      if (now < validFrom) {
+
+    if (coupon.valid_from && now < new Date(coupon.valid_from)) {
+      return NextResponse.json(
+        { valid: false, error: "Coupon not yet valid", validFrom: coupon.valid_from },
+        { status: 400 }
+      );
+    }
+
+    if (coupon.valid_to && now > new Date(coupon.valid_to)) {
+      return NextResponse.json(
+        { valid: false, error: "Coupon expired", validTo: coupon.valid_to },
+        { status: 400 }
+      );
+    }
+
+    // ------------------- USER TYPE VALIDATION -------------------
+    // Expected values: "new", "existing", "all"
+    const userTypeRestriction = coupon.user_type_restriction?.toLowerCase();
+
+    if (userTypeRestriction !== "all") {
+      // Check if user has ever redeemed ANY welcome coupon = means they are not a "new user"
+      const userHasRedeemedBefore = await sql`
+        SELECT id
+        FROM welcome_coupons_used
+        WHERE user_id = ${userId}
+          AND is_redeemed = TRUE
+        LIMIT 1
+      `;
+
+      const isNewUser = userHasRedeemedBefore.length === 0;
+
+      if (userTypeRestriction === "new" && !isNewUser) {
         return NextResponse.json(
-          { 
-            valid: false, 
-            error: "This welcome coupon is not yet valid",
-            validFrom: coupon.valid_from
-          },
+          { valid: false, error: "This coupon is only for new users" },
           { status: 400 }
         );
       }
-    }
-    
-    if (coupon.valid_to) {
-      const validTo = new Date(coupon.valid_to);
-      if (now > validTo) {
+
+      if (userTypeRestriction === "existing" && isNewUser) {
         return NextResponse.json(
-          { 
-            valid: false, 
-            error: "This welcome coupon has expired",
-            validTo: coupon.valid_to
-          },
+          { valid: false, error: "This coupon is only for existing users" },
           { status: 400 }
         );
       }
     }
 
-    // Check if user has already used this specific welcome coupon
-    const usageCheck = await sql`
+    // ------------------- USAGE CHECK (same coupon) -------------------
+    const used = await sql`
       SELECT id, is_redeemed, redeemed_at
       FROM welcome_coupons_used
       WHERE user_id = ${userId}
@@ -102,84 +117,70 @@ export async function POST(request: NextRequest) {
       LIMIT 1
     `;
 
-    if (usageCheck.length > 0) {
-      if (usageCheck[0].is_redeemed === true) {
-        return NextResponse.json(
-          { 
-            valid: false, 
-            error: "You have already used this welcome coupon. Each welcome coupon can only be used once.",
-            redeemedAt: usageCheck[0].redeemed_at
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Check minimum purchase requirement based on currency
-    let minPurchase = 0;
-    if (currency === "AED") {
-      minPurchase = coupon.minimum_purchase_aed ? parseFloat(coupon.minimum_purchase_aed) : 0;
-    } else if (currency === "INR") {
-      minPurchase = coupon.minimum_purchase_inr ? parseFloat(coupon.minimum_purchase_inr) : 0;
-    }
-
-    if (orderTotal < minPurchase) {
-      const currencySymbol = currency === "AED" ? "AED" : "₹";
+    if (used.length > 0 && used[0].is_redeemed === true) {
       return NextResponse.json(
         {
           valid: false,
-          error: `Minimum order value of ${currencySymbol}${minPurchase.toFixed(2)} required for this welcome coupon`,
-          requiredAmount: minPurchase,
-          minPurchase: minPurchase,
-          currentTotal: orderTotal
+          error: "You have already used this welcome coupon.",
+          redeemedAt: used[0].redeemed_at,
         },
         { status: 400 }
       );
     }
 
-    // Get discount type - check both possible field names
-    const discountType = coupon.discount_type || coupon.type;
-    
-    // Calculate discount amount based on discount type
-    let discountAmount = 0;
-    const discountValue = parseFloat(coupon.discount_value);
+    // ------------------- CURRENCY SELECTION -------------------
+    const isAED = currency === "AED";
+    const symbol = isAED ? "AED" : "₹";
 
-    if (discountType === "flat" || discountType === "cash") {
-      // For flat discount, use the discount value but don't exceed order total
-      discountAmount = Math.min(discountValue, orderTotal);
-    } else if (discountType === "percentage" || discountType === "percent") {
-      // For percentage discount, calculate based on order total
-      discountAmount = (orderTotal * discountValue) / 100;
-      
-      // Apply maximum discount cap if set
-      if (coupon.maximum_discount && parseFloat(coupon.maximum_discount) > 0) {
-        const maxDiscount = parseFloat(coupon.maximum_discount);
-        discountAmount = Math.min(discountAmount, maxDiscount);
-        console.log(`Applied max discount cap: ${maxDiscount}, final discount: ${discountAmount}`);
-      }
-      
-      // Ensure discount doesn't exceed order total
-      discountAmount = Math.min(discountAmount, orderTotal);
-    } else {
-      console.error('Invalid discount type:', discountType);
+    const discountValue = isAED
+      ? Number(coupon.discount_value_aed)
+      : Number(coupon.discount_value_inr);
+
+    const minPurchase = isAED
+      ? Number(coupon.minimum_purchase_aed)
+      : Number(coupon.minimum_purchase_inr);
+
+    const maxCap = isAED
+      ? Number(coupon.max_purchase_aed)
+      : Number(coupon.max_purchase_inr);
+
+    // ------------------- MIN PURCHASE VALIDATION -------------------
+    if (orderTotal < minPurchase) {
       return NextResponse.json(
-        { valid: false, error: `Invalid discount type (${discountType}) for this welcome coupon` },
+        {
+          valid: false,
+          error: `Minimum order value of ${symbol}${minPurchase.toFixed(2)} required`,
+          minPurchase,
+        },
         { status: 400 }
       );
     }
 
-    // Round to 2 decimal places
+    // ------------------- DISCOUNT CALCULATION -------------------
+    let discountAmount = 0;
+
+    if (coupon.discount_type === "flat") {
+      discountAmount = Math.min(discountValue, orderTotal);
+    }
+
+    else if (coupon.discount_type === "percent") {
+      discountAmount = (orderTotal * discountValue) / 100;
+
+      // If you want to REMOVE max cap for welcome coupons:
+      // comment the next 2 lines
+      if (maxCap > 0) discountAmount = Math.min(discountAmount, maxCap);
+    }
+
+    else {
+      return NextResponse.json(
+        { valid: false, error: "Invalid discount type" },
+        { status: 400 }
+      );
+    }
+
     discountAmount = Math.round(discountAmount * 100) / 100;
 
-    console.log('Discount calculation:', {
-      type: discountType,
-      value: discountValue,
-      orderTotal,
-      calculatedDiscount: discountAmount
-    });
-
-    // Return success response
-    const currencySymbol = currency === "AED" ? "AED" : "₹";
+    // ------------------- SUCCESS -------------------
     return NextResponse.json({
       valid: true,
       coupon: {
@@ -187,27 +188,26 @@ export async function POST(request: NextRequest) {
         code: coupon.code,
         title: coupon.title,
         description: coupon.description,
-        discountType: discountType, // Return the actual type
-        discountValue: discountValue.toString(),
-        discountAmount: discountAmount,
-        minPurchase: minPurchase.toString(),
-        maxDiscount: coupon.maximum_discount ? parseFloat(coupon.maximum_discount).toString() : null,
+        discountType: coupon.discount_type,
+        discountValue,
+        discountAmount,
+        minPurchase,
+        maxCap,
         validFrom: coupon.valid_from,
         validTo: coupon.valid_to,
-        userTypeRestriction: coupon.user_type_restriction
+        userTypeRestriction: coupon.user_type_restriction,
       },
-      message: `Welcome coupon applied successfully! You saved ${currencySymbol}${discountAmount.toFixed(2)}`
+      message: `Coupon applied. You saved ${symbol}${discountAmount.toFixed(2)}`,
     });
-
   } catch (err) {
-    console.error("Welcome coupon validation error:", err);
     return NextResponse.json(
-      { 
-        valid: false, 
-        error: "Failed to validate welcome coupon. Please try again.",
-        details: err instanceof Error ? err.message : "Unknown error"
+      {
+        valid: false,
+        error: "Failed to validate coupon",
+        details: err instanceof Error ? err.message : String(err),
       },
       { status: 500 }
     );
   }
 }
+

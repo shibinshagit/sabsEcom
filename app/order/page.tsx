@@ -47,6 +47,19 @@ interface OfferCouponData {
   offerId: number
   timestamp: number
   expiresAt: string
+  // New fields for database structure
+  minimumOrderValue?: number
+  maximumOrderValue?: number
+  minimumOrderValueAED?: number
+  minimumOrderValueINR?: number
+  maximumOrderValueAED?: number
+  maximumOrderValueINR?: number
+  usageLimitPerUser?: number
+  totalUsageLimit?: number
+  allowedCategories?: string[]
+  excludedCategories?: string[]
+  shopRestriction?: string
+  userTypeRestriction?: string
 }
 
 interface WelcomeCouponData {
@@ -54,15 +67,20 @@ interface WelcomeCouponData {
   code: string
   title: string
   description: string
-  discountType: "flat" | "percentage"
-  discountValue: string
+  discountType: "flat" | "percent"
+  discountValue: number
   discountAmount: number
-  minPurchase: string
-  maxDiscount: string | null
+  minPurchase: number
+  maxDiscount: number | null
   validFrom: string | null
   validTo: string | null
   userTypeRestriction: string
   message: string
+  // New fields for database structure
+  minimumPurchaseINR?: number
+  minimumPurchaseAED?: number
+  maxPurchaseINR?: number | null
+  maxPurchaseAED?: number | null
 }
 
 type AppliedCouponType = 'offer' | 'welcome'
@@ -265,13 +283,12 @@ export default function OrderPage() {
         } else if (appliedCoupon.type === 'welcome') {
           const welcomeData = appliedCoupon.data as WelcomeCouponData
           if (welcomeData.discountType === "flat") {
-            newDiscount = Math.min(parseFloat(welcomeData.discountValue), cartTotal)
-          } else if (welcomeData.discountType === "percentage") {
-            newDiscount = (cartTotal * parseFloat(welcomeData.discountValue)) / 100
+            newDiscount = Math.min(welcomeData.discountValue, cartTotal)
+          } else if (welcomeData.discountType === "percent") {
+            newDiscount = (cartTotal * welcomeData.discountValue) / 100
             // Apply maximum discount cap if set
-            if (welcomeData.maxDiscount && parseFloat(welcomeData.maxDiscount) > 0) {
-              const maxDiscount = parseFloat(welcomeData.maxDiscount)
-              newDiscount = Math.min(newDiscount, maxDiscount)
+            if (welcomeData.maxDiscount && welcomeData.maxDiscount > 0) {
+              newDiscount = Math.min(newDiscount, welcomeData.maxDiscount)
             }
           }
         }
@@ -344,14 +361,17 @@ export default function OrderPage() {
 
   // Auto re-validate coupon when cart changes
   useEffect(() => {
-    if (appliedCoupon) {
+    if (appliedCoupon && !isLoadingFromStorage) {
       const timeoutId = setTimeout(async () => {
         try {
           const orderTotal = calculateCartTotal()
           
-          if (appliedCoupon.type === 'offer') {
+          // Create a local reference to avoid stale closure
+          const currentAppliedCoupon = appliedCoupon
+          
+          if (currentAppliedCoupon.type === 'offer') {
             // Re-validate offer coupon
-            const offerData = appliedCoupon.data as OfferCouponData
+            const offerData = currentAppliedCoupon.data as OfferCouponData
             
             let currentShop = localStorage.getItem('currentShop')
             if (!currentShop) {
@@ -371,12 +391,12 @@ export default function OrderPage() {
                 shopId: currentShop,
                 userType: user?.id ? "returning" : "new",
                 userId: user?.id || "guest",
-                cartItems: cart.map((item: any) => ({
+                cartItems: validCartItems.map((item: any) => ({
                   id: item.menuItem?.id || item.id,
                   categoryId: item.menuItem?.category_id || item.category_id || item.categoryId,
                   category_id: item.menuItem?.category_id || item.category_id || item.categoryId,
                   quantity: item.quantity,
-                  price: item.menuItem?.price || item.price
+                  price: getCurrencySpecificPrice(item.menuItem, item.selected_variant)
                 }))
               })
             })
@@ -423,15 +443,32 @@ export default function OrderPage() {
             } else {
               calculateDiscount(offerData, orderTotal, 'offer')
             }
-          } else if (appliedCoupon.type === 'welcome') {
+          } else if (currentAppliedCoupon.type === 'welcome') {
             // Re-validate welcome coupon
-            const welcomeData = appliedCoupon.data as WelcomeCouponData
+            const welcomeData = currentAppliedCoupon.data as WelcomeCouponData
+            
+            if (!isAuthenticated || !user?.id) {
+              // User logged out or session expired
+              setAppliedCoupon(null)
+              setCouponCode("")
+              setDiscountAmount(0)
+              setCouponError("")
+              localStorage.removeItem("appliedCoupon")
+              toast.error("Welcome coupons require login. Please login again.", { 
+                position: 'top-center', 
+                duration: 3000 
+              })
+              return
+            }
+            
+            console.log('Re-validating welcome coupon:', welcomeData.code)
+            
             const response = await fetch('/api/offers/welcome-coupons-validate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                userId: user?.id,
-                userEmail: user?.email,
+                userId: user.id,
+                userEmail: user.email,
                 couponCode: welcomeData.code,
                 orderTotal,
                 currency: selectedCurrency
@@ -447,229 +484,293 @@ export default function OrderPage() {
               setCouponError("")
               localStorage.removeItem("appliedCoupon")
               
-              toast.error(result.error || "Coupon removed", { position: 'top-center', duration: 3000 })
+              if (isLoadingFromStorage || !hasUserInteracted) {
+                toast.error("Coupon removed", { position: 'top-center', duration: 3000 })
+              } else {
+                let toastMessage = "Coupon removed: "
+                
+                if (result.error && typeof result.error === 'string') {
+                  if (result.error.includes("minimum purchase")) {
+                    const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
+                    toastMessage += `Order total is below the minimum required (${result.minAmount} ${currencySymbol}).`
+                  } else if (result.error.includes("maximum purchase")) {
+                    const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
+                    toastMessage += `Order total exceeds the maximum allowed (${result.maxAmount} ${currencySymbol}).`
+                  } else if (result.error.includes("already redeemed")) {
+                    toastMessage += "This welcome coupon has already been used."
+                  } else {
+                    toastMessage += result.error || "Cart changes made the coupon invalid."
+                  }
+                } else {
+                  toastMessage += "Cart changes made the coupon invalid."
+                }
+                
+                toast.error(toastMessage, { position: 'top-center', duration: 4000 })
+              }
             } else {
               calculateDiscount(welcomeData, orderTotal, 'welcome')
             }
           }
         } catch (error) {
           console.error('Error re-validating coupon:', error)
-          calculateDiscount(appliedCoupon.data, calculateCartTotal(), appliedCoupon.type)
+          // Don't remove coupon on network errors, just recalculate discount
+          if (appliedCoupon) {
+            calculateDiscount(appliedCoupon.data, calculateCartTotal(), appliedCoupon.type)
+          }
         }
       }, 200)
 
       return () => clearTimeout(timeoutId)
     }
-  }, [cart.length, total, appliedCoupon?.type, selectedCurrency, user?.id])
+  }, [cart.length, total, appliedCoupon, selectedCurrency, user?.id, isLoadingFromStorage, hasUserInteracted, validCartItems])
 
   const calculateDiscount = (couponData: OfferCouponData | WelcomeCouponData, subtotal: number, type: AppliedCouponType) => {
-  let discount = 0
-  
-  if (type === 'offer') {
-    const offerData = couponData as OfferCouponData
-    if (offerData.type === "cash" || offerData.type === "flat") {
-      discount = Math.min(parseFloat(offerData.discount), subtotal)
-    } else if (offerData.type === "percentage" || offerData.type === "percent") {
-      discount = (subtotal * parseFloat(offerData.discount)) / 100
-    }
-  } else if (type === 'welcome') {
-    const welcomeData = couponData as WelcomeCouponData
-    const discountType = welcomeData.discountType // Could be "flat", "percentage", "percent", "cash"
+    let discount = 0
     
-    if (discountType === "flat" || discountType === "cash") {
-      discount = Math.min(parseFloat(welcomeData.discountValue), subtotal)
-    } else if (discountType === "percentage" || discountType === "percent") {
-      discount = (subtotal * parseFloat(welcomeData.discountValue)) / 100
-      // Apply maximum discount cap if set
-      if (welcomeData.maxDiscount && parseFloat(welcomeData.maxDiscount) > 0) {
-        const maxDiscount = parseFloat(welcomeData.maxDiscount)
-        discount = Math.min(discount, maxDiscount)
+    if (type === 'offer') {
+      const offerData = couponData as OfferCouponData
+      if (offerData.type === "cash") {
+        discount = Math.min(parseFloat(offerData.discount), subtotal)
+      } else if (offerData.type === "percentage") {
+        discount = (subtotal * parseFloat(offerData.discount)) / 100
+      }
+    } else if (type === 'welcome') {
+      const welcomeData = couponData as WelcomeCouponData
+      if (welcomeData.discountType === "flat") {
+        discount = Math.min(welcomeData.discountValue, subtotal)
+      } else if (welcomeData.discountType === "percent") {
+        discount = (subtotal * welcomeData.discountValue) / 100
+        // Apply maximum discount cap if set
+        if (welcomeData.maxDiscount && welcomeData.maxDiscount > 0) {
+          discount = Math.min(discount, welcomeData.maxDiscount)
+        }
       }
     }
+    
+    setDiscountAmount(discount)
+  }
+
+const handleApplyCoupon = async () => {
+  if (!couponCode.trim()) {
+    setCouponError("Please enter a coupon code")
+    toast.error('Please enter a coupon code', { position: 'top-center' })
+    return
   }
   
-  setDiscountAmount(discount)
-}
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) {
-      setCouponError("Please enter a coupon code")
-      toast.error('Please enter a coupon code', { position: 'top-center' })
-      return
-    }
+  setIsApplyingCoupon(true)
+  setCouponError("")
+  
+  try {
+    const orderTotal = calculateCartTotal()
+    const upperCaseCouponCode = couponCode.toUpperCase().trim()
     
-    setIsApplyingCoupon(true)
-    setCouponError("")
+    console.log('Trying to apply coupon:', upperCaseCouponCode)
     
-    try {
-      const orderTotal = calculateCartTotal()
-      const upperCaseCouponCode = couponCode.toUpperCase()
+    // Check if this looks like a welcome coupon (based on user's available coupons or common patterns)
+    const isWelcomeCoupon = isAuthenticated && userAvailableCoupons.includes(upperCaseCouponCode)
+    
+    // Determine which endpoint to use based on coupon characteristics
+    if (isAuthenticated && user?.id && isWelcomeCoupon) {
+      // This looks like a welcome coupon, validate with welcome endpoint
+      console.log('Validating as welcome coupon:', upperCaseCouponCode)
       
-      // Check if this coupon is in user's available coupons
-      const isUserCoupon = userAvailableCoupons.includes(upperCaseCouponCode)
-      
-      if (isUserCoupon) {
-        // This is a user-specific welcome coupon
-        if (!isAuthenticated || !user?.id) {
-          toast.error('Please login to use your coupons', { position: 'top-center' })
-          setCouponError('Please login to use your coupons')
-          setIsApplyingCoupon(false)
-          return
-        }
-        
-        console.log('Validating user welcome coupon:', couponCode)
+      try {
         const welcomeResponse = await fetch('/api/offers/welcome-coupons-validate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: user.id,
             userEmail: user.email,
-            couponCode: couponCode,
+            couponCode: upperCaseCouponCode,
             orderTotal,
             currency: selectedCurrency
           })
         })
         
-        if (!welcomeResponse.ok) {
+        if (welcomeResponse.ok) {
           const result = await welcomeResponse.json()
-          setCouponError(result.error || "Invalid coupon code")
-          toast.error(result.error || 'Invalid coupon code', { position: 'top-center' })
-          setIsApplyingCoupon(false)
-          return
-        }
-        
-        const result = await welcomeResponse.json()
-        
-        if (result.valid) {
-          const welcomeCoupon: WelcomeCouponData = {
-            id: result.coupon.id,
-            code: result.coupon.code,
-            title: result.coupon.title,
-            description: result.coupon.description,
-            discountType: result.coupon.discountType,
-            discountValue: result.coupon.discountValue,
-            discountAmount: result.coupon.discountAmount,
-            minPurchase: result.coupon.minPurchase,
-            maxDiscount: result.coupon.maxDiscount,
-            validFrom: result.coupon.validFrom,
-            validTo: result.coupon.validTo,
-            userTypeRestriction: result.coupon.userTypeRestriction,
-            message: result.message
-          }
           
-          setAppliedCoupon({ type: 'welcome', data: welcomeCoupon })
-          setDiscountAmount(result.coupon.discountAmount)
-          localStorage.setItem("appliedCoupon", JSON.stringify({
-            type: 'welcome',
-            data: welcomeCoupon
-          }))
-          
-          toast.success(`Welcome coupon ${welcomeCoupon.code} applied! ${result.message}`, { 
-            position: 'top-center' 
-          })
-          setCouponError("")
-          setIsApplyingCoupon(false)
-          return
-        }
-      } else {
-        // This is not a user coupon, try regular offer validation
-        console.log('Trying regular offer validation for:', couponCode)
-        let currentShop = localStorage.getItem('currentShop')
-        if (!currentShop) {
-          const isStyleShop = window.location.href.includes('style') || 
-                             document.title.includes('Style') ||
-                             document.querySelector('title')?.textContent?.includes('Style')
-          currentShop = isStyleShop ? 'B' : 'B'
-        }
-        
-        const response = await fetch('/api/offers/validate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            offerCode: couponCode,
-            orderTotal,
-            shopId: currentShop,
-            userType: user?.id ? "returning" : "new",
-            userId: user?.id || "guest",
-            currency: selectedCurrency,
-            cartItems: cart.map((item: any) => ({
-              id: item.menuItem?.id || item.id,
-              categoryId: item.menuItem?.category_id || item.category_id || item.categoryId,
-              category_id: item.menuItem?.category_id || item.category_id || item.categoryId,
-              quantity: item.quantity,
-              price: item.menuItem?.price || item.price
-            }))
-          })
-        })
-
-        if (!response.ok) {
-          const result = await response.json()
-          let errorMessage = result.error || "Invalid coupon code"
-          
-          if (result.error) {
-            if (result.error.includes("only valid for Beauty Shop")) {
-              errorMessage = "This offer is only valid for Beauty Shop. Switch to Beauty Shop to use this offer."
-            } else if (result.error.includes("only valid for Style Shop")) {
-              errorMessage = "This offer is only valid for Style Shop. Switch to Style Shop to use this offer."
-            } else if (result.error.includes("new customers")) {
-              errorMessage = "This offer is exclusively for new customers."
-            } else if (result.error.includes("already used this offer")) {
-              errorMessage = `${result.error}. Each customer can only use this offer ${result.usageLimit} time(s).`
-            } else if (result.error.includes("Minimum order value")) {
-              const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
-              const amountNeeded = (result.requiredAmount - orderTotal).toFixed(2)
-              errorMessage = `${result.error}. Add ${amountNeeded} ${currencySymbol} more to your cart.`
+          if (result.valid && result.coupon) {
+            console.log('Welcome coupon validation successful:', result.coupon.code)
+            
+            const welcomeCoupon: WelcomeCouponData = {
+              id: result.coupon.id,
+              code: result.coupon.code,
+              title: result.coupon.title,
+              description: result.coupon.description,
+              discountType: result.coupon.discountType,
+              discountValue: result.coupon.discountValue,
+              discountAmount: result.coupon.discountAmount,
+              minPurchase: result.coupon.minPurchase,
+              maxDiscount: result.coupon.maxCap,
+              validFrom: result.coupon.validFrom,
+              validTo: result.coupon.validTo,
+              userTypeRestriction: result.coupon.userTypeRestriction,
+              message: result.message,
+              minimumPurchaseINR: result.coupon.minimumPurchaseINR,
+              minimumPurchaseAED: result.coupon.minimumPurchaseAED,
+              maxPurchaseINR: result.coupon.maxPurchaseINR,
+              maxPurchaseAED: result.coupon.maxPurchaseAED
             }
+            
+            setAppliedCoupon({ type: 'welcome', data: welcomeCoupon })
+            setDiscountAmount(result.coupon.discountAmount)
+            localStorage.setItem("appliedCoupon", JSON.stringify({
+              type: 'welcome',
+              data: welcomeCoupon
+            }))
+            
+            toast.success(`Welcome coupon ${welcomeCoupon.code} applied! ${result.message}`, { 
+              position: 'top-center' 
+            })
+            setCouponError("")
+            setIsApplyingCoupon(false)
+            return
+          } else {
+            setCouponError(result.error || "Invalid welcome coupon")
+            toast.error(result.error || 'Invalid welcome coupon', { position: 'top-center', duration: 4000 })
+            setIsApplyingCoupon(false)
+            return
           }
-          
-          setCouponError(errorMessage)
-          toast.error(errorMessage, { position: 'top-center', duration: 4000 })
-          setIsApplyingCoupon(false)
-          return
+        } else {
+          // Welcome coupon validation failed, try regular offer validation as fallback
+          console.log('Welcome coupon validation failed, trying regular offer as fallback')
+          // Continue to regular offer validation below
         }
+      } catch (welcomeError) {
+        console.error("Error in welcome coupon validation:", welcomeError)
+        console.log('Welcome coupon endpoint error, trying regular offer validation')
+        // Continue to regular offer validation below
+      }
+    }
+    
+    // For all other cases (non-authenticated, non-welcome coupons, or welcome validation failed)
+    // Use regular offer validation endpoint
+    console.log('Validating as regular offer coupon:', upperCaseCouponCode)
+    
+    let currentShop = localStorage.getItem('currentShop')
+    if (!currentShop) {
+      const isStyleShop = window.location.href.includes('style') || 
+                         document.title.includes('Style') ||
+                         document.querySelector('title')?.textContent?.includes('Style')
+      currentShop = isStyleShop ? 'B' : 'B'
+    }
+    
+    const response = await fetch('/api/offers/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        offerCode: upperCaseCouponCode,
+        orderTotal,
+        shopId: currentShop,
+        userType: user?.id ? "returning" : "new",
+        userId: user?.id || "guest",
+        currency: selectedCurrency,
+        cartItems: validCartItems.map((item: any) => ({
+          id: item.menuItem?.id || item.id,
+          categoryId: item.menuItem?.category_id || item.category_id || item.categoryId,
+          category_id: item.menuItem?.category_id || item.category_id || item.categoryId,
+          quantity: item.quantity,
+          price: getCurrencySpecificPrice(item.menuItem, item.selected_variant)
+        }))
+      })
+    })
 
-        const result = await response.json()
-        if (result.valid && result.offer) {
-          const validCoupon: OfferCouponData = {
-            code: result.offer.code,
-            discount: result.offer.value,
-            type: result.offer.type,
-            title: result.offer.title,
-            offerTitle: result.offer.title,
-            offerId: result.offer.id,
-            timestamp: Date.now(),
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-          }
-
-          setAppliedCoupon({ type: 'offer', data: validCoupon })
-          setDiscountAmount(result.offer.discountAmount)
-          localStorage.setItem("appliedCoupon", JSON.stringify({
-            type: 'offer',
-            data: validCoupon
-          }))
-          
-          toast.success(`Offer ${validCoupon.code} applied! Saved ${result.offer.discountAmount.toFixed(2)} ${selectedCurrency}`, { 
-            position: 'top-center' 
-          })
-          setCouponError("")
+    if (!response.ok) {
+      const result = await response.json()
+      let errorMessage = result.error || "Invalid coupon code"
+      
+      if (result.error) {
+        if (result.error.includes("only valid for Beauty Shop")) {
+          errorMessage = "This offer is only valid for Beauty Shop. Switch to Beauty Shop to use this offer."
+        } else if (result.error.includes("only valid for Style Shop")) {
+          errorMessage = "This offer is only valid for Style Shop. Switch to Style Shop to use this offer."
+        } else if (result.error.includes("new customers")) {
+          errorMessage = "This offer is exclusively for new customers."
+        } else if (result.error.includes("already used this offer")) {
+          errorMessage = `${result.error}. Each customer can only use this offer ${result.usageLimit} time(s).`
+        } else if (result.error.includes("Minimum order value")) {
+          const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
+          const amountNeeded = (result.requiredAmount - orderTotal).toFixed(2)
+          errorMessage = `${result.error}. Add ${amountNeeded} ${currencySymbol} more to your cart.`
+        } else if (result.error.includes("reached its usage limit")) {
+          errorMessage = "This offer has reached its usage limit."
+        } else if (result.error.includes("not valid for the products")) {
+          errorMessage = "Some items in your cart are not eligible for this offer."
+        } else if (result.error.includes("cannot be applied to some products")) {
+          errorMessage = "Some products are excluded from this offer."
         }
       }
-    } catch (error) {
-      console.error("Error applying coupon:", error)
-      setCouponError("Failed to apply coupon. Please try again.")
-      toast.error('Failed to apply coupon', { position: 'top-center' })
-    } finally {
+      
+      setCouponError(errorMessage)
+      toast.error(errorMessage, { position: 'top-center', duration: 4000 })
       setIsApplyingCoupon(false)
+      return
     }
+
+    const result = await response.json()
+    if (result.valid && result.offer) {
+      const validCoupon: OfferCouponData = {
+        code: result.offer.code,
+        discount: result.offer.value,
+        type: result.offer.type,
+        title: result.offer.title,
+        offerTitle: result.offer.title,
+        offerId: result.offer.id,
+        timestamp: Date.now(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        minimumOrderValue: result.offer.restrictions?.minimumOrderValue,
+        maximumOrderValue: result.offer.restrictions?.maximumOrderValue,
+        minimumOrderValueAED: result.offer.restrictions?.minimumOrderValueAED,
+        minimumOrderValueINR: result.offer.restrictions?.minimumOrderValueINR,
+        maximumOrderValueAED: result.offer.restrictions?.maximumOrderValueAED,
+        maximumOrderValueINR: result.offer.restrictions?.maximumOrderValueINR,
+        usageLimitPerUser: result.offer.restrictions?.usageLimitPerUser,
+        totalUsageLimit: result.offer.restrictions?.totalUsageLimit,
+        allowedCategories: result.offer.restrictions?.allowedCategories,
+        excludedCategories: result.offer.restrictions?.excludedCategories,
+        shopRestriction: result.offer.restrictions?.shopRestriction,
+        userTypeRestriction: result.offer.restrictions?.userTypeRestriction
+      }
+
+      setAppliedCoupon({ type: 'offer', data: validCoupon })
+      setDiscountAmount(result.offer.discountAmount)
+      localStorage.setItem("appliedCoupon", JSON.stringify({
+        type: 'offer',
+        data: validCoupon
+      }))
+      
+      toast.success(`Offer ${validCoupon.code} applied! Saved ${result.offer.discountAmount.toFixed(2)} ${selectedCurrency}`, { 
+        position: 'top-center' 
+      })
+      setCouponError("")
+    }
+  } catch (error) {
+    console.error("Error applying coupon:", error)
+    setCouponError("Failed to apply coupon. Please try again.")
+    toast.error('Failed to apply coupon', { position: 'top-center' })
+  } finally {
+    setIsApplyingCoupon(false)
   }
+}
 
   const handleRemoveCoupon = () => {
-    setAppliedCoupon(null)
-    setDiscountAmount(0)
-    setCouponCode("")
-    setCouponError("")
-    localStorage.removeItem("appliedCoupon")
-    toast.success('Coupon removed', { position: 'top-center' })
+    if (appliedCoupon) {
+      const removedCouponType = appliedCoupon.type
+      const removedCouponCode = appliedCoupon.type === 'offer' 
+        ? (appliedCoupon.data as OfferCouponData).code 
+        : (appliedCoupon.data as WelcomeCouponData).code
+        
+      setAppliedCoupon(null)
+      setDiscountAmount(0)
+      setCouponCode("")
+      setCouponError("")
+      localStorage.removeItem("appliedCoupon")
+      
+      toast.success(`${removedCouponType === 'welcome' ? 'Welcome coupon' : 'Offer'} ${removedCouponCode} removed`, { 
+        position: 'top-center' 
+      })
+    }
   }
 
   const handleQuantityChange = async (id: number, newQuantity: number) => {
@@ -764,6 +865,7 @@ export default function OrderPage() {
         productImageUrl: item.menuItem.image_url || item.menuItem.image_urls?.[0] || null,
       })),
     }
+    
     try {
       const result = await dispatch(submitOrder(orderData)).unwrap()
       
@@ -781,7 +883,8 @@ export default function OrderPage() {
                 userId: user.id,
                 userEmail: user.email,
                 orderTotal: cartTotal,
-                discountAmount: discountAmount
+                discountAmount: discountAmount,
+                currency: selectedCurrency
               })
             })
           } else if (appliedCoupon.type === 'welcome') {
@@ -808,11 +911,18 @@ export default function OrderPage() {
       
       // Clear coupon state immediately to prevent revalidation on empty cart
       if (appliedCoupon) {
+        const removedCouponType = appliedCoupon.type
+        const removedCouponCode = appliedCoupon.type === 'offer' 
+          ? (appliedCoupon.data as OfferCouponData).code 
+          : (appliedCoupon.data as WelcomeCouponData).code
+          
         setAppliedCoupon(null)
         setCouponCode("")
         setDiscountAmount(0)
         setCouponError("")
         localStorage.removeItem("appliedCoupon")
+        
+        console.log(`Cleared ${removedCouponType} coupon: ${removedCouponCode} after successful order`)
       }
       
       await clearCartAfterOrder()
@@ -872,7 +982,7 @@ export default function OrderPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: (calculateCartTotal() + deliveryFee - discountAmount), 
+            amount: (calculateCartTotal() + deliveryFee - discountAmount), // Convert to paise for INR
             currency: selectedCurrency,
             receipt: `order_${Date.now()}`
           }),
@@ -2012,6 +2122,14 @@ export default function OrderPage() {
                                       ? (appliedCoupon.data as OfferCouponData).title 
                                       : (appliedCoupon.data as WelcomeCouponData).title}
                                   </div>
+                                  {appliedCoupon.type === 'welcome' && (
+                                    <div className="text-xs text-green-500 mt-1">
+                                      {(appliedCoupon.data as WelcomeCouponData).discountType === 'flat' 
+                                        ? `Flat ${selectedCurrency} ${(appliedCoupon.data as WelcomeCouponData).discountValue} off`
+                                        : `${(appliedCoupon.data as WelcomeCouponData).discountValue}% off`
+                                      }
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               <Button

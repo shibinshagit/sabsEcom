@@ -16,11 +16,11 @@ export default function HomePage() {
       <Navbar />
       {!isAuthenticated && <NewUserSpinnerSection />}
 
-      {isAuthenticated && (
-        <section className="mt-4">
+      {/* {isAuthenticated && (
+        <section className="mt-4">z
           <UserCoupons />
         </section>
-      )}
+      )} */}
       <Suspense fallback={<div>Loading navbar...</div>}>
         <ProductList />
       

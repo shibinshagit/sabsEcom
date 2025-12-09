@@ -5,8 +5,8 @@ import { sql } from "@/lib/database";
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      userId, 
+    const {
+      userId,
       userEmail,
       couponCode,
       orderId,
@@ -15,14 +15,6 @@ export async function POST(request: NextRequest) {
       currency = "AED"
     } = await request.json();
 
-    console.log('Welcome coupon usage tracking:', { 
-      userId, 
-      userEmail, 
-      couponCode, 
-      orderId 
-    });
-
-    // Validation - userId is required (INTEGER foreign key)
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "User ID is required to track welcome coupon usage" },
@@ -37,9 +29,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the welcome coupon (case-insensitive)
+    // Fetch coupon (active only)
     const couponData = await sql`
-      SELECT id, code, title, discount_type, discount_value
+      SELECT 
+        id,
+        code,
+        title,
+        description,
+        discount_type,
+        discount_value_inr,
+        discount_value_aed,
+        minimum_purchase_inr,
+        minimum_purchase_aed,
+        max_purchase_inr,
+        max_purchase_aed,
+        user_type_restriction,
+        is_active,
+        valid_from,
+        valid_to
       FROM welcome_coupons
       WHERE UPPER(code) = UPPER(${couponCode})
         AND is_active = TRUE
@@ -47,19 +54,13 @@ export async function POST(request: NextRequest) {
     `;
 
     if (couponData.length === 0) {
-      console.log('Welcome coupon not found:', couponCode);
       return NextResponse.json(
-        { success: false, error: "Welcome coupon not found" },
+        { success: false, error: "Welcome coupon not found or inactive" },
         { status: 404 }
       );
     }
 
     const coupon = couponData[0];
-    console.log('Found welcome coupon for tracking:', { 
-      id: coupon.id, 
-      code: coupon.code, 
-      title: coupon.title 
-    });
 
     const now = new Date().toISOString();
 
@@ -74,18 +75,11 @@ export async function POST(request: NextRequest) {
 
     if (existing.length > 0) {
       const existingRecord = existing[0];
-      
-      // If already redeemed, return error
-      if (existingRecord.is_redeemed === true) {
-        console.warn('Attempted to redeem already used coupon:', {
-          userId,
-          couponId: coupon.id,
-          previouslyRedeemedAt: existingRecord.redeemed_at
-        });
-        
+
+      if (existingRecord.is_redeemed) {
         return NextResponse.json(
-          { 
-            success: false, 
+          {
+            success: false,
             error: "This welcome coupon has already been redeemed by you",
             redeemedAt: existingRecord.redeemed_at
           },
@@ -93,73 +87,20 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Update existing record to mark as redeemed
-      const updateResult = await sql`
+      // Mark existing record as redeemed
+      const updated = await sql`
         UPDATE welcome_coupons_used
-        SET 
-          is_redeemed = TRUE,
-          redeemed_at = ${now}
+        SET is_redeemed = TRUE,
+            redeemed_at = ${now}
         WHERE id = ${existingRecord.id}
-        RETURNING id, is_redeemed, redeemed_at
-      `;
-
-      console.log('Welcome coupon marked as redeemed:', {
-        recordId: existingRecord.id,
-        userId,
-        couponCode,
-        couponId: coupon.id,
-        redeemedAt: now
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: "Welcome coupon marked as redeemed successfully",
-        recordId: existingRecord.id,
-        redeemedAt: now,
-        coupon: {
-          id: coupon.id,
-          code: coupon.code,
-          title: coupon.title
-        }
-      });
-    } else {
-      // Insert new redemption record
-      // The UNIQUE constraint (user_id, welcome_coupon_id) ensures no duplicates
-      const insertResult = await sql`
-        INSERT INTO welcome_coupons_used (
-          user_id,
-          welcome_coupon_id,
-          is_redeemed,
-          redeemed_at,
-          assigned_at
-        )
-        VALUES (
-          ${userId},
-          ${coupon.id},
-          TRUE,
-          ${now},
-          ${now}
-        )
         RETURNING id, is_redeemed, redeemed_at, assigned_at
       `;
 
-      const newRecord = insertResult[0];
-
-      console.log('Welcome coupon redemption recorded:', { 
-        recordId: newRecord.id,
-        userId, 
-        couponCode, 
-        couponId: coupon.id,
-        isRedeemed: newRecord.is_redeemed,
-        redeemedAt: newRecord.redeemed_at,
-        assignedAt: newRecord.assigned_at
-      });
-
       return NextResponse.json({
         success: true,
-        message: "Welcome coupon redeemed and tracked successfully",
-        recordId: newRecord.id,
-        redeemedAt: newRecord.redeemed_at,
+        message: "Welcome coupon marked as redeemed",
+        recordId: updated[0].id,
+        redeemedAt: updated[0].redeemed_at,
         coupon: {
           id: coupon.id,
           code: coupon.code,
@@ -168,42 +109,73 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Insert new redemption record
+    const inserted = await sql`
+      INSERT INTO welcome_coupons_used (
+        user_id,
+        welcome_coupon_id,
+        is_redeemed,
+        redeemed_at,
+        assigned_at
+      )
+      VALUES (
+        ${userId},
+        ${coupon.id},
+        TRUE,
+        ${now},
+        ${now}
+      )
+      RETURNING id, is_redeemed, redeemed_at, assigned_at
+    `;
+
+    return NextResponse.json({
+      success: true,
+      message: "Welcome coupon redeemed and tracked successfully",
+      recordId: inserted[0].id,
+      redeemedAt: inserted[0].redeemed_at,
+      coupon: {
+        id: coupon.id,
+        code: coupon.code,
+        title: coupon.title
+      }
+    });
+
   } catch (err) {
     console.error("Welcome coupon usage tracking error:", err);
-    
-    // Check for foreign key constraint errors
+
+    // Handle common SQL errors
     if (err instanceof Error) {
-      if (err.message.includes('foreign key') || err.message.includes('violates')) {
+      if (err.message.includes("foreign key") || err.message.includes("violates")) {
         return NextResponse.json(
-          { 
-            success: false, 
-            error: "Invalid user ID or coupon reference. Please contact support.",
+          {
+            success: false,
+            error: "Invalid user ID or coupon reference",
             details: err.message
           },
           { status: 400 }
         );
       }
-      
-      // Check for unique constraint violations
-      if (err.message.includes('unique') || err.message.includes('duplicate')) {
+
+      if (err.message.includes("unique") || err.message.includes("duplicate")) {
         return NextResponse.json(
-          { 
-            success: false, 
-            error: "This welcome coupon usage has already been recorded.",
+          {
+            success: false,
+            error: "This coupon usage has already been recorded",
             details: err.message
           },
           { status: 409 }
         );
       }
     }
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
-        error: "Failed to track welcome coupon usage. Please contact support if this persists.",
+      {
+        success: false,
+        error: "Failed to track welcome coupon usage",
         details: err instanceof Error ? err.message : "Unknown error"
       },
       { status: 500 }
     );
   }
 }
+

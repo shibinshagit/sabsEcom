@@ -28,69 +28,101 @@ export async function POST(request: Request) {
       title,
       description,
       discountType,
-      discountValue,
-      maximumDiscount,
+
+      discountValueInr,
+      discountValueAed,
+
+      maxPurchaseInr,
+      maxPurchaseAed,
+
+      minimumPurchaseInr,
+      minimumPurchaseAed,
+
       validFrom,
       validTo,
       isActive,
-      minimumPurchaseInr,
-      minimumPurchaseAed,
       userTypeRestriction,
     } = data;
 
     // =========================
-    // VALIDATION
+    // BASIC REQUIRED FIELDS
     // =========================
-    if (!code || !discountType || !discountValue) {
+    if (!code || !discountType) {
       return NextResponse.json(
-        { error: "code, discountType and discountValue are required" },
+        { error: "code and discountType are required" },
         { status: 400 }
       );
     }
 
     if (!["flat", "percent"].includes(discountType)) {
       return NextResponse.json(
-        { error: "discountType must be 'flat' or 'percent'" },
+        { error: "discountType must be flat or percent" },
         { status: 400 }
       );
     }
 
+    // =========================
+    // DISCOUNT VALUE VALIDATION
+    // =========================
     if (discountType === "percent") {
-      if (discountValue < 1 || discountValue > 100) {
-        return NextResponse.json(
-          { error: "Percentage discount must be between 1 and 100" },
-          { status: 400 }
-        );
-      }
+      const invalidPct =
+        (discountValueInr && (discountValueInr <= 0 || discountValueInr > 100)) ||
+        (discountValueAed && (discountValueAed <= 0 || discountValueAed > 100));
 
-      if (!maximumDiscount) {
+      if (invalidPct) {
         return NextResponse.json(
-          {
-            error:
-              "maximumDiscount is required for percentage coupons to avoid unlimited discount",
-          },
+          { error: "Percentage discount must be BETWEEN 1 and 100" },
           { status: 400 }
         );
       }
     }
 
-    if (
-      userTypeRestriction &&
-      !["all", "new", "returning"].includes(userTypeRestriction)
-    ) {
+    if (discountType === "flat") {
+      const invalidFlat =
+        (discountValueInr && discountValueInr <= 0) ||
+        (discountValueAed && discountValueAed <= 0);
+
+      if (invalidFlat) {
+        return NextResponse.json(
+          { error: "Flat discount must be a positive number" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // =========================
+    // USER TYPE VALIDATION
+    // =========================
+    const allowedTypes = ["all", "new", "returning"];
+    if (userTypeRestriction && !allowedTypes.includes(userTypeRestriction)) {
       return NextResponse.json(
-        {
-          error: "userTypeRestriction must be one of: all, new, returning",
-        },
+        { error: `userTypeRestriction must be one of: ${allowedTypes.join(", ")}` },
         { status: 400 }
       );
     }
 
-    // Default values
+    // =========================
+    // OPTIONAL FIELDS
+    // =========================
     const minINR = minimumPurchaseInr ?? 0;
     const minAED = minimumPurchaseAed ?? 0;
+
+    // maxPurchaseInr / maxPurchaseAed ARE OPTIONAL → no validation if empty/null
+    const maxINR = maxPurchaseInr ?? null;
+    const maxAED = maxPurchaseAed ?? null;
+
     const active = isActive ?? true;
     const userType = userTypeRestriction ?? "all";
+
+    // =========================
+    // OPTIONAL DATE VALIDATION
+    // =========================
+    if (validFrom && validTo && new Date(validFrom) > new Date(validTo)) {
+      return NextResponse.json(
+        { error: "validFrom cannot be greater than validTo" },
+        { status: 400 }
+      );
+    }
 
     // =========================
     // INSERT QUERY
@@ -98,30 +130,39 @@ export async function POST(request: Request) {
     const [coupon] = await sql`
       INSERT INTO welcome_coupons (
         code, title, description,
-        discount_type, discount_value, maximum_discount,
+        discount_type,
+        discount_value_inr, discount_value_aed,
         minimum_purchase_inr, minimum_purchase_aed,
+        max_purchase_inr, max_purchase_aed,
         user_type_restriction,
         valid_from, valid_to, is_active,
         created_at, updated_at
       )
       VALUES (
         ${code}, ${title}, ${description},
-        ${discountType}, ${discountValue}, ${maximumDiscount},
+        ${discountType},
+        ${discountValueInr}, ${discountValueAed},
         ${minINR}, ${minAED},
+        ${maxINR}, ${maxAED},
         ${userType},
         ${validFrom}, ${validTo}, ${active},
         NOW(), NOW()
       )
       RETURNING *;
     `;
+
+    // =========================
+    // PRELOAD coupon usage for all users
+    // =========================
     await sql`
-  INSERT INTO welcome_coupons_used (user_id, welcome_coupon_id)
-  SELECT id, ${coupon.id}
-  FROM users
-  ON CONFLICT (user_id, welcome_coupon_id) DO NOTHING;
-`;
+      INSERT INTO welcome_coupons_used (user_id, welcome_coupon_id)
+      SELECT id, ${coupon.id}
+      FROM users
+      ON CONFLICT (user_id, welcome_coupon_id) DO NOTHING;
+    `;
 
     return NextResponse.json(coupon);
+
   } catch (error) {
     console.error("Failed to create coupon:", error);
     return NextResponse.json(

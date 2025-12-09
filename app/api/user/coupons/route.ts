@@ -40,16 +40,19 @@ export async function GET() {
         c.title,
         c.description,
         c.discount_type,
-        c.discount_value,
-        c.maximum_discount,
+        c.discount_value_inr,
+        c.discount_value_aed,
         c.minimum_purchase_inr,
         c.minimum_purchase_aed,
+        c.max_purchase_inr,
+        c.max_purchase_aed,
         c.user_type_restriction,
         c.valid_from,
         c.valid_to,
         c.is_active,
         u.is_redeemed,
-        u.redeemed_at
+        u.redeemed_at,
+        u.assigned_at
       FROM welcome_coupons_used u
       JOIN welcome_coupons c ON c.id = u.welcome_coupon_id
       WHERE u.user_id = ${user.id}
@@ -62,3 +65,4 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch coupons" }, { status: 500 });
   }
 }
+
