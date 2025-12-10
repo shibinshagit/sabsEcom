@@ -137,6 +137,7 @@ export default function OrderPage() {
 
           if (res.ok) {
             const data = await res.json()
+            console.log(data)
             // Get only non-redeemed coupon codes
             const availableCouponCodes = data
               .filter((coupon: any) => !coupon.is_redeemed)
@@ -497,7 +498,7 @@ export default function OrderPage() {
                     const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
                     toastMessage += `Order total exceeds the maximum allowed (${result.maxAmount} ${currencySymbol}).`
                   } else if (result.error.includes("already redeemed")) {
-                    toastMessage += "This welcome coupon has already been used."
+                    toastMessage += "This  coupon has already been used."
                   } else {
                     toastMessage += result.error || "Cart changes made the coupon invalid."
                   }
@@ -620,7 +621,7 @@ const handleApplyCoupon = async () => {
               data: welcomeCoupon
             }))
             
-            toast.success(`Welcome coupon ${welcomeCoupon.code} applied! ${result.message}`, { 
+            toast.success(`coupon ${welcomeCoupon.code} applied! ${result.message}`, { 
               position: 'top-center' 
             })
             setCouponError("")
@@ -634,11 +635,11 @@ const handleApplyCoupon = async () => {
           }
         } else {
           // Welcome coupon validation failed, try regular offer validation as fallback
-          console.log('Welcome coupon validation failed, trying regular offer as fallback')
+          console.log(' coupon validation failed, trying regular offer as fallback')
           // Continue to regular offer validation below
         }
       } catch (welcomeError) {
-        console.error("Error in welcome coupon validation:", welcomeError)
+        console.error("Error in  coupon validation:", welcomeError)
         console.log('Welcome coupon endpoint error, trying regular offer validation')
         // Continue to regular offer validation below
       }
@@ -753,6 +754,7 @@ const handleApplyCoupon = async () => {
     setIsApplyingCoupon(false)
   }
 }
+
 
   const handleRemoveCoupon = () => {
     if (appliedCoupon) {
@@ -889,7 +891,7 @@ const handleApplyCoupon = async () => {
             })
           } else if (appliedCoupon.type === 'welcome') {
             const welcomeData = appliedCoupon.data as WelcomeCouponData
-            console.log('Tracking welcome coupon usage after successful order:', welcomeData.code)
+            console.log('Tracking  coupon usage after successful order:', welcomeData.code)
             await fetch('/api/offers/welcome-coupon-used', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -2234,3 +2236,4 @@ const handleApplyCoupon = async () => {
     </div>
   )
 }
+

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { valid: false, error: "Please login to use welcome coupons" },
+        { valid: false, error: "Please login to use  coupons" },
         { status: 401 }
       );
     }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     if (rows.length === 0) {
       return NextResponse.json(
-        { valid: false, error: "Invalid or inactive welcome coupon" },
+        { valid: false, error: "Invalid or inactive  coupon" },
         { status: 400 }
       );
     }
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           valid: false,
-          error: "You have already used this welcome coupon.",
+          error: "You have already used this  coupon.",
           redeemedAt: used[0].redeemed_at,
         },
         { status: 400 }
