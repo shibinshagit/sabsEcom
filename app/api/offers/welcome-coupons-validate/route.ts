@@ -77,36 +77,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ------------------- USER TYPE VALIDATION -------------------
-    // Expected values: "new", "existing", "all"
-    const userTypeRestriction = coupon.user_type_restriction?.toLowerCase();
+// ------------------- USER TYPE VALIDATION -------------------
+// Expected: "new", "returning", "all"
+const userTypeRestriction = coupon.user_type_restriction?.toLowerCase();
 
-    if (userTypeRestriction !== "all") {
-      // Check if user has ever redeemed ANY welcome coupon = means they are not a "new user"
-      const userHasRedeemedBefore = await sql`
-        SELECT id
-        FROM welcome_coupons_used
-        WHERE user_id = ${userId}
-          AND is_redeemed = TRUE
-        LIMIT 1
-      `;
+if (userTypeRestriction !== "all") {
+  // Count orders from the orders table
+  const orderRows = await sql`
+    SELECT COUNT(*)::int AS total_orders
+    FROM orders
+    WHERE user_id = ${userId}
+  `;
 
-      const isNewUser = userHasRedeemedBefore.length === 0;
+  const totalOrders = orderRows[0]?.total_orders ?? 0;
+  const isNewUser = totalOrders === 0;
+  const isReturningUser = totalOrders > 0;
 
-      if (userTypeRestriction === "new" && !isNewUser) {
-        return NextResponse.json(
-          { valid: false, error: "This coupon is only for new users" },
-          { status: 400 }
-        );
-      }
+  // Only for NEW users
+  if (userTypeRestriction === "new" && !isNewUser) {
+    return NextResponse.json(
+      { valid: false, error: "This coupon is only for new users" },
+      { status: 400 }
+    );
+  }
 
-      if (userTypeRestriction === "existing" && isNewUser) {
-        return NextResponse.json(
-          { valid: false, error: "This coupon is only for existing users" },
-          { status: 400 }
-        );
-      }
-    }
+  // Only for RETURNING users
+  if (userTypeRestriction === "returning" && !isReturningUser) {
+    return NextResponse.json(
+      { valid: false, error: "This coupon is only for returning users" },
+      { status: 400 }
+    );
+  }
+}
+
 
     // ------------------- USAGE CHECK (same coupon) -------------------
     const used = await sql`

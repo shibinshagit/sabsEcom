@@ -97,13 +97,39 @@ export async function POST(request: NextRequest) {
     }
 
     // User type restriction
-    if (restrictions.userTypeRestriction && userType !== restrictions.userTypeRestriction) {
-      const typeText = restrictions.userTypeRestriction === 'new' ? 'new customers' : 'returning customers';
-      return NextResponse.json({
-        error: `This offer is only valid for ${typeText}`,
-        requiredUserType: restrictions.userTypeRestriction,
-      }, { status: 400 });
-    }
+    
+      if (restrictions.userTypeRestriction && restrictions.userTypeRestriction.trim() !== "") {
+
+        // Count user's previous orders
+        const userOrders = await sql`
+          SELECT COUNT(*) AS order_count
+          FROM orders
+          WHERE user_id = ${userId}
+        `;
+
+        const orderCount = parseInt(userOrders[0].order_count);
+
+        // NEW USERS ONLY → must have 0 orders
+        if (restrictions.userTypeRestriction === "new") {
+          if (orderCount > 0) {
+            return NextResponse.json(
+              { error: "This offer is only for new users" },
+              { status: 400 }
+            );
+          }
+        }
+
+        // RETURNING USERS → must have >=1 orders
+        if (restrictions.userTypeRestriction === "returning") {
+          if (orderCount === 0) {
+            return NextResponse.json(
+              { error: "This offer is only for returning users" },
+              { status: 400 }
+            );
+          }
+        }
+      }
+
 
     // Shop restriction
     if (restrictions.shopRestriction && shopId !== restrictions.shopRestriction) {

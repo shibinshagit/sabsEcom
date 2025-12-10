@@ -628,8 +628,8 @@ const handleApplyCoupon = async () => {
             setIsApplyingCoupon(false)
             return
           } else {
-            setCouponError(result.error || "Invalid welcome coupon")
-            toast.error(result.error || 'Invalid welcome coupon', { position: 'top-center', duration: 4000 })
+            setCouponError(result.error || "Invalid  coupon")
+            toast.error(result.error || 'Invalid  coupon', { position: 'top-center', duration: 4000 })
             setIsApplyingCoupon(false)
             return
           }
@@ -769,7 +769,7 @@ const handleApplyCoupon = async () => {
       setCouponError("")
       localStorage.removeItem("appliedCoupon")
       
-      toast.success(`${removedCouponType === 'welcome' ? 'Welcome coupon' : 'Offer'} ${removedCouponCode} removed`, { 
+      toast.success(`${removedCouponType === 'welcome' ? 'coupon' : 'Offer'} ${removedCouponCode} removed`, { 
         position: 'top-center' 
       })
     }
@@ -1973,7 +1973,7 @@ const handleApplyCoupon = async () => {
                                </div>
                                <div>
                                  <span className="font-bold text-green-800 text-sm">
-                                   {appliedCoupon.type === 'welcome' ? 'Welcome Coupon' : 'Offer'} Applied
+                                   {appliedCoupon.type === 'welcome' ? 'Coupon' : 'Offer'} Applied
                                  </span>
                                  <div className="text-xs text-green-600 font-mono">
                                    {appliedCoupon.type === 'offer' 
@@ -2099,11 +2099,11 @@ const handleApplyCoupon = async () => {
                                     💡 Login to use your exclusive coupons and welcome offers!
                                   </div>
                                 )}
-                                {isAuthenticated && userAvailableCoupons.length > 0 && (
+                                {/* {isAuthenticated && userAvailableCoupons.length > 0 && (
                                   <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
                                     💎 You have {userAvailableCoupons.length} active coupon{userAvailableCoupons.length !== 1 ? 's' : ''} available
                                   </div>
-                                )}
+                                )} */}
                               </div>
                             )}
                           </>
@@ -2114,7 +2114,7 @@ const handleApplyCoupon = async () => {
                                 <CheckCircle className="w-5 h-5 text-green-500" />
                                 <div>
                                   <div className="font-medium text-green-800 text-sm sm:text-base">
-                                    {appliedCoupon.type === 'welcome' ? 'Welcome Coupon' : 'Offer'} Applied!
+                                    {appliedCoupon.type === 'welcome' ? 'Coupon' : 'Offer'} Applied!
                                   </div>
                                   <div className="text-xs sm:text-sm text-green-600">
                                     {appliedCoupon.type === 'offer' 

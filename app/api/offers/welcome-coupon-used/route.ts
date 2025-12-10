@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "User ID is required to track welcome coupon usage" },
+        { success: false, error: "User ID is required to track  coupon usage" },
         { status: 400 }
       );
     }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     if (couponData.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Welcome coupon not found or inactive" },
+        { success: false, error: "coupon not found or inactive" },
         { status: 404 }
       );
     }
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: "This welcome coupon has already been redeemed by you",
+            error: "This  coupon has already been redeemed by you",
             redeemedAt: existingRecord.redeemed_at
           },
           { status: 400 }
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: "Welcome coupon marked as redeemed",
+        message: "coupon marked as redeemed",
         recordId: updated[0].id,
         redeemedAt: updated[0].redeemed_at,
         coupon: {
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Welcome coupon redeemed and tracked successfully",
+      message: " coupon redeemed and tracked successfully",
       recordId: inserted[0].id,
       redeemedAt: inserted[0].redeemed_at,
       coupon: {
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (err) {
-    console.error("Welcome coupon usage tracking error:", err);
+    console.error(" coupon usage tracking error:", err);
 
     // Handle common SQL errors
     if (err instanceof Error) {
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to track welcome coupon usage",
+        error: "Failed to track  coupon usage",
         details: err instanceof Error ? err.message : "Unknown error"
       },
       { status: 500 }
