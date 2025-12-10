@@ -10,10 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Tag, X, Calendar, Clock, Users, IndianRupee, DollarSign, Percent, Hash } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Pencil, Trash2, Plus, Calendar, Star, DollarSign, Percent } from "lucide-react";
 
-// Helper function to format date to datetime-local input format
 const formatDateForInput = (dateString: string) => {
   if (!dateString) return "";
   try {
@@ -29,59 +27,18 @@ const formatDateForInput = (dateString: string) => {
   }
 };
 
-// Helper function to format date to readable string with 12-hour time
-const formatDateTime = (dateString: string) => {
+const formatDate = (dateString: string) => {
   if (!dateString) return "";
   try {
     const date = new Date(dateString);
-    
-    // Format date
-    const dateStr = date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
       year: 'numeric',
-      month: 'short',
-      day: 'numeric',
     });
-    
-    // Format time in 12-hour format
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    
-    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-    const timeStr = `${hours}:${minutesStr} ${ampm}`;
-    
-    return `${dateStr} • ${timeStr}`;
   } catch {
     return "Invalid date";
   }
-};
-
-// Helper function to convert datetime-local (24h) to 12h display
-const formatInputDateTo12Hour = (dateString: string) => {
-  if (!dateString) return "";
-  try {
-    const date = new Date(dateString);
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    
-    const minutesStr = String(minutes).padStart(2, '0');
-    return `${hours}:${minutesStr} ${ampm}`;
-  } catch {
-    return "";
-  }
-};
-
-// Helper to check if screen is tablet size
-const isTablet = () => {
-  if (typeof window === 'undefined') return false;
-  return window.innerWidth >= 640 && window.innerWidth < 1024;
 };
 
 export default function WelcomeCouponsPage() {
@@ -89,9 +46,6 @@ export default function WelcomeCouponsPage() {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [isTabletView, setIsTabletView] = useState(false);
-  
-  const isMobile = useIsMobile();
 
   const emptyForm = {
     code: "",
@@ -111,17 +65,6 @@ export default function WelcomeCouponsPage() {
   };
 
   const [form, setForm] = useState(emptyForm);
-
-  // Check for tablet view on mount and resize
-  useEffect(() => {
-    const handleResize = () => {
-      setIsTabletView(window.innerWidth >= 640 && window.innerWidth < 1024);
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   async function loadCoupons() {
     try {
@@ -164,7 +107,6 @@ export default function WelcomeCouponsPage() {
   }
 
   async function handleSubmit() {
-    // Basic validation
     if (!form.code.trim()) {
       alert("Coupon code is required");
       return;
@@ -175,9 +117,7 @@ export default function WelcomeCouponsPage() {
       return;
     }
     
-    // Discount validation based on type
     if (form.discountType === "percent") {
-      // Validate percentage ranges
       if (form.discountValueInr) {
         const inrValue = Number(form.discountValueInr);
         if (inrValue < 1 || inrValue > 100) {
@@ -193,7 +133,6 @@ export default function WelcomeCouponsPage() {
         }
       }
     } else if (form.discountType === "flat") {
-      // Validate flat amounts
       if (form.discountValueInr && Number(form.discountValueInr) <= 0) {
         alert("INR flat discount must be a positive number");
         return;
@@ -204,13 +143,11 @@ export default function WelcomeCouponsPage() {
       }
     }
     
-    // At least one discount value should be provided
     if (!form.discountValueInr && !form.discountValueAed) {
       alert("Please provide at least one discount value (INR or AED)");
       return;
     }
     
-    // Date validation
     if (!form.validFrom || !form.validTo) {
       alert("Please set both start and end dates");
       return;
@@ -223,7 +160,6 @@ export default function WelcomeCouponsPage() {
 
     setLoading(true);
 
-    // Prepare request body matching backend structure
     const body = {
       code: form.code,
       title: form.title || null,
@@ -274,10 +210,6 @@ export default function WelcomeCouponsPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Are you sure you want to delete this coupon?")) {
-      return;
-    }
-    
     try {
       const res = await fetch(`/api/admin/welcome-coupons/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
@@ -293,310 +225,251 @@ export default function WelcomeCouponsPage() {
     setShowForm(false);
   }
 
-  // Get grid columns based on screen size
-  const getGridCols = () => {
-    if (isMobile) return "grid-cols-1";
-    if (isTabletView) return "grid-cols-2";
-    return "grid-cols-1 md:grid-cols-2";
-  };
-
-  // Helper to display discount value
   const getDiscountDisplay = (coupon: any) => {
     if (coupon.discount_type === "flat") {
-      const inr = coupon.discount_value_inr ? `₹${coupon.discount_value_inr}` : null;
-      const aed = coupon.discount_value_aed ? `AED ${coupon.discount_value_aed}` : null;
-      return [inr, aed].filter(Boolean).join(" / ");
+      const parts = [];
+      if (coupon.discount_value_inr) parts.push(`₹${coupon.discount_value_inr}`);
+      if (coupon.discount_value_aed) parts.push(`${coupon.discount_value_aed} AED`);
+      return parts.join(" / ");
     } else {
-      const inr = coupon.discount_value_inr ? `${coupon.discount_value_inr}%` : null;
-      const aed = coupon.discount_value_aed ? `${coupon.discount_value_aed}%` : null;
-      return [inr, aed].filter(Boolean).join(" / ");
+      const parts = [];
+      if (coupon.discount_value_inr) parts.push(`${coupon.discount_value_inr}%`);
+      if (coupon.discount_value_aed) parts.push(`${coupon.discount_value_aed}%`);
+      return parts.join(" / ");
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-950 p-4 sm:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Welcome Coupons</h1>
-          <p className="text-slate-400 text-sm sm:text-base mt-1">
-            Manage welcome coupons for new and returning users
-          </p>
-        </div>
-        {!showForm && (
-          <Button 
-            onClick={() => setShowForm(true)} 
-            className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-            size={isMobile ? "default" : "default"}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add New Coupon
-          </Button>
-        )}
-      </div>
+  const getDiscountBadges = (coupon: any) => {
+    const badges = [];
+    if (coupon.discount_type === "flat") {
+      if (coupon.discount_value_inr) {
+        badges.push(
+          <div key="inr" className="bg-orange-500 text-white px-4 py-2 rounded text-center font-medium">
+            ₹{coupon.discount_value_inr} OFF
+          </div>
+        );
+      }
+      if (coupon.discount_value_aed) {
+        badges.push(
+          <div key="aed" className="bg-orange-500 text-white px-4 py-2 rounded text-center font-medium">
+            {coupon.discount_value_aed} AED OFF
+          </div>
+        );
+      }
+    } else {
+      if (coupon.discount_value_inr) {
+        badges.push(
+          <div key="inr" className="bg-green-500 text-white px-4 py-2 rounded text-center font-medium">
+            {coupon.discount_value_inr}% OFF
+          </div>
+        );
+      }
+      if (coupon.discount_value_aed) {
+        badges.push(
+          <div key="aed" className="bg-green-500 text-white px-4 py-2 rounded text-center font-medium">
+            {coupon.discount_value_aed}% OFF
+          </div>
+        );
+      }
+    }
+    return badges;
+  };
 
-      {/* Form Section */}
-      {showForm && (
-        <Card className="mb-6 bg-white border-gray-200 shadow-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-50">
-                <Tag className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <CardTitle className="text-gray-900 text-lg sm:text-xl">
-                  {selected ? "Edit Coupon" : "Create New Coupon"}
-                </CardTitle>
-                <CardDescription className="text-gray-600 text-sm">
-                  {selected ? "Update the coupon details" : "Fill in the details to create a new coupon"}
-                </CardDescription>
-              </div>
-            </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6">
+      {!showForm ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-white">Welcome Coupons</h1>
             <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleCancel}
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              onClick={() => setShowForm(true)} 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <X className="h-5 w-5" />
+              Add New Coupon
             </Button>
+          </div>
+
+          <div className="space-y-4">
+            {coupons.map((coupon) => (
+              <Card key={coupon.id} className="bg-slate-800 border-slate-700">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h2 className="text-2xl font-bold text-blue-400">{coupon.code}</h2>
+                        <Badge 
+                          className={coupon.is_active 
+                            ? "bg-green-500 text-white hover:bg-green-600" 
+                            : "bg-gray-500 text-white hover:bg-gray-600"}
+                        >
+                          {coupon.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      <p className="text-xl text-white mb-1">
+                        {coupon.title || "Untitled Coupon"}
+                      </p>
+                      <p className="text-sm text-gray-400">{coupon.description || "No description"}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleSelect(coupon)}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                      >
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="bg-red-500 hover:bg-red-600 text-white font-medium">
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-slate-800 border-slate-700">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-white">Delete Coupon</AlertDialogTitle>
+                            <AlertDialogDescription className="text-gray-400">
+                              Are you sure you want to delete "{coupon.code}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="bg-slate-700 text-white hover:bg-slate-600">
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(coupon.id)}
+                              className="bg-red-500 hover:bg-red-600 text-white"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase mb-1">Type:</p>
+                      <Badge className={coupon.discount_type === "flat" 
+                        ? "bg-orange-500 text-white hover:bg-orange-600" 
+                        : "bg-green-500 text-white hover:bg-green-600"}>
+                        {coupon.discount_type === "flat" ? "$ Cash" : "% Percentage"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase mb-1">Start:</p>
+                      <p className="text-white">{formatDate(coupon.valid_from)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase mb-1">End:</p>
+                      <p className="text-white">{formatDate(coupon.valid_to)}</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400 uppercase mb-1">User Type:</p>
+                    <p className="text-white">
+                      {coupon.user_type_restriction === "all" && "All Users"}
+                      {coupon.user_type_restriction === "new" && "New Users Only"}
+                      {coupon.user_type_restriction === "returning" && "Returning Users Only"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-white font-medium mb-2">Available Discounts:</p>
+                    <div className="flex gap-2">
+                      {getDiscountBadges(coupon)}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {coupons.length === 0 && (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-12 text-center">
+                  <p className="text-gray-400 text-lg mb-4">No coupons available</p>
+                  <Button 
+                    onClick={() => setShowForm(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Coupon
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </>
+      ) : (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white text-2xl">
+              {selected ? "Edit Coupon" : "Add New Coupon"}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className={`grid ${getGridCols()} gap-4 sm:gap-6`}>
-              
-              {/* Coupon Code */}
+          <CardContent>
+            <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="code" className="text-gray-700 flex items-center gap-2">
-                  <Hash className="h-4 w-4" />
-                  Coupon Code *
-                </Label>
+                <Label htmlFor="code" className="text-white">Coupon Code *</Label>
                 <Input
                   id="code"
                   placeholder="e.g., WELCOME50"
                   value={form.code}
                   onChange={(e) => updateForm("code", e.target.value.toUpperCase().replace(/\s/g, ''))}
-                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500"
-                  maxLength={20}
+                  className="bg-slate-700 border-slate-600 text-white"
                   required
                 />
-                <p className="text-xs text-gray-500">
-                  Code will be auto-uppercased, no spaces allowed
-                </p>
               </div>
 
-              {/* Title */}
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-gray-700">Title</Label>
+                <Label htmlFor="title" className="text-white">Title</Label>
                 <Input
                   id="title"
                   placeholder="e.g., Welcome Discount"
                   value={form.title}
                   onChange={(e) => updateForm("title", e.target.value)}
-                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500"
-                  maxLength={50}
+                  className="bg-slate-700 border-slate-600 text-white"
                 />
               </div>
 
-              {/* Description */}
-              <div className="space-y-2 col-span-full">
-                <Label htmlFor="description" className="text-gray-700">Description</Label>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="description" className="text-white">Description</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe the coupon offer and terms..."
+                  placeholder="Describe the coupon..."
                   value={form.description || ""}
                   onChange={(e) => updateForm("description", e.target.value)}
                   rows={3}
-                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 resize-none"
-                  maxLength={200}
+                  className="bg-slate-700 border-slate-600 text-white"
                 />
-                <p className="text-xs text-gray-500 text-right">
-                  {(form.description || "").length}/200 characters
-                </p>
               </div>
 
-              {/* Discount Type */}
               <div className="space-y-2">
-                <Label htmlFor="discountType" className="text-gray-700 flex items-center gap-2">
-                  <Percent className="h-4 w-4" />
-                  Discount Type *
-                </Label>
+                <Label htmlFor="discountType" className="text-white">Discount Type *</Label>
                 <Select
                   value={form.discountType}
                   onValueChange={(value: "flat" | "percent") => updateForm("discountType", value)}
                 >
-                  <SelectTrigger id="discountType" className="bg-white border-gray-300 text-gray-900">
-                    <SelectValue placeholder="Select type" />
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-300">
-                    <SelectItem value="flat">Flat Amount</SelectItem>
+                  <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectItem value="flat">Cash (Flat Amount)</SelectItem>
                     <SelectItem value="percent">Percentage</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Spacer */}
-              <div className="col-span-full">
-                <p className="text-sm font-medium text-gray-700 mb-2">Discount Values</p>
-                <p className="text-xs text-gray-500 mb-4">
-                  Provide at least one value (INR or AED)
-                </p>
-              </div>
-
-              {/* INR Discount Value */}
               <div className="space-y-2">
-                <Label htmlFor="discountValueInr" className="text-gray-700 flex items-center gap-2">
-                  <IndianRupee className="h-4 w-4" />
-                  {form.discountType === "flat" ? "Flat Discount (INR)" : "Percentage Discount (INR)"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="discountValueInr"
-                    type="number"
-                    min={form.discountType === "percent" ? "1" : "0.01"}
-                    max={form.discountType === "percent" ? "100" : undefined}
-                    step={form.discountType === "percent" ? "0.1" : "1"}
-                    placeholder={form.discountType === "flat" ? "50" : "10"}
-                    value={form.discountValueInr}
-                    onChange={(e) => updateForm("discountValueInr", e.target.value)}
-                    className="bg-white border-gray-300 text-gray-900 pl-8 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                    {form.discountType === "flat" ? (
-                      <IndianRupee className="h-4 w-4" />
-                    ) : (
-                      <Percent className="h-4 w-4" />
-                    )}
-                  </div>
-                </div>
-                {form.discountType === "percent" && (
-                  <p className="text-xs text-gray-500">Must be between 1 and 100</p>
-                )}
-              </div>
-
-              {/* AED Discount Value */}
-              <div className="space-y-2">
-                <Label htmlFor="discountValueAed" className="text-gray-700 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  {form.discountType === "flat" ? "Flat Discount (AED)" : "Percentage Discount (AED)"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="discountValueAed"
-                    type="number"
-                    min={form.discountType === "percent" ? "1" : "0.01"}
-                    max={form.discountType === "percent" ? "100" : undefined}
-                    step={form.discountType === "percent" ? "0.1" : "1"}
-                    placeholder={form.discountType === "flat" ? "50" : "10"}
-                    value={form.discountValueAed}
-                    onChange={(e) => updateForm("discountValueAed", e.target.value)}
-                    className="bg-white border-gray-300 text-gray-900 pl-8 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                    {form.discountType === "flat" ? (
-                      <DollarSign className="h-4 w-4" />
-                    ) : (
-                      <Percent className="h-4 w-4" />
-                    )}
-                  </div>
-                </div>
-                {form.discountType === "percent" && (
-                  <p className="text-xs text-gray-500">Must be between 1 and 100</p>
-                )}
-              </div>
-
-              {/* Maximum Purchase Amounts */}
-              <div className="space-y-2 col-span-full">
-                <p className="text-sm font-medium text-gray-700">Maximum Purchase Limits (Optional)</p>
-                <p className="text-xs text-gray-500 mb-4">
-                  Maximum cart value this coupon can be applied to
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="maxPurchaseInr" className="text-gray-700 flex items-center gap-2">
-                  <IndianRupee className="h-4 w-4" />
-                  Max Purchase (INR)
-                </Label>
-                <Input
-                  id="maxPurchaseInr"
-                  type="number"
-                  min="0"
-                  placeholder="No limit"
-                  value={form.maxPurchaseInr}
-                  onChange={(e) => updateForm("maxPurchaseInr", e.target.value)}
-                  className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="maxPurchaseAed" className="text-gray-700 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Max Purchase (AED)
-                </Label>
-                <Input
-                  id="maxPurchaseAed"
-                  type="number"
-                  min="0"
-                  placeholder="No limit"
-                  value={form.maxPurchaseAed}
-                  onChange={(e) => updateForm("maxPurchaseAed", e.target.value)}
-                  className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Minimum Purchase Amounts */}
-              <div className="space-y-2 col-span-full">
-                <p className="text-sm font-medium text-gray-700">Minimum Purchase Requirements</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="minimumPurchaseInr" className="text-gray-700 flex items-center gap-2">
-                  <IndianRupee className="h-4 w-4" />
-                  Min Purchase (INR)
-                </Label>
-                <Input
-                  id="minimumPurchaseInr"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={form.minimumPurchaseInr}
-                  onChange={(e) => updateForm("minimumPurchaseInr", e.target.value)}
-                  className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500">For India region</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="minimumPurchaseAed" className="text-gray-700 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Min Purchase (AED)
-                </Label>
-                <Input
-                  id="minimumPurchaseAed"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={form.minimumPurchaseAed}
-                  onChange={(e) => updateForm("minimumPurchaseAed", e.target.value)}
-                  className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500">For UAE/Middle East region</p>
-              </div>
-
-              {/* User Type Restriction */}
-              <div className="space-y-2 col-span-full">
-                <Label htmlFor="userType" className="text-gray-700 flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  User Type Restriction
-                </Label>
+                <Label htmlFor="userType" className="text-white">User Type</Label>
                 <Select
                   value={form.userTypeRestriction}
                   onValueChange={(value: "all" | "new" | "returning") => updateForm("userTypeRestriction", value)}
                 >
-                  <SelectTrigger id="userType" className="bg-white border-gray-300 text-gray-900">
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-300">
+                  <SelectContent className="bg-slate-700 border-slate-600">
                     <SelectItem value="all">All Users</SelectItem>
                     <SelectItem value="new">New Users Only</SelectItem>
                     <SelectItem value="returning">Returning Users Only</SelectItem>
@@ -604,345 +477,134 @@ export default function WelcomeCouponsPage() {
                 </Select>
               </div>
 
-              {/* Validity Period */}
               <div className="space-y-2">
-                <Label htmlFor="validFrom" className="text-gray-700 flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Valid From *
+                <Label htmlFor="discountValueInr" className="text-white">
+                  {form.discountType === "flat" ? "Discount Amount (INR)" : "Discount Percentage (INR)"}
                 </Label>
-                <div className="space-y-1">
-                  <div className="relative">
-                    <Input
-                      id="validFrom"
-                      type="datetime-local"
-                      value={form.validFrom}
-                      onChange={(e) => updateForm("validFrom", e.target.value)}
-                      className="bg-white border-gray-300 text-gray-900 pr-10 focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  </div>
-                  {form.validFrom && (
-                    <div className="flex items-center gap-1 pl-1">
-                      <span className="text-xs font-medium text-blue-600">Selected:</span>
-                      <span className="text-xs text-gray-700">
-                        {new Date(form.validFrom).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })} at {formatInputDateTo12Hour(form.validFrom)}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <Input
+                  id="discountValueInr"
+                  type="number"
+                  placeholder={form.discountType === "flat" ? "50" : "10"}
+                  value={form.discountValueInr}
+                  onChange={(e) => updateForm("discountValueInr", e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="validTo" className="text-gray-700">Valid To *</Label>
-                <div className="space-y-1">
-                  <div className="relative">
-                    <Input
-                      id="validTo"
-                      type="datetime-local"
-                      value={form.validTo}
-                      onChange={(e) => updateForm("validTo", e.target.value)}
-                      className="bg-white border-gray-300 text-gray-900 pr-10 focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  </div>
-                  {form.validTo && (
-                    <div className="flex items-center gap-1 pl-1">
-                      <span className="text-xs font-medium text-blue-600">Selected:</span>
-                      <span className="text-xs text-gray-700">
-                        {new Date(form.validTo).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })} at {formatInputDateTo12Hour(form.validTo)}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <Label htmlFor="discountValueAed" className="text-white">
+                  {form.discountType === "flat" ? "Discount Amount (AED)" : "Discount Percentage (AED)"}
+                </Label>
+                <Input
+                  id="discountValueAed"
+                  type="number"
+                  placeholder={form.discountType === "flat" ? "50" : "10"}
+                  value={form.discountValueAed}
+                  onChange={(e) => updateForm("discountValueAed", e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
 
-              {/* Active Switch */}
-              <div className="flex items-center space-x-3 col-span-full p-4 rounded-lg bg-gray-50">
+              <div className="space-y-2">
+                <Label htmlFor="minInr" className="text-white">Min Purchase (INR)</Label>
+                <Input
+                  id="minInr"
+                  type="number"
+                  placeholder="0"
+                  value={form.minimumPurchaseInr}
+                  onChange={(e) => updateForm("minimumPurchaseInr", e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="minAed" className="text-white">Min Purchase (AED)</Label>
+                <Input
+                  id="minAed"
+                  type="number"
+                  placeholder="0"
+                  value={form.minimumPurchaseAed}
+                  onChange={(e) => updateForm("minimumPurchaseAed", e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxInr" className="text-white">Max Purchase (INR)</Label>
+                <Input
+                  id="maxInr"
+                  type="number"
+                  placeholder="No limit"
+                  value={form.maxPurchaseInr}
+                  onChange={(e) => updateForm("maxPurchaseInr", e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxAed" className="text-white">Max Purchase (AED)</Label>
+                <Input
+                  id="maxAed"
+                  type="number"
+                  placeholder="No limit"
+                  value={form.maxPurchaseAed}
+                  onChange={(e) => updateForm("maxPurchaseAed", e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="validFrom" className="text-white">Valid From *</Label>
+                <Input
+                  id="validFrom"
+                  type="datetime-local"
+                  value={form.validFrom}
+                  onChange={(e) => updateForm("validFrom", e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="validTo" className="text-white">Valid To *</Label>
+                <Input
+                  id="validTo"
+                  type="datetime-local"
+                  value={form.validTo}
+                  onChange={(e) => updateForm("validTo", e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center space-x-3 col-span-2 p-4 rounded bg-slate-700">
                 <Switch
                   id="isActive"
                   checked={form.isActive}
                   onCheckedChange={(checked) => updateForm("isActive", checked)}
-                  className="data-[state=checked]:bg-green-500"
                 />
-                <div className="flex-1">
-                  <Label htmlFor="isActive" className="text-gray-900 font-medium">
-                    Active Status
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    {form.isActive 
-                      ? "This coupon is currently active and can be used" 
-                      : "This coupon is inactive and cannot be used"}
-                  </p>
-                </div>
+                <Label htmlFor="isActive" className="text-white">
+                  {form.isActive ? "Coupon is Active" : "Coupon is Inactive"}
+                </Label>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 col-span-full pt-4 border-t border-gray-200">
+              <div className="flex gap-3 col-span-2 pt-4">
                 <Button 
                   onClick={handleSubmit} 
                   disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-                  size={isMobile ? "default" : "default"}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  {loading ? (
-                    <>
-                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      {selected ? "Updating..." : "Creating..."}
-                    </>
-                  ) : (
-                    <>
-                      {selected ? "Update Coupon" : "Create Coupon"}
-                    </>
-                  )}
+                  {loading ? "Saving..." : (selected ? "Update Coupon" : "Create Coupon")}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleCancel}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                  size={isMobile ? "default" : "default"}
+                  className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600"
                 >
                   Cancel
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Coupons List */}
-      {!showForm && (
-        <Card className="bg-white border-gray-200 shadow-xl">
-          <CardHeader className="border-b border-gray-200">
-            <CardTitle className="text-gray-900 text-lg sm:text-xl">
-              All Coupons ({coupons.length})
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Manage and monitor all your welcome coupons
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6">
-            {coupons.length === 0 ? (
-              <div className="text-center py-12 sm:py-16">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-50 flex items-center justify-center">
-                  <Tag className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No coupons yet</h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Create your first welcome coupon to offer discounts to new users
-                </p>
-                <Button 
-                  onClick={() => setShowForm(true)}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                  size={isMobile ? "default" : "default"}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Coupon
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {coupons.map((c: any) => (
-                  <Card 
-                    key={c.id} 
-                    className={`bg-white border ${
-                      c.is_active ? 'border-green-200' : 'border-gray-200'
-                    } hover:border-gray-300 transition-colors`}
-                  >
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                        
-                        {/* Left Section */}
-                        <div className="flex-1">
-                          {/* Header */}
-                          <div className="flex flex-wrap items-center gap-2 mb-3">
-                            <code className="text-base sm:text-lg font-bold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200">
-                              {c.code}
-                            </code>
-                            <Badge 
-                              variant={c.is_active ? "default" : "secondary"} 
-                              className={`${c.is_active 
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
-                                : 'bg-gray-200 text-gray-700'} px-3 py-1`}
-                            >
-                              {c.is_active ? "Active" : "Inactive"}
-                            </Badge>
-                            {c.user_type_restriction !== "all" && (
-                              <Badge 
-                                variant="outline" 
-                                className="border-purple-200 text-purple-700 bg-purple-50 px-3 py-1"
-                              >
-                                {c.user_type_restriction === "new" ? "New Users" : "Returning Users"}
-                              </Badge>
-                            )}
-                          </div>
-
-                          {/* Title and Description */}
-                          <h3 className="font-semibold text-lg text-gray-900 mb-1">{c.title || "Untitled Coupon"}</h3>
-                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">{c.description || "No description"}</p>
-
-                          {/* Details Grid */}
-                          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'} gap-4`}>
-                            
-                            {/* Discount Info */}
-                            <div className="space-y-1">
-                              <p className="text-xs text-gray-500 uppercase tracking-wider">Discount</p>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-lg text-gray-900">
-                                  {getDiscountDisplay(c)}
-                                </span>
-                                <span className="text-sm text-gray-600">
-                                  ({c.discount_type === "flat" ? "Flat" : "Percent"})
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Purchase Limits */}
-                            <div className="space-y-1">
-                              <p className="text-xs text-gray-500 uppercase tracking-wider">Purchase Limits</p>
-                              <div className="space-y-1">
-                                {/* Minimum */}
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs text-gray-600">Min:</span>
-                                  {(c.minimum_purchase_inr > 0 || c.minimum_purchase_aed > 0) ? (
-                                    <>
-                                      {c.minimum_purchase_inr > 0 && (
-                                        <span className="text-sm text-gray-700">₹{c.minimum_purchase_inr}</span>
-                                      )}
-                                      {c.minimum_purchase_inr > 0 && c.minimum_purchase_aed > 0 && (
-                                        <span className="text-xs text-gray-400 mx-1">•</span>
-                                      )}
-                                      {c.minimum_purchase_aed > 0 && (
-                                        <span className="text-sm text-gray-700">AED {c.minimum_purchase_aed}</span>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className="text-sm text-gray-600">No minimum</span>
-                                  )}
-                                </div>
-                                {/* Maximum */}
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs text-gray-600">Max:</span>
-                                  {(c.max_purchase_inr || c.max_purchase_aed) ? (
-                                    <>
-                                      {c.max_purchase_inr && (
-                                        <span className="text-sm text-gray-700">₹{c.max_purchase_inr}</span>
-                                      )}
-                                      {c.max_purchase_inr && c.max_purchase_aed && (
-                                        <span className="text-xs text-gray-400 mx-1">•</span>
-                                      )}
-                                      {c.max_purchase_aed && (
-                                        <span className="text-sm text-gray-700">AED {c.max_purchase_aed}</span>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className="text-sm text-gray-600">No limit</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Validity Period */}
-                            <div className="space-y-1">
-                              <p className="text-xs text-gray-500 uppercase tracking-wider">Valid Period</p>
-                              <div className="flex items-start gap-2">
-                                <Calendar className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                                <div className="text-sm">
-                                  <div className="text-gray-700">
-                                    {formatDateTime(c.valid_from)}
-                                  </div>
-                                  <div className="text-gray-500 text-xs">to</div>
-                                  <div className="text-gray-700">
-                                    {formatDateTime(c.valid_to)}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Dates */}
-                            <div className="space-y-1">
-                              <p className="text-xs text-gray-500 uppercase tracking-wider">Created</p>
-                              <p className="text-sm text-gray-700">
-                                {c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                }) : 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">Updated: {
-                                c.updated_at ? new Date(c.updated_at).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                }) : 'N/A'
-                              }</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Button
-                            variant="outline"
-                            size={isMobile ? "sm" : "default"}
-                            onClick={() => handleSelect(c)}
-                            className="border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            {isMobile ? "Edit" : "Edit"}
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size={isMobile ? "sm" : "default"}
-                                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                {isMobile ? "Delete" : "Delete"}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white border-gray-200 max-w-[95vw] sm:max-w-md">
-                              <AlertDialogHeader>
-                                <div className="p-3 rounded-full bg-red-50 w-12 h-12 flex items-center justify-center mb-4">
-                                  <Trash2 className="h-6 w-6 text-red-600" />
-                                </div>
-                                <AlertDialogTitle className="text-gray-900 text-lg">
-                                  Delete Coupon
-                                </AlertDialogTitle>
-                                <AlertDialogDescription className="text-gray-600">
-                                  Are you sure you want to delete the coupon <span className="font-semibold text-gray-900">"{c.code}"</span>? This action cannot be undone and will remove the coupon permanently.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-                                <AlertDialogCancel className="mt-0 border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full sm:w-auto">
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDelete(c.id)}
-                                  className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 w-full sm:w-auto"
-                                >
-                                  Delete Coupon
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
