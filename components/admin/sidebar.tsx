@@ -31,8 +31,8 @@ const navigation = [
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Admin Users", href: "/admin/users", icon: Shield },
   { name: "Settings", href: "/admin/settings", icon: Settings },
-  { name: "Spinner-Offers", href: "/admin/offer", icon:BadgePercent},
-  {name: "welcome Bonus",href:"/admin/welcome-coupons",icon:BadgePercent}
+  { name: "Spinner-Offers", href: "/admin/offer", icon: BadgePercent },
+  { name: "Welcome Bonus", href: "/admin/welcome-coupons", icon: BadgePercent }
 ]
 
 export default function AdminSidebar() {
@@ -52,17 +52,15 @@ export default function AdminSidebar() {
                 <Link
                   href={item.href}
                   className={`group flex items-center gap-x-3 rounded-md px-3 py-2 text-sm font-semibold leading-6 transition-colors duration-200
-                    ${
-                      isActive
-                        ? "bg-[linear-gradient(135deg,_#0a0a0a_0%,_#1a1a2e_50%,_#16213e_100%)] text-blue-100 shadow-lg border border-blue-500/20"
-                        : "text-blue-300 hover:text-white hover:bg-blue-900/40"
+                    ${isActive
+                      ? "bg-[linear-gradient(135deg,_#0a0a0a_0%,_#1a1a2e_50%,_#16213e_100%)] text-blue-100 shadow-lg border border-blue-500/20"
+                      : "text-blue-300 hover:text-white hover:bg-blue-900/40"
                     }
                   `}
                 >
                   <item.icon
-                    className={`h-5 w-5 shrink-0 transition-all duration-200 ${
-                      isActive ? "text-blue-200" : "text-blue-400 group-hover:text-white"
-                    }`}
+                    className={`h-5 w-5 shrink-0 transition-all duration-200 ${isActive ? "text-blue-200" : "text-blue-400 group-hover:text-white"
+                      }`}
                   />
                   {item.name}
                 </Link>

@@ -30,6 +30,12 @@ interface OpeningHours {
   sunday: string
 }
 
+interface RazorpayAccount {
+  accountNumber: string
+  label: string
+  keyId: string
+}
+
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Setting[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,9 +64,13 @@ export default function AdminSettings() {
     default_shop: 'A',
     shop_switch_enabled: 'true'
   })
-  
+
+  // Razorpay accounts state
+  const [razorpayAccounts, setRazorpayAccounts] = useState<RazorpayAccount[]>([])
+  const [loadingRazorpayAccounts, setLoadingRazorpayAccounts] = useState(false)
+
   // URL validation state
-  const [urlValidation, setUrlValidation] = useState<{[key: string]: {isValid: boolean, isChecking: boolean}}>({
+  const [urlValidation, setUrlValidation] = useState<{ [key: string]: { isValid: boolean, isChecking: boolean } }>({
     social_facebook: { isValid: true, isChecking: false },
     social_instagram: { isValid: true, isChecking: false },
     social_twitter: { isValid: true, isChecking: false }
@@ -69,6 +79,7 @@ export default function AdminSettings() {
   useEffect(() => {
     fetchSettings()
     fetchShopFeaturesSettings()
+    fetchRazorpayAccounts()
   }, [])
 
   const fetchShopFeaturesSettings = async () => {
@@ -80,6 +91,26 @@ export default function AdminSettings() {
       }
     } catch (error) {
       console.error('Failed to fetch shop features settings:', error)
+    }
+  }
+
+  const fetchRazorpayAccounts = async () => {
+    setLoadingRazorpayAccounts(true)
+    try {
+      const response = await fetch('/api/admin/settings/razorpay-accounts')
+      if (response.ok) {
+        const data = await response.json()
+        setRazorpayAccounts(data.accounts || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch Razorpay accounts:', error)
+      // Fallback to default 2 accounts if API fails
+      setRazorpayAccounts([
+        { accountNumber: "1", label: "Account 1", keyId: "" },
+        { accountNumber: "2", label: "Account 2", keyId: "" }
+      ])
+    } finally {
+      setLoadingRazorpayAccounts(false)
     }
   }
 
@@ -182,7 +213,7 @@ export default function AdminSettings() {
 
     // Basic URL format validation
     const isValidFormat = validateUrl(url)
-    
+
     // Platform-specific validation
     let isValidPlatform = true
     if (key === 'social_facebook' && url) {
@@ -218,11 +249,11 @@ export default function AdminSettings() {
       )
 
       await Promise.all(promises)
-      
+
       // Show success message
       setError(null)
       // You could add a success toast here
-      
+
     } catch (error) {
       console.error('Failed to save shop features settings:', error)
       setError('Failed to save shop features settings')
@@ -316,51 +347,51 @@ export default function AdminSettings() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-      <div className="sticky top-0 z-20 bg-gray-900/95 shadow-lg px-4 py-2">
-  <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-    <TabsList className="flex gap-3 min-w-max">
-      <TabsTrigger
-        value="general"
-        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
-      >
-        <Store className="w-4 h-4" />
-        General
-      </TabsTrigger>
+        <div className="sticky top-0 z-20 bg-gray-900/95 shadow-lg px-4 py-2">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+            <TabsList className="flex gap-3 min-w-max">
+              <TabsTrigger
+                value="general"
+                className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+              >
+                <Store className="w-4 h-4" />
+                General
+              </TabsTrigger>
 
-      <TabsTrigger
-        value="contact"
-        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
-      >
-        <MapPin className="w-4 h-4" />
-        Contact
-      </TabsTrigger>
+              <TabsTrigger
+                value="contact"
+                className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+              >
+                <MapPin className="w-4 h-4" />
+                Contact
+              </TabsTrigger>
 
-      <TabsTrigger
-        value="payment"
-        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
-      >
-        <CreditCard className="w-4 h-4" />
-        Payment
-      </TabsTrigger>
+              <TabsTrigger
+                value="payment"
+                className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+              >
+                <CreditCard className="w-4 h-4" />
+                Payment
+              </TabsTrigger>
 
-      <TabsTrigger
-        value="appearance"
-        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
-      >
-        <SettingsIcon className="w-4 h-4" />
-        Appearance
-      </TabsTrigger>
+              <TabsTrigger
+                value="appearance"
+                className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+              >
+                <SettingsIcon className="w-4 h-4" />
+                Appearance
+              </TabsTrigger>
 
-      <TabsTrigger
-        value="shop-features"
-        className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
-      >
-        <Zap className="w-4 h-4" />
-        Shop Features
-      </TabsTrigger>
-    </TabsList>
-  </div>
-</div>
+              <TabsTrigger
+                value="shop-features"
+                className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-white hover:bg-gray-700 transition-all duration-200 whitespace-nowrap"
+              >
+                <Zap className="w-4 h-4" />
+                Shop Features
+              </TabsTrigger>
+            </TabsList>
+          </div>
+        </div>
 
 
         <TabsContent value="general">
@@ -513,10 +544,9 @@ export default function AdminSettings() {
                           updateSetting("social_facebook", e.target.value)
                           validateSocialUrl("social_facebook", e.target.value)
                         }}
-                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${
-                          !urlValidation.social_facebook.isValid ? 'border-red-500' : 
+                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${!urlValidation.social_facebook.isValid ? 'border-red-500' :
                           getSetting("social_facebook") && urlValidation.social_facebook.isValid ? 'border-green-500' : ''
-                        }`}
+                          }`}
                         placeholder="https://facebook.com/yourpage"
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -556,10 +586,9 @@ export default function AdminSettings() {
                           updateSetting("social_instagram", e.target.value)
                           validateSocialUrl("social_instagram", e.target.value)
                         }}
-                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${
-                          !urlValidation.social_instagram.isValid ? 'border-red-500' : 
+                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${!urlValidation.social_instagram.isValid ? 'border-red-500' :
                           getSetting("social_instagram") && urlValidation.social_instagram.isValid ? 'border-green-500' : ''
-                        }`}
+                          }`}
                         placeholder="https://instagram.com/yourprofile"
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -599,10 +628,9 @@ export default function AdminSettings() {
                           updateSetting("social_twitter", e.target.value)
                           validateSocialUrl("social_twitter", e.target.value)
                         }}
-                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${
-                          !urlValidation.social_twitter.isValid ? 'border-red-500' : 
+                        className={`bg-gray-700 border-gray-600 text-white h-12 pr-10 ${!urlValidation.social_twitter.isValid ? 'border-red-500' :
                           getSetting("social_twitter") && urlValidation.social_twitter.isValid ? 'border-green-500' : ''
-                        }`}
+                          }`}
                         placeholder="https://twitter.com/yourprofile"
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -644,7 +672,7 @@ export default function AdminSettings() {
               <CardTitle className="text-white">Payment Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="currency_code">Currency Code</Label>
                   <Input
@@ -666,6 +694,89 @@ export default function AdminSettings() {
                     placeholder="$"
                   />
                   <p className="text-gray-400 text-sm mt-1">Symbol to display with prices</p>
+                </div>
+              </div> */}
+
+              {/* Razorpay Account Configuration */}
+              <div>
+                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Razorpay Account Configuration
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="active_razorpay_account" className="text-white">Active Razorpay Account</Label>
+                    {loadingRazorpayAccounts ? (
+                      <div className="w-full bg-gray-700 border-gray-600 text-white h-12 mt-2 rounded-md px-3 flex items-center">
+                        <span className="text-gray-400">Loading accounts...</span>
+                      </div>
+                    ) : (
+                      <select
+                        id="active_razorpay_account"
+                        value={getSetting("active_razorpay_account") || "1"}
+                        onChange={(e) => updateSetting("active_razorpay_account", e.target.value)}
+                        className="w-full bg-gray-700 border-gray-600 text-white h-12 mt-2 rounded-md px-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      >
+                        {razorpayAccounts.map((account) => (
+                          <option key={account.accountNumber} value={account.accountNumber}>
+                            {getSetting(`razorpay_account_${account.accountNumber}_label`) || account.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <p className="text-gray-400 text-xs mt-1">
+                      Select which Razorpay account to use for payments
+                      {razorpayAccounts.length > 0 && ` (${razorpayAccounts.length} account${razorpayAccounts.length > 1 ? 's' : ''} configured)`}
+                    </p>
+                  </div>
+
+                  {/* Dynamic Account Label Inputs */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {razorpayAccounts.map((account) => (
+                      <div key={account.accountNumber}>
+                        <Label htmlFor={`razorpay_account_${account.accountNumber}_label`} className="text-white">
+                          Account {account.accountNumber} Label
+                        </Label>
+                        <Input
+                          id={`razorpay_account_${account.accountNumber}_label`}
+                          value={getSetting(`razorpay_account_${account.accountNumber}_label`) ?? account.label}
+                          onChange={(e) => updateSetting(`razorpay_account_${account.accountNumber}_label`, e.target.value)}
+                          className="bg-gray-700 border-gray-600 text-white h-12 mt-2"
+                          placeholder={`e.g., Primary Account, Shop ${account.accountNumber}, etc.`}
+                        />
+                        <p className="text-gray-400 text-xs mt-1">
+                          Custom label • Key ID: {account.keyId ? `${account.keyId.substring(0, 12)}...` : 'Not configured'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      Current Configuration
+                    </h4>
+                    <div className="text-sm text-gray-300 space-y-1">
+                      {(() => {
+                        const activeAccountNum = getSetting("active_razorpay_account") || "1"
+                        const activeAccount = razorpayAccounts.find(acc => acc.accountNumber === activeAccountNum)
+                        const activeLabel = getSetting(`razorpay_account_${activeAccountNum}_label`) || activeAccount?.label || `Account ${activeAccountNum}`
+
+                        return (
+                          <>
+                            <p>• Active Account: <strong>{activeLabel}</strong> (Account {activeAccountNum})</p>
+                            {activeAccount?.keyId && (
+                              <p>• Key ID: <code className="text-xs bg-gray-800 px-2 py-1 rounded">{activeAccount.keyId ? `${activeAccount.keyId.substring(4, 16)}...` : 'Not configured'}</code></p>
+                            )}
+                            <p className="text-xs text-gray-400 mt-2">
+                              Note: Razorpay credentials are stored securely
+                            </p>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>

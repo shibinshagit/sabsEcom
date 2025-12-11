@@ -152,7 +152,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
 async function sendAdminNotificationEmail(orderData: any, orderId: number, orderNumber: string) {
   try {
     const adminEmail = process.env.ORDER_ALERT_MAIL || "sabsorder@gmail.com"
-    
+
     if (!adminEmail) {
       console.error('ORDER_ALERT_MAIL environment variable not configured')
       return
@@ -393,7 +393,7 @@ async function getAuthenticatedUser() {
 async function ensureOrdersTableExists() {
   try {
     console.log('Starting database schema setup...')
-    
+
     // Check if orders table already exists with correct schema
     const tableExists = await sql`
       SELECT EXISTS (
@@ -461,7 +461,7 @@ async function ensureOrdersTableExists() {
               WHERE table_name = 'orders' AND column_name = ${column.check}
             )
           `
-          
+
           if (!columnExists[0].exists) {
             await sql.unsafe(`ALTER TABLE orders ADD COLUMN ${column.name} ${column.definition}`)
             console.log(`Added column: ${column.name}`)
@@ -470,7 +470,7 @@ async function ensureOrdersTableExists() {
           console.log(`Column ${column.name} might already exist:`, colError)
         }
       }
-      
+
       console.log('Orders table schema updated successfully')
     }
   } catch (error) {
@@ -535,7 +535,7 @@ async function ensureOrderItemsTableExists() {
               WHERE table_name = 'order_items' AND column_name = ${column.check}
             )
           `
-          
+
           if (!columnExists[0].exists) {
             await sql.unsafe(`ALTER TABLE order_items ADD COLUMN ${column.name} ${column.definition}`)
             console.log(`Added column: ${column.name}`)
@@ -575,7 +575,7 @@ async function findLinkedUser(email: string, isClerkUser: boolean, userId: strin
   }
 }
 
-// Function to generate professional order number
+// Function to generate order number
 async function generateOrderNumber(): Promise<string> {
   try {
     // Get the highest existing order number to continue sequence
@@ -586,16 +586,16 @@ async function generateOrderNumber(): Promise<string> {
       ORDER BY CAST(SUBSTRING(order_number FROM 5) AS INTEGER) DESC 
       LIMIT 1
     `
-    
-    let nextNumber = 10001 // Start from 10001 for professional appearance
-    
+
+    let nextNumber = 10001
+
     if (result.length > 0 && result[0].order_number) {
       const lastNumber = parseInt(result[0].order_number.replace('SAB-', ''))
       if (!isNaN(lastNumber)) {
         nextNumber = lastNumber + 1
       }
     }
-    
+
     return `SAB-${nextNumber}`
   } catch (error) {
     console.error('Error generating order number:', error)
@@ -677,6 +677,14 @@ export async function POST(request: Request) {
     const totalAmount = subtotal + deliveryFee + taxAmount - discountAmount
     const finalTotal = totalAmount
 
+    // For UPI payments require payment verification
+    if (orderData.paymentMethod === 'upi' && !orderData.paymentId) {
+      console.warn('UPI payment attempted without payment verification')
+      return NextResponse.json({
+        error: "Payment verification required for UPI orders. Please complete the payment process."
+      }, { status: 400 })
+    }
+
     // Determine payment status
     const paymentStatus = orderData.paymentMethod === 'upi' && orderData.paymentId ? 'paid' : 'pending'
 
@@ -688,6 +696,8 @@ export async function POST(request: Request) {
       total_amount: totalAmount,
       final_total: finalTotal,
       payment_status: paymentStatus,
+      payment_method: orderData.paymentMethod,
+      has_payment_id: !!orderData.paymentId,
       currency: orderData.currency || 'AED'
     })
 
@@ -738,7 +748,7 @@ export async function POST(request: Request) {
       // Parse variant information from item name if it contains ' - '
       const itemName = item.menuItemName || "Unknown Item"
       const variantName = item.variantName || null
-      
+
       // Get currency-specific pricing
       const pricing = getCurrencySpecificPrice(item, orderData.currency || 'AED')
       const unitPrice = parseFloat(item.unitPrice) || pricing.unitPrice
@@ -773,14 +783,21 @@ export async function POST(request: Request) {
     console.log('Order completed successfully')
 
     // Send order confirmation email and admin notification
-    try {
-      await Promise.all([
-        sendOrderConfirmationEmail(orderData, order.id, order.order_number),
-        sendAdminNotificationEmail(orderData, order.id, order.order_number)
-      ])
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError)
-      // Continue with order completion even if email fails
+    // ONLY send emails for successful payments or COD orders
+    if (paymentStatus === 'paid' || orderData.paymentMethod === 'cod') {
+      try {
+        console.log(`Sending confirmation emails for ${orderData.paymentMethod} order with status: ${paymentStatus}`)
+        await Promise.all([
+          sendOrderConfirmationEmail(orderData, order.id, order.order_number),
+          sendAdminNotificationEmail(orderData, order.id, order.order_number)
+        ])
+        // console.log('Confirmation emails sent successfully')
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError)
+        // Continue with order completion even if email fails
+      }
+    } else {
+      console.log(`Skipping email notification for order with payment status: ${paymentStatus} and method: ${orderData.paymentMethod}`)
     }
 
     return NextResponse.json({
@@ -793,8 +810,8 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error("Error creating order:", error)
-    return NextResponse.json({ 
-      error: "Failed to create order", 
+    return NextResponse.json({
+      error: "Failed to create order",
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
@@ -803,7 +820,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const user = await getAuthenticatedUser()
-    
+
     // If no authenticated user, return unauthorized
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -902,15 +919,13 @@ export async function GET(request: Request) {
     }
 
     console.log(`Found ${orders.length} orders for user ${user.email}`)
-    
+
     // Clean up the orders data to ensure proper structure
     const cleanOrders = orders.map(order => ({
       ...order,
-      // Ensure final_total is available for the frontend - use existing final_total or fallback to total_amount
-      final_total: order.final_total || order.total_amount,
       items: Array.isArray(order.items) ? order.items : []
     }))
-    
+
     return NextResponse.json(cleanOrders)
   } catch (error) {
     console.error("Error fetching orders:", error)

@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from "next/server"
 import Razorpay from "razorpay"
+import { neon } from "@neondatabase/serverless"
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-})
+// Helper function to get active Razorpay account credentials
+async function getActiveRazorpayCredentials() {
+  try {
+    // Initialize Neon DB connection
+    const sql = neon(process.env.DATABASE_URL!)
+
+    // Fetch active account number from settings
+    const rows = await sql`
+      SELECT value FROM settings WHERE key = 'active_razorpay_account' LIMIT 1
+    `
+
+    const activeAccount = rows[0]?.value || "1" // Default to account 1
+
+    // Get credentials from environment variables
+    const keyId = process.env[`RAZORPAY_ACCOUNT_${activeAccount}_KEY_ID`]
+    const keySecret = process.env[`RAZORPAY_ACCOUNT_${activeAccount}_KEY_SECRET`]
+
+    if (!keyId || !keySecret) {
+      throw new Error(`Razorpay credentials not found for account ${activeAccount}`)
+    }
+
+    return { keyId, keySecret, accountNumber: activeAccount }
+  } catch (error) {
+    console.error("Failed to get Razorpay credentials:", error)
+    throw error
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,8 +65,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get active Razorpay credentials dynamically
+    const { keyId, keySecret } = await getActiveRazorpayCredentials()
+
+    // Initialize Razorpay with active account credentials
+    const razorpay = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    })
+
     const order = await razorpay.orders.create({
-      amount: Math.round(amount * 100), // Convert to paise for INR or fils for AED
+      amount: Math.round(amount * 100),
       currency: currency,
       receipt: receipt,
       notes: {
@@ -52,11 +85,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      key: process.env.RAZORPAY_KEY_ID,
+      key: keyId,
       receipt: order.receipt
     })
   } catch (error) {
