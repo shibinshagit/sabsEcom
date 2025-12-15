@@ -32,7 +32,7 @@ const navigation = [
   { name: "Admin Users", href: "/admin/users", icon: Shield },
   { name: "Settings", href: "/admin/settings", icon: Settings },
   { name: "Spinner-Offers", href: "/admin/offer", icon:BadgePercent},
-  {name: "welcome Bonus",href:"/admin/welcome-coupons",icon:BadgePercent}
+  {name: "Coupon Management",href:"/admin/welcome-coupons",icon:BadgePercent}
 ]
 
 export default function AdminSidebar() {

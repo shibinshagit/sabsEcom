@@ -1,5 +1,3 @@
-
-
 "use client"
 import { useState, useEffect } from "react"
 import { X, Plus, Trash2, Calendar, Tag, Percent, DollarSign, AlertCircle, CheckCircle, XCircle, Star } from "lucide-react"
@@ -12,9 +10,9 @@ const OfferPage = () => {
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [loading, setLoading] = useState(false)
-  const [initialLoading, setInitialLoading] = useState(true) 
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // New restriction states - separate for each currency
   const [minOrderValueAED, setMinOrderValueAED] = useState("")
   const [minOrderValueINR, setMinOrderValueINR] = useState("")
@@ -27,9 +25,8 @@ const OfferPage = () => {
   const [allowedCategories, setAllowedCategories] = useState<string[]>([])
   const [priority, setPriority] = useState("")
 
-  const [categories, setCategories] = useState<{id: number, name: string}[]>([]) 
-  
-  
+  const [categories, setCategories] = useState<{ id: number, name: string }[]>([])
+
   const [savedOffers, setSavedOffers] = useState<
     {
       id: number
@@ -49,10 +46,36 @@ const OfferPage = () => {
       userTypeRestriction?: string
       allowedCategories?: string[]
       priority?: number
-
     }[]
   >([])
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null)
+
+  // Helper function to check if an offer is expired
+  const isExpired = (dateString: string) => {
+    if (!dateString) return false
+    try {
+      const endDate = new Date(dateString)
+      const today = new Date()
+      return endDate < today
+    } catch {
+      return false
+    }
+  }
+
+  // Helper function to format dates
+  const formatDate = (dateString: string) => {
+    if (!dateString) return ""
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric',
+      })
+    } catch {
+      return "Invalid date"
+    }
+  }
 
   const handleAddOffer = () => {
     if (offers.length < 6) {
@@ -113,9 +136,9 @@ const OfferPage = () => {
     const invalidOffers = validOffers.filter((offer) => {
       const value = parseFloat(offer.value)
       if (isNaN(value) || value <= 0) return true
-      
+
       if (offerType === "percentage" && (value < 1 || value > 100)) return true
-      
+
       return false
     })
 
@@ -160,7 +183,6 @@ const OfferPage = () => {
             shopRestriction: shopRestriction || null,
             userTypeRestriction: userTypeRestriction || null,
             allowedCategories: allowedCategories.length > 0 ? allowedCategories : null,
-
           }
         }),
       })
@@ -188,14 +210,13 @@ const OfferPage = () => {
         userTypeRestriction: data.user_type_restriction || "",
         allowedCategories: data.allowed_categories ? JSON.parse(data.allowed_categories) : [],
         priority: data.priority || 0,
-
       }
 
       if (isEditing) {
         // Refresh the entire offers list from server to ensure we have all the latest data
         await fetchOffers()
         alert("Offer updated successfully!")
-        
+
         // Keep the modal open briefly to show success, then close
         setTimeout(() => {
           setShowModal(false)
@@ -221,18 +242,18 @@ const OfferPage = () => {
     setTitle(offer.title)
     setStartDate(offer.startDate)
     setEndDate(offer.endDate)
-    
+
     // Set the offer type from the first offer or fallback to percentage
     const firstOffer = offer.offers[0]
     const editOfferType = firstOffer?.type || offer.offerType || "percentage"
     setOfferType(editOfferType)
-    
+
     // Extract just the values for the form
-    const offerValues = offer.offers.length > 0 
+    const offerValues = offer.offers.length > 0
       ? offer.offers.map(o => ({ value: o.value }))
       : [{ value: "" }]
     setOffers(offerValues)
-    
+
     // Set restriction values
     setMinOrderValueAED(offer.minOrderValueAED || "")
     setMinOrderValueINR(offer.minOrderValueINR || "")
@@ -245,7 +266,6 @@ const OfferPage = () => {
     setAllowedCategories(offer.allowedCategories || [])
     setPriority(offer.priority ? offer.priority.toString() : "")
 
-    
     setEditingOfferId(offer.id)
     setShowModal(true)
   }
@@ -306,7 +326,6 @@ const OfferPage = () => {
           userTypeRestriction: offer.user_type_restriction || "",
           allowedCategories: offer.allowed_categories ? JSON.parse(offer.allowed_categories) : [],
           priority: offer.priority || 0,
-
         }))
         setSavedOffers(parsedOffers)
       }
@@ -367,8 +386,8 @@ const OfferPage = () => {
             <div>
               <h3 className="text-red-400 font-semibold">Error Loading Offers</h3>
               <p className="text-red-300 text-sm mt-1">{error}</p>
-              <button 
-                onClick={fetchOffers} 
+              <button
+                onClick={fetchOffers}
                 className="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors text-sm"
               >
                 Retry
@@ -395,81 +414,93 @@ const OfferPage = () => {
       {/* Show all offers */}
       {savedOffers.length > 0 ? (
         <div className="space-y-4 mb-6">
-          {savedOffers.map((offer) => (
-            <div key={offer.id} className="bg-gray-800 text-white p-6 rounded-lg shadow-lg">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">{offer.title}</h2>
-                  <div className="text-gray-300 mb-2">
-                    <strong>Type:</strong>{" "}
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ${
-                      offer.offerType === 'cash' 
-                        ? 'bg-orange-600 text-white' 
-                        : 'bg-green-600 text-white'
-                    }`}>
-                      {offer.offerType === 'cash' ? (
-                        <>
-                          <DollarSign size={14} />
-                          Cash (AED)
-                        </>
-                      ) : (
-                        <>
-                          <Percent size={14} />
-                          Percentage
-                        </>
+          {savedOffers.map((offer) => {
+            const expired = isExpired(offer.endDate)
+            
+            return (
+              <div key={offer.id} className="bg-gray-800 text-white p-6 rounded-lg shadow-lg">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-xl font-semibold mb-2">{offer.title}</h2>
+                      {expired && (
+                        <span className="bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full">
+                          Expired
+                        </span>
                       )}
-                    </span>
-                  </div>
-                  <p className="text-gray-300">
-                    <strong>Start:</strong> {new Date(offer.startDate).toLocaleDateString()}
-                    <span className="mx-2">|</span>
-                    <strong>End:</strong> {new Date(offer.endDate).toLocaleDateString()}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Star size={16} className="text-yellow-400" />
-                    <span className="text-gray-300">
-                      <strong>Priority:</strong> {offer.priority || 'Auto (Date-based)'}
-                    </span>
-                    {offer.priority && offer.priority >= 10000 && (
-                      <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded">
-                        High Priority
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(offer)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(offer.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <h3 className="text-lg font-medium mb-2">Available Discounts:</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {offer.offers.map((offerDiscount, index) => (
-                    <div key={index} className={`text-white px-3 py-2 rounded text-center ${
-                      offerDiscount.type === 'cash' ? 'bg-orange-600' : 'bg-green-600'
-                    }`}>
-                      {offerDiscount.type === 'cash' 
-                        ? `${offerDiscount.value} AED OFF` 
-                        : `${offerDiscount.value}% OFF`
-                      }
                     </div>
-                  ))}
+                    <div className="text-gray-300 mb-2">
+                      <strong>Type:</strong>{" "}
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ${offer.offerType === 'cash'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-green-600 text-white'
+                        }`}>
+                        {offer.offerType === 'cash' ? (
+                          <>
+                            <DollarSign size={14} />
+                            Cash (AED)
+                          </>
+                        ) : (
+                          <>
+                            <Percent size={14} />
+                            Percentage
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    <p className="text-gray-300">
+                      <strong>Start:</strong> {formatDate(offer.startDate)}
+                      <span className="mx-2">|</span>
+                      <strong>End:</strong>{" "}
+                      <span className={expired ? "text-red-400 font-semibold" : ""}>
+                        {formatDate(offer.endDate)}
+                      </span>
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Star size={16} className="text-yellow-400" />
+                      <span className="text-gray-300">
+                        <strong>Priority:</strong> {offer.priority || 'Auto (Date-based)'}
+                      </span>
+                      {offer.priority && offer.priority >= 10000 && (
+                        <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded">
+                          High Priority
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(offer)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(offer.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <h3 className="text-lg font-medium mb-2">Available Discounts:</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {offer.offers.map((offerDiscount, index) => (
+                      <div key={index} className={`text-white px-3 py-2 rounded text-center ${offerDiscount.type === 'cash' ? 'bg-orange-600' : 'bg-green-600'
+                        }`}>
+                        {offerDiscount.type === 'cash'
+                          ? `${offerDiscount.value} AED OFF`
+                          : `${offerDiscount.value}% OFF`
+                        }
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         // Only show "No offers" when not loading and no error
@@ -617,22 +648,20 @@ const OfferPage = () => {
                           placeholder={offerType === 'cash' ? `Amount in AED (e.g., 50)` : `Percentage (1-100)`}
                           value={offer.value}
                           onChange={(e) => handleOfferChange(index, e.target.value)}
-                          className={`w-full border-2 border-gray-200 px-4 py-3 pr-16 rounded-xl focus:outline-none focus:ring-4 transition-all duration-200 text-gray-800 placeholder-gray-400 ${
-                            offerType === 'cash'
-                              ? 'focus:border-orange-500 focus:ring-orange-100'
-                              : 'focus:border-green-500 focus:ring-green-100'
-                          }`}
+                          className={`w-full border-2 border-gray-200 px-4 py-3 pr-16 rounded-xl focus:outline-none focus:ring-4 transition-all duration-200 text-gray-800 placeholder-gray-400 ${offerType === 'cash'
+                            ? 'focus:border-orange-500 focus:ring-orange-100'
+                            : 'focus:border-green-500 focus:ring-green-100'
+                            }`}
                           min="1"
                           max={offerType === 'percentage' ? "100" : undefined}
                           step={offerType === 'cash' ? "0.01" : "1"}
                         />
-                        <div className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium ${
-                          offerType === 'cash' ? 'text-orange-600' : 'text-green-600'
-                        }`}>
+                        <div className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium ${offerType === 'cash' ? 'text-orange-600' : 'text-green-600'
+                          }`}>
                           {offerType === 'cash' ? 'AED' : '%'}
                         </div>
                       </div>
-                      
+
                       {offers.length > 1 && (
                         <button
                           onClick={() => handleRemoveOffer(index)}
@@ -648,9 +677,8 @@ const OfferPage = () => {
                 {offers.length < 6 && (
                   <button
                     onClick={handleAddOffer}
-                    className={`flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-xl transition-all duration-200 font-medium ${
-                      offerType === 'cash' ? 'text-orange-600' : 'text-green-600'
-                    }`}
+                    className={`flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-xl transition-all duration-200 font-medium ${offerType === 'cash' ? 'text-orange-600' : 'text-green-600'
+                      }`}
                   >
                     <Plus size={16} />
                     Add Another {offerType === 'cash' ? 'Amount' : 'Percentage'}
@@ -660,11 +688,10 @@ const OfferPage = () => {
 
               {/* Preview Section */}
               {offers.some((offer) => offer.value) && (
-                <div className={`p-4 rounded-xl border ${
-                  offerType === 'cash'
-                    ? 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'
-                    : 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200'
-                }`}>
+                <div className={`p-4 rounded-xl border ${offerType === 'cash'
+                  ? 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'
+                  : 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200'
+                  }`}>
                   <h4 className="text-sm font-semibold text-gray-700 mb-2">Preview:</h4>
                   <div className="flex flex-wrap gap-2">
                     {offers
@@ -672,14 +699,13 @@ const OfferPage = () => {
                       .map((offer, index) => (
                         <span
                           key={index}
-                          className={`text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm ${
-                            offerType === 'cash' 
-                              ? 'bg-gradient-to-r from-orange-500 to-orange-600' 
-                              : 'bg-gradient-to-r from-green-500 to-green-600'
-                          }`}
+                          className={`text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm ${offerType === 'cash'
+                            ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+                            : 'bg-gradient-to-r from-green-500 to-green-600'
+                            }`}
                         >
-                          {offerType === 'cash' 
-                            ? `${offer.value} AED OFF` 
+                          {offerType === 'cash'
+                            ? `${offer.value} AED OFF`
                             : `${offer.value}% OFF`
                           }
                         </span>
@@ -693,7 +719,7 @@ const OfferPage = () => {
                   <DollarSign size={18} className="text-blue-600" />
                   Order Value Restrictions
                 </h3>
-                
+
                 {/* Minimum Order Values */}
                 <div className="space-y-4">
                   <h4 className="text-md font-semibold text-gray-700">Minimum Order Value</h4>
@@ -807,10 +833,10 @@ const OfferPage = () => {
                     onChange={(e) => {
                       const newShopRestriction = e.target.value
                       setShopRestriction(newShopRestriction)
-                      
+
                       // Clear existing category selections when shop changes
                       setAllowedCategories([])
-                      
+
                       // Fetch categories for the selected shop
                       if (newShopRestriction) {
                         fetchCategories(newShopRestriction)
@@ -857,7 +883,7 @@ const OfferPage = () => {
                   className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 transition-all duration-200 text-gray-800 bg-white"
                 />
                 <p className="text-xs text-gray-600">
-                  💡 <strong>Priority Guide:</strong> Higher numbers appear first when users apply coupons. 
+                  💡 <strong>Priority Guide:</strong> Higher numbers appear first when users apply coupons.
                   Leave empty for automatic date-based priority (newest offers first).
                 </p>
               </div>
@@ -867,7 +893,7 @@ const OfferPage = () => {
                   <Tag size={18} className="text-purple-600" />
                   Product Category Restrictions
                 </h3>
-                
+
                 {/* Allowed Categories */}
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -905,7 +931,7 @@ const OfferPage = () => {
                     )}
                   </div>
                   <p className="text-xs text-gray-500">
-                    {shopRestriction 
+                    {shopRestriction
                       ? `Select categories from ${shopRestriction === 'A' ? 'Beauty Shop' : 'Style Shop'}. If none selected, offer applies to all categories in this shop.`
                       : 'Select specific categories for this offer. If none selected, offer applies to all categories.'
                     }

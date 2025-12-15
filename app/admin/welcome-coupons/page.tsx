@@ -41,6 +41,17 @@ const formatDate = (dateString: string) => {
   }
 };
 
+const isExpired = (dateString: string) => {
+  if (!dateString) return false;
+  try {
+    const endDate = new Date(dateString);
+    const today = new Date();
+    return endDate < today;
+  } catch {
+    return false;
+  }
+};
+
 export default function WelcomeCouponsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -290,99 +301,111 @@ export default function WelcomeCouponsPage() {
           </div>
 
           <div className="space-y-4">
-            {coupons.map((coupon) => (
-              <Card key={coupon.id} className="bg-slate-800 border-slate-700">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-2xl font-bold text-blue-400">{coupon.code}</h2>
-                        <Badge 
-                          className={coupon.is_active 
-                            ? "bg-green-500 text-white hover:bg-green-600" 
-                            : "bg-gray-500 text-white hover:bg-gray-600"}
+            {coupons.map((coupon) => {
+              const expired = isExpired(coupon.valid_to);
+              
+              return (
+                <Card key={coupon.id} className="bg-slate-800 border-slate-700">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h2 className="text-2xl font-bold text-blue-400">{coupon.code}</h2>
+                          {expired ? (
+                            <Badge className="bg-red-500 text-white hover:bg-red-600">
+                              Expired
+                            </Badge>
+                          ) : (
+                            <Badge 
+                              className={coupon.is_active 
+                                ? "bg-green-500 text-white hover:bg-green-600" 
+                                : "bg-gray-500 text-white hover:bg-gray-600"}
+                            >
+                              {coupon.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xl text-white mb-1">
+                          {coupon.title || "Untitled Coupon"}
+                        </p>
+                        <p className="text-sm text-gray-400">{coupon.description || "No description"}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleSelect(coupon)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
                         >
-                          {coupon.is_active ? "Active" : "Inactive"}
+                          Edit
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button className="bg-red-500 hover:bg-red-600 text-white font-medium">
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-slate-800 border-slate-700">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-white">Delete Coupon</AlertDialogTitle>
+                              <AlertDialogDescription className="text-gray-400">
+                                Are you sure you want to delete "{coupon.code}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-slate-700 text-white hover:bg-slate-600">
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDelete(coupon.id)}
+                                className="bg-red-500 hover:bg-red-600 text-white"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase mb-1">Type:</p>
+                        <Badge className={coupon.discount_type === "flat" 
+                          ? "bg-orange-500 text-white hover:bg-orange-600" 
+                          : "bg-green-500 text-white hover:bg-green-600"}>
+                          {coupon.discount_type === "flat" ? "$ Cash" : "% Percentage"}
                         </Badge>
                       </div>
-                      <p className="text-xl text-white mb-1">
-                        {coupon.title || "Untitled Coupon"}
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase mb-1">Start:</p>
+                        <p className="text-white">{formatDate(coupon.valid_from)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase mb-1">End:</p>
+                        <p className={expired ? "text-red-400 font-semibold" : "text-white"}>
+                          {formatDate(coupon.valid_to)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="text-xs text-gray-400 uppercase mb-1">User Type:</p>
+                      <p className="text-white">
+                        {coupon.user_type_restriction === "all" && "All Users"}
+                        {coupon.user_type_restriction === "new" && "New Users Only"}
+                        {coupon.user_type_restriction === "returning" && "Returning Users Only"}
                       </p>
-                      <p className="text-sm text-gray-400">{coupon.description || "No description"}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleSelect(coupon)}
-                        className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
-                      >
-                        Edit
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button className="bg-red-500 hover:bg-red-600 text-white font-medium">
-                            Delete
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-slate-800 border-slate-700">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="text-white">Delete Coupon</AlertDialogTitle>
-                            <AlertDialogDescription className="text-gray-400">
-                              Are you sure you want to delete "{coupon.code}"? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-slate-700 text-white hover:bg-slate-600">
-                              Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDelete(coupon.id)}
-                              className="bg-red-500 hover:bg-red-600 text-white"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-4">
                     <div>
-                      <p className="text-xs text-gray-400 uppercase mb-1">Type:</p>
-                      <Badge className={coupon.discount_type === "flat" 
-                        ? "bg-orange-500 text-white hover:bg-orange-600" 
-                        : "bg-green-500 text-white hover:bg-green-600"}>
-                        {coupon.discount_type === "flat" ? "$ Cash" : "% Percentage"}
-                      </Badge>
+                      <p className="text-white font-medium mb-2">Available Discounts:</p>
+                      <div className="flex gap-2">
+                        {getDiscountBadges(coupon)}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-400 uppercase mb-1">Start:</p>
-                      <p className="text-white">{formatDate(coupon.valid_from)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-400 uppercase mb-1">End:</p>
-                      <p className="text-white">{formatDate(coupon.valid_to)}</p>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <p className="text-xs text-gray-400 uppercase mb-1">User Type:</p>
-                    <p className="text-white">
-                      {coupon.user_type_restriction === "all" && "All Users"}
-                      {coupon.user_type_restriction === "new" && "New Users Only"}
-                      {coupon.user_type_restriction === "returning" && "Returning Users Only"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-white font-medium mb-2">Available Discounts:</p>
-                    <div className="flex gap-2">
-                      {getDiscountBadges(coupon)}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {coupons.length === 0 && (
               <Card className="bg-slate-800 border-slate-700">
