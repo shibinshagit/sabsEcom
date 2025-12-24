@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, TrendingUp, Clock, CheckCircle, AlertCircle, Calendar, Users, ArrowRight } from "lucide-react"
+import { ShoppingBag, TrendingUp, Clock, CheckCircle, AlertCircle, Calendar, Users, ArrowRight, ShieldAlert } from "lucide-react"
+import { useAdminAuth } from "@/lib/contexts/admin-auth-context"
 
 interface DashboardStats {
   totalRevenueAED: number
@@ -45,6 +46,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const { user } = useAdminAuth()
 
   useEffect(() => {
     fetchStats()
@@ -100,6 +102,33 @@ export default function AdminDashboard() {
       default:
         return <Clock className="w-4 h-4" />
     }
+  }
+
+  // Check if user is super_admin
+  if (user && user.role !== 'super_admin') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card className="bg-gray-800/50 border-red-500/50 max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+                <ShieldAlert className="w-8 h-8 text-red-400" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Access Restricted</h2>
+            <p className="text-gray-400 mb-6">
+              This page is only accessible to Super Admin users. Your current role is: <span className="text-yellow-400 font-semibold capitalize">{user.role}</span>
+            </p>
+            <Button
+              onClick={() => router.push('/admin/menu')}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Go to Products Page
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (loading) {
