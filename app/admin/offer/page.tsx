@@ -1,5 +1,3 @@
-
-
 "use client"
 import { useState, useEffect } from "react"
 import { X, Plus, Trash2, Calendar, Tag, Percent, DollarSign, AlertCircle, CheckCircle, XCircle, Star } from "lucide-react"
@@ -49,10 +47,36 @@ const OfferPage = () => {
       userTypeRestriction?: string
       allowedCategories?: string[]
       priority?: number
-
     }[]
   >([])
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null)
+
+  // Helper function to check if an offer is expired
+  const isExpired = (dateString: string) => {
+    if (!dateString) return false
+    try {
+      const endDate = new Date(dateString)
+      const today = new Date()
+      return endDate < today
+    } catch {
+      return false
+    }
+  }
+
+  // Helper function to format dates
+  const formatDate = (dateString: string) => {
+    if (!dateString) return ""
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric',
+      })
+    } catch {
+      return "Invalid date"
+    }
+  }
 
   const handleAddOffer = () => {
     if (offers.length < 6) {
@@ -160,7 +184,6 @@ const OfferPage = () => {
             shopRestriction: shopRestriction || null,
             userTypeRestriction: userTypeRestriction || null,
             allowedCategories: allowedCategories.length > 0 ? allowedCategories : null,
-
           }
         }),
       })
@@ -188,7 +211,6 @@ const OfferPage = () => {
         userTypeRestriction: data.user_type_restriction || "",
         allowedCategories: data.allowed_categories ? JSON.parse(data.allowed_categories) : [],
         priority: data.priority || 0,
-
       }
 
       if (isEditing) {
@@ -306,7 +328,6 @@ const OfferPage = () => {
           userTypeRestriction: offer.user_type_restriction || "",
           allowedCategories: offer.allowed_categories ? JSON.parse(offer.allowed_categories) : [],
           priority: offer.priority || 0,
-
         }))
         setSavedOffers(parsedOffers)
       }
@@ -403,8 +424,8 @@ const OfferPage = () => {
                   <div className="text-gray-300 mb-2">
                     <strong>Type:</strong>{" "}
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ${offer.offerType === 'cash'
-                      ? 'bg-orange-600 text-white'
-                      : 'bg-green-600 text-white'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-green-600 text-white'
                       }`}>
                       {offer.offerType === 'cash' ? (
                         <>
