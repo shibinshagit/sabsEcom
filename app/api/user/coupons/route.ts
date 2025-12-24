@@ -33,6 +33,16 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userRecord = await sql`
+      SELECT id FROM users WHERE clerk_id = ${user.id} OR email = ${user.email} LIMIT 1
+    `;
+
+    if (userRecord.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    const internalUserId = userRecord[0].id;
+
     const coupons = await sql`
       SELECT
         c.id,
@@ -55,7 +65,7 @@ export async function GET() {
         u.assigned_at
       FROM welcome_coupons_used u
       JOIN welcome_coupons c ON c.id = u.welcome_coupon_id
-      WHERE u.user_id = ${user.id}
+      WHERE u.user_id = ${internalUserId}
       ORDER BY c.updated_at DESC, c.created_at DESC
     `;
 

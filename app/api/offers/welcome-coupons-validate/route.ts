@@ -77,45 +77,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-// ------------------- USER TYPE VALIDATION -------------------
-// Expected: "new", "returning", "all"
-const userTypeRestriction = coupon.user_type_restriction?.toLowerCase();
+    // ------------------- USER ID RESOLUTION -------------------
+    const userRows = await sql`
+        SELECT id FROM users WHERE clerk_id = ${userId} OR email = ${userEmail} LIMIT 1
+    `;
 
-if (userTypeRestriction !== "all") {
-  // Count orders from the orders table
-  const orderRows = await sql`
-    SELECT COUNT(*)::int AS total_orders
-    FROM orders
-    WHERE user_id = ${userId}
-  `;
-
-  const totalOrders = orderRows[0]?.total_orders ?? 0;
-  const isNewUser = totalOrders === 0;
-  const isReturningUser = totalOrders > 0;
-
-  // Only for NEW users
-  if (userTypeRestriction === "new" && !isNewUser) {
-    return NextResponse.json(
-      { valid: false, error: "This coupon is only for new users" },
-      { status: 400 }
-    );
-  }
-
-  // Only for RETURNING users
-  if (userTypeRestriction === "returning" && !isReturningUser) {
-    return NextResponse.json(
-      { valid: false, error: "This coupon is only for returning users" },
-      { status: 400 }
-    );
-  }
-}
+    if (userRows.length === 0) {
+      return NextResponse.json(
+        { valid: false, error: "User record not found in database" },
+        { status: 400 }
+      );
+    }
+    const internalUserId = userRows[0].id;
 
 
-    // ------------------- USAGE CHECK (same coupon) -------------------
+    // ------------------- USER TYPE VALIDATION -------------------
+    // Expected: "new", "returning", "all"
+    const userTypeRestriction = coupon.user_type_restriction?.toLowerCase();
+
+    if (userTypeRestriction !== "all") {
+      // Count orders from the orders table
+      const orderRows = await sql`
+        SELECT COUNT(*)::int AS total_orders
+        FROM orders
+        WHERE 
+          (user_id IS NOT NULL AND user_id::text = ${internalUserId.toString()})
+          OR 
+          (clerk_user_id IS NOT NULL AND clerk_user_id = ${userId})
+      `;
+
+      const totalOrders = orderRows[0]?.total_orders ?? 0;
+      const isNewUser = totalOrders === 0;
+      const isReturningUser = totalOrders > 0;
+
+      // Only for NEW users
+      if (userTypeRestriction === "new" && !isNewUser) {
+        return NextResponse.json(
+          { valid: false, error: "This coupon is only for new users" },
+          { status: 400 }
+        );
+      }
+
+      // Only for RETURNING users
+      if (userTypeRestriction === "returning" && !isReturningUser) {
+        return NextResponse.json(
+          { valid: false, error: "This coupon is only for returning users" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ------------------- COUPON USAGE CHECK  -------------------
     const used = await sql`
       SELECT id, is_redeemed, redeemed_at
       FROM welcome_coupons_used
-      WHERE user_id = ${userId}
+      WHERE user_id = ${internalUserId}
         AND welcome_coupon_id = ${coupon.id}
       LIMIT 1
     `;
@@ -203,6 +219,7 @@ if (userTypeRestriction !== "all") {
       message: `Coupon applied. You saved ${symbol}${discountAmount.toFixed(2)}`,
     });
   } catch (err) {
+    console.error("Welcome coupon validation error:", err);
     return NextResponse.json(
       {
         valid: false,

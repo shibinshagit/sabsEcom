@@ -108,7 +108,7 @@ export default function OrderPage() {
     state: "",
     country: selectedCurrency === 'AED' ? 'UAE' : 'India'
   })
-  
+
   const [couponCode, setCouponCode] = useState("")
   const [isCouponFieldOpen, setIsCouponFieldOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState(selectedCurrency === 'AED' ? "cod" : "upi")
@@ -142,7 +142,7 @@ export default function OrderPage() {
             const availableCouponCodes = data
               .filter((coupon: any) => !coupon.is_redeemed)
               .map((coupon: any) => coupon.code.toUpperCase())
-            
+
             setUserAvailableCoupons(availableCouponCodes)
             console.log('User available coupons loaded:', availableCouponCodes)
           }
@@ -263,17 +263,17 @@ export default function OrderPage() {
   useEffect(() => {
     if (cart.length > 0) {
       dispatch(recalculateTotal(selectedCurrency))
-      
+
       // Mark that user has interacted with cart (after initial load)
       if (!isLoadingFromStorage) {
         setHasUserInteracted(true)
       }
-      
+
       // Immediately recalculate discount to prevent negative totals
       if (appliedCoupon) {
         const cartTotal = calculateCartTotal()
         let newDiscount = 0
-        
+
         if (appliedCoupon.type === 'offer') {
           const offerData = appliedCoupon.data as OfferCouponData
           if (offerData.type === "cash") {
@@ -293,7 +293,7 @@ export default function OrderPage() {
             }
           }
         }
-        
+
         // Cap discount at cart total to prevent negative values
         newDiscount = Math.min(newDiscount, cartTotal)
         setDiscountAmount(newDiscount)
@@ -315,7 +315,7 @@ export default function OrderPage() {
     if (savedCoupon) {
       try {
         const couponData = JSON.parse(savedCoupon)
-        
+
         // Check if it's an offer coupon (old format) or welcome coupon
         if (couponData.type) {
           // New format with type
@@ -353,7 +353,7 @@ export default function OrderPage() {
         toast.error('Failed to load saved coupon', { position: 'top-center' })
       }
     }
-    
+
     // Set loading from storage to false after initial load
     setTimeout(() => {
       setIsLoadingFromStorage(false)
@@ -366,22 +366,22 @@ export default function OrderPage() {
       const timeoutId = setTimeout(async () => {
         try {
           const orderTotal = calculateCartTotal()
-          
+
           // Create a local reference to avoid stale closure
           const currentAppliedCoupon = appliedCoupon
-          
+
           if (currentAppliedCoupon.type === 'offer') {
             // Re-validate offer coupon
             const offerData = currentAppliedCoupon.data as OfferCouponData
-            
+
             let currentShop = localStorage.getItem('currentShop')
             if (!currentShop) {
-              const isStyleShop = window.location.href.includes('style') || 
-                                 document.title.includes('Style') ||
-                                 document.querySelector('title')?.textContent?.includes('Style')
+              const isStyleShop = window.location.href.includes('style') ||
+                document.title.includes('Style') ||
+                document.querySelector('title')?.textContent?.includes('Style')
               currentShop = isStyleShop ? 'B' : 'B'
             }
-            
+
             const response = await fetch('/api/offers/validate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -404,19 +404,19 @@ export default function OrderPage() {
 
             if (!response.ok) {
               const result = await response.json()
-              
+
               setAppliedCoupon(null)
               setCouponCode("")
               setDiscountAmount(0)
               setCouponError("")
               localStorage.removeItem("appliedCoupon")
-              
+
               if (isLoadingFromStorage || !hasUserInteracted) {
                 toast.error("Coupon removed", { position: 'top-center', duration: 3000 })
               } else {
                 const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
                 let toastMessage = "Coupon removed: "
-                
+
                 if (result.error && typeof result.error === 'string') {
                   if (result.error.includes("Maximum order value")) {
                     toastMessage += `Order total exceeds the maximum allowed (${result.maxAmount} ${currencySymbol}).`
@@ -438,7 +438,7 @@ export default function OrderPage() {
                 } else {
                   toastMessage += "Cart changes made the coupon invalid."
                 }
-                
+
                 toast.error(toastMessage, { position: 'top-center', duration: 4000 })
               }
             } else {
@@ -447,7 +447,7 @@ export default function OrderPage() {
           } else if (currentAppliedCoupon.type === 'welcome') {
             // Re-validate welcome coupon
             const welcomeData = currentAppliedCoupon.data as WelcomeCouponData
-            
+
             if (!isAuthenticated || !user?.id) {
               // User logged out or session expired
               setAppliedCoupon(null)
@@ -455,15 +455,15 @@ export default function OrderPage() {
               setDiscountAmount(0)
               setCouponError("")
               localStorage.removeItem("appliedCoupon")
-              toast.error("Welcome coupons require login. Please login again.", { 
-                position: 'top-center', 
-                duration: 3000 
+              toast.error("Welcome coupons require login. Please login again.", {
+                position: 'top-center',
+                duration: 3000
               })
               return
             }
-            
+
             console.log('Re-validating welcome coupon:', welcomeData.code)
-            
+
             const response = await fetch('/api/offers/welcome-coupons-validate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -478,18 +478,18 @@ export default function OrderPage() {
 
             if (!response.ok) {
               const result = await response.json()
-              
+
               setAppliedCoupon(null)
               setCouponCode("")
               setDiscountAmount(0)
               setCouponError("")
               localStorage.removeItem("appliedCoupon")
-              
+
               if (isLoadingFromStorage || !hasUserInteracted) {
                 toast.error("Coupon removed", { position: 'top-center', duration: 3000 })
               } else {
                 let toastMessage = "Coupon removed: "
-                
+
                 if (result.error && typeof result.error === 'string') {
                   if (result.error.includes("minimum purchase")) {
                     const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
@@ -505,7 +505,7 @@ export default function OrderPage() {
                 } else {
                   toastMessage += "Cart changes made the coupon invalid."
                 }
-                
+
                 toast.error(toastMessage, { position: 'top-center', duration: 4000 })
               }
             } else {
@@ -527,7 +527,7 @@ export default function OrderPage() {
 
   const calculateDiscount = (couponData: OfferCouponData | WelcomeCouponData, subtotal: number, type: AppliedCouponType) => {
     let discount = 0
-    
+
     if (type === 'offer') {
       const offerData = couponData as OfferCouponData
       if (offerData.type === "cash") {
@@ -547,230 +547,295 @@ export default function OrderPage() {
         }
       }
     }
-    
+
     setDiscountAmount(discount)
   }
 
-const handleApplyCoupon = async () => {
-  if (!couponCode.trim()) {
-    setCouponError("Please enter a coupon code")
-    toast.error('Please enter a coupon code', { position: 'top-center' })
-    return
-  }
-  
-  setIsApplyingCoupon(true)
-  setCouponError("")
-  
-  try {
-    const orderTotal = calculateCartTotal()
-    const upperCaseCouponCode = couponCode.toUpperCase().trim()
-    
-    console.log('Trying to apply coupon:', upperCaseCouponCode)
-    
-    // Check if this looks like a welcome coupon (based on user's available coupons or common patterns)
-    const isWelcomeCoupon = isAuthenticated && userAvailableCoupons.includes(upperCaseCouponCode)
-    
-    // Determine which endpoint to use based on coupon characteristics
-    if (isAuthenticated && user?.id && isWelcomeCoupon) {
-      // This looks like a welcome coupon, validate with welcome endpoint
-      console.log('Validating as welcome coupon:', upperCaseCouponCode)
-      
-      try {
-        const welcomeResponse = await fetch('/api/offers/welcome-coupons-validate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user.id,
-            userEmail: user.email,
-            couponCode: upperCaseCouponCode,
-            orderTotal,
-            currency: selectedCurrency
-          })
-        })
-        
-        if (welcomeResponse.ok) {
-          const result = await welcomeResponse.json()
-          
-          if (result.valid && result.coupon) {
-            console.log('Welcome coupon validation successful:', result.coupon.code)
-            
-            const welcomeCoupon: WelcomeCouponData = {
-              id: result.coupon.id,
-              code: result.coupon.code,
-              title: result.coupon.title,
-              description: result.coupon.description,
-              discountType: result.coupon.discountType,
-              discountValue: result.coupon.discountValue,
-              discountAmount: result.coupon.discountAmount,
-              minPurchase: result.coupon.minPurchase,
-              maxDiscount: result.coupon.maxCap,
-              validFrom: result.coupon.validFrom,
-              validTo: result.coupon.validTo,
-              userTypeRestriction: result.coupon.userTypeRestriction,
-              message: result.message,
-              minimumPurchaseINR: result.coupon.minimumPurchaseINR,
-              minimumPurchaseAED: result.coupon.minimumPurchaseAED,
-              maxPurchaseINR: result.coupon.maxPurchaseINR,
-              maxPurchaseAED: result.coupon.maxPurchaseAED
-            }
-            
-            setAppliedCoupon({ type: 'welcome', data: welcomeCoupon })
-            setDiscountAmount(result.coupon.discountAmount)
-            localStorage.setItem("appliedCoupon", JSON.stringify({
-              type: 'welcome',
-              data: welcomeCoupon
-            }))
-            
-            toast.success(`coupon ${welcomeCoupon.code} applied! ${result.message}`, { 
-              position: 'top-center' 
-            })
-            setCouponError("")
-            setIsApplyingCoupon(false)
-            return
-          } else {
-            setCouponError(result.error || "Invalid  coupon")
-            toast.error(result.error || 'Invalid  coupon', { position: 'top-center', duration: 4000 })
-            setIsApplyingCoupon(false)
-            return
-          }
-        } else {
-          // Welcome coupon validation failed, try regular offer validation as fallback
-          console.log(' coupon validation failed, trying regular offer as fallback')
-          // Continue to regular offer validation below
-        }
-      } catch (welcomeError) {
-        console.error("Error in  coupon validation:", welcomeError)
-        console.log('Welcome coupon endpoint error, trying regular offer validation')
-        // Continue to regular offer validation below
-      }
-    }
-    
-    // For all other cases (non-authenticated, non-welcome coupons, or welcome validation failed)
-    // Use regular offer validation endpoint
-    console.log('Validating as regular offer coupon:', upperCaseCouponCode)
-    
-    let currentShop = localStorage.getItem('currentShop')
-    if (!currentShop) {
-      const isStyleShop = window.location.href.includes('style') || 
-                         document.title.includes('Style') ||
-                         document.querySelector('title')?.textContent?.includes('Style')
-      currentShop = isStyleShop ? 'B' : 'B'
-    }
-    
-    const response = await fetch('/api/offers/validate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        offerCode: upperCaseCouponCode,
-        orderTotal,
-        shopId: currentShop,
-        userType: user?.id ? "returning" : "new",
-        userId: user?.id || "guest",
-        currency: selectedCurrency,
-        cartItems: validCartItems.map((item: any) => ({
-          id: item.menuItem?.id || item.id,
-          categoryId: item.menuItem?.category_id || item.category_id || item.categoryId,
-          category_id: item.menuItem?.category_id || item.category_id || item.categoryId,
-          quantity: item.quantity,
-          price: getCurrencySpecificPrice(item.menuItem, item.selected_variant)
-        }))
-      })
-    })
-
-    if (!response.ok) {
-      const result = await response.json()
-      let errorMessage = result.error || "Invalid coupon code"
-      
-      if (result.error) {
-        if (result.error.includes("only valid for Beauty Shop")) {
-          errorMessage = "This offer is only valid for Beauty Shop. Switch to Beauty Shop to use this offer."
-        } else if (result.error.includes("only valid for Style Shop")) {
-          errorMessage = "This offer is only valid for Style Shop. Switch to Style Shop to use this offer."
-        } else if (result.error.includes("new customers")) {
-          errorMessage = "This offer is exclusively for new customers."
-        } else if (result.error.includes("already used this offer")) {
-          errorMessage = `${result.error}. Each customer can only use this offer ${result.usageLimit} time(s).`
-        } else if (result.error.includes("Minimum order value")) {
-          const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
-          const amountNeeded = (result.requiredAmount - orderTotal).toFixed(2)
-          errorMessage = `${result.error}. Add ${amountNeeded} ${currencySymbol} more to your cart.`
-        } else if (result.error.includes("reached its usage limit")) {
-          errorMessage = "This offer has reached its usage limit."
-        } else if (result.error.includes("not valid for the products")) {
-          errorMessage = "Some items in your cart are not eligible for this offer."
-        } else if (result.error.includes("cannot be applied to some products")) {
-          errorMessage = "Some products are excluded from this offer."
-        }
-      }
-      
-      setCouponError(errorMessage)
-      toast.error(errorMessage, { position: 'top-center', duration: 4000 })
-      setIsApplyingCoupon(false)
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Please enter a coupon code")
+      toast.error('Please enter a coupon code', { position: 'top-center' })
       return
     }
 
-    const result = await response.json()
-    if (result.valid && result.offer) {
-      const validCoupon: OfferCouponData = {
-        code: result.offer.code,
-        discount: result.offer.value,
-        type: result.offer.type,
-        title: result.offer.title,
-        offerTitle: result.offer.title,
-        offerId: result.offer.id,
-        timestamp: Date.now(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        minimumOrderValue: result.offer.restrictions?.minimumOrderValue,
-        maximumOrderValue: result.offer.restrictions?.maximumOrderValue,
-        minimumOrderValueAED: result.offer.restrictions?.minimumOrderValueAED,
-        minimumOrderValueINR: result.offer.restrictions?.minimumOrderValueINR,
-        maximumOrderValueAED: result.offer.restrictions?.maximumOrderValueAED,
-        maximumOrderValueINR: result.offer.restrictions?.maximumOrderValueINR,
-        usageLimitPerUser: result.offer.restrictions?.usageLimitPerUser,
-        totalUsageLimit: result.offer.restrictions?.totalUsageLimit,
-        allowedCategories: result.offer.restrictions?.allowedCategories,
-        excludedCategories: result.offer.restrictions?.excludedCategories,
-        shopRestriction: result.offer.restrictions?.shopRestriction,
-        userTypeRestriction: result.offer.restrictions?.userTypeRestriction
+    setIsApplyingCoupon(true)
+    setCouponError("")
+
+    try {
+      const orderTotal = calculateCartTotal()
+      const upperCaseCouponCode = couponCode.toUpperCase().trim()
+
+      console.log('Trying to apply coupon:', upperCaseCouponCode)
+
+      // Check if this looks like a welcome coupon (based on user's available coupons or common patterns)
+      const isWelcomeCoupon = isAuthenticated && userAvailableCoupons.includes(upperCaseCouponCode)
+
+      // Determine which endpoint to use based on coupon characteristics
+      if (isAuthenticated && user?.id && isWelcomeCoupon) {
+        // This looks like a welcome coupon, validate with welcome endpoint
+        console.log('Validating as welcome coupon:', upperCaseCouponCode)
+
+        try {
+          const welcomeResponse = await fetch('/api/offers/welcome-coupons-validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.id,
+              userEmail: user.email,
+              couponCode: upperCaseCouponCode,
+              orderTotal,
+              currency: selectedCurrency
+            })
+          })
+
+          if (welcomeResponse.ok) {
+            const result = await welcomeResponse.json()
+
+            if (result.valid && result.coupon) {
+              console.log('Welcome coupon validation successful:', result.coupon.code)
+
+              const welcomeCoupon: WelcomeCouponData = {
+                id: result.coupon.id,
+                code: result.coupon.code,
+                title: result.coupon.title,
+                description: result.coupon.description,
+                discountType: result.coupon.discountType,
+                discountValue: result.coupon.discountValue,
+                discountAmount: result.coupon.discountAmount,
+                minPurchase: result.coupon.minPurchase,
+                maxDiscount: result.coupon.maxCap,
+                validFrom: result.coupon.validFrom,
+                validTo: result.coupon.validTo,
+                userTypeRestriction: result.coupon.userTypeRestriction,
+                message: result.message,
+                minimumPurchaseINR: result.coupon.minimumPurchaseINR,
+                minimumPurchaseAED: result.coupon.minimumPurchaseAED,
+                maxPurchaseINR: result.coupon.maxPurchaseINR,
+                maxPurchaseAED: result.coupon.maxPurchaseAED
+              }
+
+              setAppliedCoupon({ type: 'welcome', data: welcomeCoupon })
+              setDiscountAmount(result.coupon.discountAmount)
+              localStorage.setItem("appliedCoupon", JSON.stringify({
+                type: 'welcome',
+                data: welcomeCoupon
+              }))
+
+              toast.success(`coupon ${welcomeCoupon.code} applied! ${result.message}`, {
+                position: 'top-center'
+              })
+              setCouponError("")
+              setIsApplyingCoupon(false)
+              return
+            } else {
+              setCouponError(result.error || "Invalid  coupon")
+              toast.error(result.error || 'Invalid  coupon', { position: 'top-center', duration: 4000 })
+              setIsApplyingCoupon(false)
+              return
+            }
+          } else {
+            // Welcome coupon validation failed, try regular offer validation as fallback
+            console.log(' coupon validation failed, trying regular offer as fallback')
+            // Continue to regular offer validation below
+          }
+        } catch (welcomeError) {
+          console.error("Error in  coupon validation:", welcomeError)
+          console.log('Welcome coupon endpoint error, trying regular offer validation')
+          // Continue to regular offer validation below
+        }
       }
 
-      setAppliedCoupon({ type: 'offer', data: validCoupon })
-      setDiscountAmount(result.offer.discountAmount)
-      localStorage.setItem("appliedCoupon", JSON.stringify({
-        type: 'offer',
-        data: validCoupon
-      }))
-      
-      toast.success(`Offer ${validCoupon.code} applied! Saved ${result.offer.discountAmount.toFixed(2)} ${selectedCurrency}`, { 
-        position: 'top-center' 
+      // For all other cases (non-authenticated, non-welcome coupons, or welcome validation failed)
+      // Use regular offer validation endpoint
+      console.log('Validating as regular offer coupon:', upperCaseCouponCode)
+
+      let currentShop = localStorage.getItem('currentShop')
+      if (!currentShop) {
+        const isStyleShop = window.location.href.includes('style') ||
+          document.title.includes('Style') ||
+          document.querySelector('title')?.textContent?.includes('Style')
+        currentShop = isStyleShop ? 'B' : 'B'
+      }
+
+      const response = await fetch('/api/offers/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          offerCode: upperCaseCouponCode,
+          orderTotal,
+          shopId: currentShop,
+          userType: user?.id ? "returning" : "new",
+          userId: user?.id || "guest",
+          currency: selectedCurrency,
+          cartItems: validCartItems.map((item: any) => ({
+            id: item.menuItem?.id || item.id,
+            categoryId: item.menuItem?.category_id || item.category_id || item.categoryId,
+            category_id: item.menuItem?.category_id || item.category_id || item.categoryId,
+            quantity: item.quantity,
+            price: getCurrencySpecificPrice(item.menuItem, item.selected_variant)
+          }))
+        })
       })
-      setCouponError("")
+
+      if (!response.ok) {
+        const result = await response.json()
+        let errorMessage = result.error || "Invalid coupon code"
+
+        // FALLBACK: If regular validation failed with "Invalid offer code" (or generic 400),
+        // and we haven't tried welcome validation yet, try it now/
+        // This handles cases where userAvailableCoupons list might be stale or incomplete.
+        if (!isWelcomeCoupon && isAuthenticated && user?.id &&
+          (errorMessage === "Invalid offer code" || errorMessage === "Offer code is required")) {
+          console.log('Regular validation failed, attempting welcome coupon fallback for:', upperCaseCouponCode)
+
+          try {
+            const welcomeResponse = await fetch('/api/offers/welcome-coupons-validate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: user.id,
+                userEmail: user.email,
+                couponCode: upperCaseCouponCode,
+                orderTotal,
+                currency: selectedCurrency
+              })
+            })
+
+            if (welcomeResponse.ok) {
+              const welcomeResult = await welcomeResponse.json()
+              if (welcomeResult.valid && welcomeResult.coupon) {
+                console.log('Fallback welcome validation successful')
+
+                const welcomeCoupon: WelcomeCouponData = {
+                  id: welcomeResult.coupon.id,
+                  code: welcomeResult.coupon.code,
+                  title: welcomeResult.coupon.title,
+                  description: welcomeResult.coupon.description,
+                  discountType: welcomeResult.coupon.discountType,
+                  discountValue: welcomeResult.coupon.discountValue,
+                  discountAmount: welcomeResult.coupon.discountAmount,
+                  minPurchase: welcomeResult.coupon.minPurchase,
+                  maxDiscount: welcomeResult.coupon.maxCap,
+                  validFrom: welcomeResult.coupon.validFrom,
+                  validTo: welcomeResult.coupon.validTo,
+                  userTypeRestriction: welcomeResult.coupon.userTypeRestriction,
+                  message: welcomeResult.message,
+                  minimumPurchaseINR: welcomeResult.coupon.minimumPurchaseINR,
+                  minimumPurchaseAED: welcomeResult.coupon.minimumPurchaseAED,
+                  maxPurchaseINR: welcomeResult.coupon.maxPurchaseINR,
+                  maxPurchaseAED: welcomeResult.coupon.maxPurchaseAED
+                }
+
+                setAppliedCoupon({ type: 'welcome', data: welcomeCoupon })
+                setDiscountAmount(welcomeResult.coupon.discountAmount)
+                localStorage.setItem("appliedCoupon", JSON.stringify({
+                  type: 'welcome',
+                  data: welcomeCoupon
+                }))
+
+                toast.success(`Coupon ${welcomeCoupon.code} applied! ${welcomeResult.message}`, {
+                  position: 'top-center'
+                })
+                setCouponError("")
+                setIsApplyingCoupon(false)
+                return
+              }
+            }
+          } catch (fallbackError) {
+            console.error("Fallback welcome validation error:", fallbackError)
+          }
+        }
+
+        if (result.error) {
+          if (result.error.includes("only valid for Beauty Shop")) {
+            errorMessage = "This offer is only valid for Beauty Shop. Switch to Beauty Shop to use this offer."
+          } else if (result.error.includes("only valid for Style Shop")) {
+            errorMessage = "This offer is only valid for Style Shop. Switch to Style Shop to use this offer."
+          } else if (result.error.includes("new customers")) {
+            errorMessage = "This offer is exclusively for new customers."
+          } else if (result.error.includes("already used this offer")) {
+            errorMessage = `${result.error}. Each customer can only use this offer ${result.usageLimit} time(s).`
+          } else if (result.error.includes("Minimum order value")) {
+            const currencySymbol = selectedCurrency === 'AED' ? 'AED' : '₹'
+            const amountNeeded = (result.requiredAmount - orderTotal).toFixed(2)
+            errorMessage = `${result.error}. Add ${amountNeeded} ${currencySymbol} more to your cart.`
+          } else if (result.error.includes("reached its usage limit")) {
+            errorMessage = "This offer has reached its usage limit."
+          } else if (result.error.includes("not valid for the products")) {
+            errorMessage = "Some items in your cart are not eligible for this offer."
+          } else if (result.error.includes("cannot be applied to some products")) {
+            errorMessage = "Some products are excluded from this offer."
+          }
+        }
+
+        setCouponError(errorMessage)
+        toast.error(errorMessage, { position: 'top-center', duration: 4000 })
+        setIsApplyingCoupon(false)
+        return
+      }
+
+      const result = await response.json()
+      if (result.valid && result.offer) {
+        const validCoupon: OfferCouponData = {
+          code: result.offer.code,
+          discount: result.offer.value,
+          type: result.offer.type,
+          title: result.offer.title,
+          offerTitle: result.offer.title,
+          offerId: result.offer.id,
+          timestamp: Date.now(),
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          minimumOrderValue: result.offer.restrictions?.minimumOrderValue,
+          maximumOrderValue: result.offer.restrictions?.maximumOrderValue,
+          minimumOrderValueAED: result.offer.restrictions?.minimumOrderValueAED,
+          minimumOrderValueINR: result.offer.restrictions?.minimumOrderValueINR,
+          maximumOrderValueAED: result.offer.restrictions?.maximumOrderValueAED,
+          maximumOrderValueINR: result.offer.restrictions?.maximumOrderValueINR,
+          usageLimitPerUser: result.offer.restrictions?.usageLimitPerUser,
+          totalUsageLimit: result.offer.restrictions?.totalUsageLimit,
+          allowedCategories: result.offer.restrictions?.allowedCategories,
+          excludedCategories: result.offer.restrictions?.excludedCategories,
+          shopRestriction: result.offer.restrictions?.shopRestriction,
+          userTypeRestriction: result.offer.restrictions?.userTypeRestriction
+        }
+
+        setAppliedCoupon({ type: 'offer', data: validCoupon })
+        setDiscountAmount(result.offer.discountAmount)
+        localStorage.setItem("appliedCoupon", JSON.stringify({
+          type: 'offer',
+          data: validCoupon
+        }))
+
+        toast.success(`Offer ${validCoupon.code} applied! Saved ${result.offer.discountAmount.toFixed(2)} ${selectedCurrency}`, {
+          position: 'top-center'
+        })
+        setCouponError("")
+      }
+    } catch (error) {
+      console.error("Error applying coupon:", error)
+      setCouponError("Failed to apply coupon. Please try again.")
+      toast.error('Failed to apply coupon', { position: 'top-center' })
+    } finally {
+      setIsApplyingCoupon(false)
     }
-  } catch (error) {
-    console.error("Error applying coupon:", error)
-    setCouponError("Failed to apply coupon. Please try again.")
-    toast.error('Failed to apply coupon', { position: 'top-center' })
-  } finally {
-    setIsApplyingCoupon(false)
   }
-}
 
 
   const handleRemoveCoupon = () => {
     if (appliedCoupon) {
       const removedCouponType = appliedCoupon.type
-      const removedCouponCode = appliedCoupon.type === 'offer' 
-        ? (appliedCoupon.data as OfferCouponData).code 
+      const removedCouponCode = appliedCoupon.type === 'offer'
+        ? (appliedCoupon.data as OfferCouponData).code
         : (appliedCoupon.data as WelcomeCouponData).code
-        
+
       setAppliedCoupon(null)
       setDiscountAmount(0)
       setCouponCode("")
       setCouponError("")
       localStorage.removeItem("appliedCoupon")
-      
-      toast.success(`${removedCouponType === 'welcome' ? 'coupon' : 'Offer'} ${removedCouponCode} removed`, { 
-        position: 'top-center' 
+
+      toast.success(`${removedCouponType === 'welcome' ? 'coupon' : 'Offer'} ${removedCouponCode} removed`, {
+        position: 'top-center'
       })
     }
   }
@@ -867,10 +932,10 @@ const handleApplyCoupon = async () => {
         productImageUrl: item.menuItem.image_url || item.menuItem.image_urls?.[0] || null,
       })),
     }
-    
+
     try {
       const result = await dispatch(submitOrder(orderData)).unwrap()
-      
+
       // Track coupon usage ONLY after successful order placement
       if (appliedCoupon && user?.id) {
         try {
@@ -910,23 +975,23 @@ const handleApplyCoupon = async () => {
           console.error("Error tracking coupon usage after order:", trackError)
         }
       }
-      
+
       // Clear coupon state immediately to prevent revalidation on empty cart
       if (appliedCoupon) {
         const removedCouponType = appliedCoupon.type
-        const removedCouponCode = appliedCoupon.type === 'offer' 
-          ? (appliedCoupon.data as OfferCouponData).code 
+        const removedCouponCode = appliedCoupon.type === 'offer'
+          ? (appliedCoupon.data as OfferCouponData).code
           : (appliedCoupon.data as WelcomeCouponData).code
-          
+
         setAppliedCoupon(null)
         setCouponCode("")
         setDiscountAmount(0)
         setCouponError("")
         localStorage.removeItem("appliedCoupon")
-        
+
         console.log(`Cleared ${removedCouponType} coupon: ${removedCouponCode} after successful order`)
       }
-      
+
       await clearCartAfterOrder()
       toast.success(`Order placed successfully! Order Number: ${result.orderNumber || result.orderId}`, { position: 'top-center' })
       router.push("/orders")
@@ -1142,7 +1207,7 @@ const handleApplyCoupon = async () => {
 
     let message = `*SABS ONLINE ORDER* ${orderNumber}\n`
     message += `═════════════════\n\n`
-    
+
     message += `*CUSTOMER INFO*\n`
     message += `Name: ${customerName === "Customer" ? "_Please provide your name_" : customerName}\n`
     if (customerPhone) message += `Phone: ${customerPhone}\n`
@@ -1169,10 +1234,10 @@ const handleApplyCoupon = async () => {
       const variantName = item.selected_variant?.name || ''
       const itemName = item.menuItem.name
       const priceText = selectedCurrency === 'AED' ? `AED ${itemPrice.toFixed(2)}` : `Rs ${itemPrice.toFixed(2)}`
-      
+
       const stockWarning = item.selected_variant && item.selected_variant.stock_quantity <= 5 ?
         (item.selected_variant.stock_quantity === 0 ? ' OUT OF STOCK' : ` ${item.selected_variant.stock_quantity} left`) : ''
-      
+
       const formattedVariant = variantName && variantName !== 'Default' ? ` (${variantName})` : ''
       message += `${index + 1}. *${itemName}${formattedVariant}*\n`
       message += `    Qty: ${item.quantity} x ${priceText}${stockWarning}\n`
@@ -1182,22 +1247,22 @@ const handleApplyCoupon = async () => {
     message += `*BILL SUMMARY*\n`
     const subtotalText = selectedCurrency === 'AED' ? `AED ${cartTotal.toFixed(2)}` : `Rs ${cartTotal.toFixed(2)}`
     message += `Items Total: ${subtotalText}\n`
-    
+
     if (deliveryFee > 0) {
       const deliveryText = selectedCurrency === 'AED' ? `AED ${deliveryFee.toFixed(2)}` : `Rs ${deliveryFee.toFixed(2)}`
       message += `Delivery: ${deliveryText}\n`
     } else if (orderType === "delivery") {
       message += `Delivery: FREE!\n`
     }
-    
+
     if (discountAmount > 0 && appliedCoupon) {
       const discountText = selectedCurrency === 'AED' ? `AED ${discountAmount.toFixed(2)}` : `Rs ${discountAmount.toFixed(2)}`
-      const couponCode = appliedCoupon.type === 'offer' 
-        ? (appliedCoupon.data as OfferCouponData).code 
+      const couponCode = appliedCoupon.type === 'offer'
+        ? (appliedCoupon.data as OfferCouponData).code
         : (appliedCoupon.data as WelcomeCouponData).code
       message += `Discount (${couponCode}): -${discountText}\n`
     }
-    
+
     message += `═════════════════\n`
     message += `*TOTAL: ${totalText}*\n`
     message += `═════════════════\n\n`
@@ -1218,18 +1283,18 @@ const handleApplyCoupon = async () => {
     message += `When will this be dispatched?\n\n`
     message += `Thank you!`
     const phoneNumber = WHATSAPP_ORDER_NUMBER || "+919037888193"
-    
+
     if (!phoneNumber) {
       toast.error('WhatsApp number not configured. Please contact support.', { position: 'top-center' })
       return
     }
-    
+
     const cleanPhoneNumber = phoneNumber.replace(/[^\d+]/g, '')
     const whatsappUrl = `https://wa.me/${cleanPhoneNumber}`
-    
+
     const url = new URL(whatsappUrl)
     url.searchParams.set('text', message)
-    
+
     try {
       window.open(url.toString(), "_blank")
       toast.success('Order sent via WhatsApp! Check your WhatsApp app.', { position: 'top-center' })
@@ -1388,7 +1453,7 @@ const handleApplyCoupon = async () => {
               <Card className="border-0 shadow-lg rounded-2xl bg-white">
                 <CardHeader>
                   <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-                    Available Items 
+                    Available Items
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1438,7 +1503,7 @@ const handleApplyCoupon = async () => {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                             <div className="flex items-center gap-2">
                               <span className="text-sm text-gray-600 font-medium">Qty:</span>
@@ -1466,7 +1531,7 @@ const handleApplyCoupon = async () => {
                                 </Button>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
                               <div className="text-right">
                                 <p className="font-bold text-lg text-orange-600">
@@ -1485,7 +1550,7 @@ const handleApplyCoupon = async () => {
                               </Button>
                             </div>
                           </div>
-                          
+
                           {item.selected_variant && item.selected_variant.stock_quantity <= 5 && (
                             <div className="flex items-center gap-2 bg-orange-50 p-2 rounded-lg mt-2">
                               <AlertTriangle className="w-4 h-4 text-orange-500" />
@@ -1538,7 +1603,7 @@ const handleApplyCoupon = async () => {
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <span className="text-sm text-gray-600 font-medium">Quantity:</span>
@@ -1566,7 +1631,7 @@ const handleApplyCoupon = async () => {
                                   </Button>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center gap-4">
                                 <div className="text-right">
                                   <p className="font-bold text-xl text-orange-600">
@@ -1585,7 +1650,7 @@ const handleApplyCoupon = async () => {
                                 </Button>
                               </div>
                             </div>
-                            
+
                             {item.selected_variant && item.selected_variant.stock_quantity <= 5 && (
                               <div className="flex items-center gap-2 bg-orange-50 p-2 rounded-lg">
                                 <AlertTriangle className="w-4 h-4 text-orange-500" />
@@ -1951,108 +2016,107 @@ const handleApplyCoupon = async () => {
                         </div>
                       )}
                       {deliveryMessage && (
-                         <div className={`p-3 rounded-lg text-sm ${
-                           deliveryMessage.type === 'success' 
-                             ? 'bg-green-50 border border-green-200 text-green-800' 
-                             : deliveryMessage.type === 'info'
-                             ? 'bg-blue-50 border border-blue-200 text-blue-800'
-                             : 'bg-orange-50 border border-orange-200 text-orange-800'
-                         }`}>
-                           <div className="flex items-start gap-2">
-                             <span className="text-lg">{deliveryMessage.icon}</span>
-                             <span className="flex-1">{deliveryMessage.message}</span>
-                           </div>
-                         </div>
-                       )}
-                       {appliedCoupon && discountAmount > 0 && (
-                         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 shadow-sm">
-                           <div className="flex items-center justify-between mb-3">
-                             <div className="flex items-center gap-2">
-                               <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                                 <Tag className="w-4 h-4 text-green-600" />
-                               </div>
-                               <div>
-                                 <span className="font-bold text-green-800 text-sm">
-                                   {appliedCoupon.type === 'welcome' ? 'Coupon' : 'Offer'} Applied
-                                 </span>
-                                 <div className="text-xs text-green-600 font-mono">
-                                   {appliedCoupon.type === 'offer' 
-                                     ? (appliedCoupon.data as OfferCouponData).code 
-                                     : (appliedCoupon.data as WelcomeCouponData).code}
-                                 </div>
-                               </div>
-                             </div>
-                             <Button
-                               onClick={handleRemoveCoupon}
-                               variant="ghost"
-                               size="sm"
-                               className="text-green-600 hover:text-red-600 hover:bg-red-50 rounded-full p-1.5 h-auto transition-colors"
-                               aria-label="Remove coupon"
-                             >
-                               <XCircle className="w-4 h-4" />
-                             </Button>
-                           </div>
-                           
-                           <div className="bg-white/60 rounded-lg p-3 mb-3">
-                             <div className="flex justify-between items-center">
-                               <span className="text-sm text-green-700 font-medium">
-                                 {appliedCoupon.type === 'offer' 
-                                   ? (appliedCoupon.data as OfferCouponData).title
-                                   : (appliedCoupon.data as WelcomeCouponData).title}
-                               </span>
-                               <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">
-                                 APPLIED
-                               </span>
-                             </div>
-                             {appliedCoupon.type === 'welcome' && (
-                               <div className="text-xs text-green-600 mt-1">
-                                 {(appliedCoupon.data as WelcomeCouponData).discountType === 'flat' 
-                                   ? `${selectedCurrency} ${(appliedCoupon.data as WelcomeCouponData).discountValue} off`
-                                   : `${(appliedCoupon.data as WelcomeCouponData).discountValue}% off`
-                                 }
-                               </div>
-                             )}
-                           </div>
-                           
-                           <div className="space-y-3 text-sm">
-                             <div className="flex justify-between items-center">
-                               <span className="text-gray-700">Original Amount</span>
-                               <span className="font-medium text-gray-900">
-                                 {formatPriceWithSmallDecimals(subtotalWithDelivery, subtotalWithDelivery, selectedCurrency, true, '#111827')}
-                               </span>
-                             </div>
-                             
-                             <div className="flex justify-between items-center border-t border-green-100 pt-2">
-                               <span className="text-green-700">Discount Applied</span>
-                               <span className="font-bold text-green-600">
-                                 -{formatPriceWithSmallDecimals(discountAmount, discountAmount, selectedCurrency, true, '#059669')}
-                               </span>
-                             </div>
-                             
-                             <div className="flex justify-between items-center border-t-2 border-green-200 pt-2 bg-green-100/50 rounded-lg px-3 py-2 -mx-1">
-                               <span className="font-bold text-green-800">You Pay</span>
-                               <span className="font-bold text-lg text-green-800">
-                                 {formatPriceWithSmallDecimals(finalTotal, finalTotal, selectedCurrency, true, '#166534')}
-                               </span>
-                             </div>
-                             
-                             <div className="text-center pt-2 border-t border-green-200">
-                               <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold">
-                                 <span>🎉</span>
-                                 <span>You saved {formatPriceWithSmallDecimals(discountAmount, discountAmount, selectedCurrency, true, '#ffffff')}</span>
-                               </div>
-                             </div>
-                           </div>
-                         </div>
-                       )}
-                       <div className="flex justify-between font-bold text-base sm:text-lg border-t pt-2">
-                          <span>Final Total</span>
-                          <div className="text-right">
-                            <div className={`${appliedCoupon && discountAmount > 0 ? 'text-green-600' : 'text-gray-900'} font-bold`}>
-                              {formatPriceWithSmallDecimals(finalTotal, finalTotal, selectedCurrency, true, appliedCoupon && discountAmount > 0 ? '#059669' : '#000')}
+                        <div className={`p-3 rounded-lg text-sm ${deliveryMessage.type === 'success'
+                          ? 'bg-green-50 border border-green-200 text-green-800'
+                          : deliveryMessage.type === 'info'
+                            ? 'bg-blue-50 border border-blue-200 text-blue-800'
+                            : 'bg-orange-50 border border-orange-200 text-orange-800'
+                          }`}>
+                          <div className="flex items-start gap-2">
+                            <span className="text-lg">{deliveryMessage.icon}</span>
+                            <span className="flex-1">{deliveryMessage.message}</span>
+                          </div>
+                        </div>
+                      )}
+                      {appliedCoupon && discountAmount > 0 && (
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 shadow-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                                <Tag className="w-4 h-4 text-green-600" />
+                              </div>
+                              <div>
+                                <span className="font-bold text-green-800 text-sm">
+                                  {appliedCoupon.type === 'welcome' ? 'Coupon' : 'Offer'} Applied
+                                </span>
+                                <div className="text-xs text-green-600 font-mono">
+                                  {appliedCoupon.type === 'offer'
+                                    ? (appliedCoupon.data as OfferCouponData).code
+                                    : (appliedCoupon.data as WelcomeCouponData).code}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={handleRemoveCoupon}
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-red-600 hover:bg-red-50 rounded-full p-1.5 h-auto transition-colors"
+                              aria-label="Remove coupon"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                          <div className="bg-white/60 rounded-lg p-3 mb-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-green-700 font-medium">
+                                {appliedCoupon.type === 'offer'
+                                  ? (appliedCoupon.data as OfferCouponData).title
+                                  : (appliedCoupon.data as WelcomeCouponData).title}
+                              </span>
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">
+                                APPLIED
+                              </span>
+                            </div>
+                            {appliedCoupon.type === 'welcome' && (
+                              <div className="text-xs text-green-600 mt-1">
+                                {(appliedCoupon.data as WelcomeCouponData).discountType === 'flat'
+                                  ? `${selectedCurrency} ${(appliedCoupon.data as WelcomeCouponData).discountValue} off`
+                                  : `${(appliedCoupon.data as WelcomeCouponData).discountValue}% off`
+                                }
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-3 text-sm">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-700">Original Amount</span>
+                              <span className="font-medium text-gray-900">
+                                {formatPriceWithSmallDecimals(subtotalWithDelivery, subtotalWithDelivery, selectedCurrency, true, '#111827')}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center border-t border-green-100 pt-2">
+                              <span className="text-green-700">Discount Applied</span>
+                              <span className="font-bold text-green-600">
+                                -{formatPriceWithSmallDecimals(discountAmount, discountAmount, selectedCurrency, true, '#059669')}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center border-t-2 border-green-200 pt-2 bg-green-100/50 rounded-lg px-3 py-2 -mx-1">
+                              <span className="font-bold text-green-800">You Pay</span>
+                              <span className="font-bold text-lg text-green-800">
+                                {formatPriceWithSmallDecimals(finalTotal, finalTotal, selectedCurrency, true, '#166534')}
+                              </span>
+                            </div>
+
+                            <div className="text-center pt-2 border-t border-green-200">
+                              <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold">
+                                <span>🎉</span>
+                                <span>You saved {formatPriceWithSmallDecimals(discountAmount, discountAmount, selectedCurrency, true, '#ffffff')}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
+                      )}
+                      <div className="flex justify-between font-bold text-base sm:text-lg border-t pt-2">
+                        <span>Final Total</span>
+                        <div className="text-right">
+                          <div className={`${appliedCoupon && discountAmount > 0 ? 'text-green-600' : 'text-gray-900'} font-bold`}>
+                            {formatPriceWithSmallDecimals(finalTotal, finalTotal, selectedCurrency, true, appliedCoupon && discountAmount > 0 ? '#059669' : '#000')}
+                          </div>
+                        </div>
+                      </div>
 
                       <div className="mt-4 space-y-3">
                         {!appliedCoupon ? (
@@ -2117,16 +2181,16 @@ const handleApplyCoupon = async () => {
                                     {appliedCoupon.type === 'welcome' ? 'Coupon' : 'Offer'} Applied!
                                   </div>
                                   <div className="text-xs sm:text-sm text-green-600">
-                                    {appliedCoupon.type === 'offer' 
-                                      ? (appliedCoupon.data as OfferCouponData).code 
-                                      : (appliedCoupon.data as WelcomeCouponData).code} - 
-                                    {appliedCoupon.type === 'offer' 
-                                      ? (appliedCoupon.data as OfferCouponData).title 
+                                    {appliedCoupon.type === 'offer'
+                                      ? (appliedCoupon.data as OfferCouponData).code
+                                      : (appliedCoupon.data as WelcomeCouponData).code} -
+                                    {appliedCoupon.type === 'offer'
+                                      ? (appliedCoupon.data as OfferCouponData).title
                                       : (appliedCoupon.data as WelcomeCouponData).title}
                                   </div>
                                   {appliedCoupon.type === 'welcome' && (
                                     <div className="text-xs text-green-500 mt-1">
-                                      {(appliedCoupon.data as WelcomeCouponData).discountType === 'flat' 
+                                      {(appliedCoupon.data as WelcomeCouponData).discountType === 'flat'
                                         ? `Flat ${selectedCurrency} ${(appliedCoupon.data as WelcomeCouponData).discountValue} off`
                                         : `${(appliedCoupon.data as WelcomeCouponData).discountValue}% off`
                                       }

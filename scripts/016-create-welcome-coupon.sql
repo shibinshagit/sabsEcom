@@ -10,10 +10,13 @@ CREATE TABLE IF NOT EXISTS welcome_coupons (
 
     -- discount flat | percentage
     discount_type VARCHAR(20) NOT NULL DEFAULT 'flat',
-    discount_value NUMERIC(10,2) NOT NULL,
+    
+    discount_value_inr NUMERIC(10,2),
+    discount_value_aed NUMERIC(10,2),
 
-    -- maximum cap (for percentage type)
-    maximum_discount NUMERIC(10,2),
+    -- maximum cap (for percentage type) - optional
+    max_purchase_inr NUMERIC(10,2),
+    max_purchase_aed NUMERIC(10,2),
 
     -- shop/location specific minimum orders
     minimum_purchase_inr NUMERIC(10,2) DEFAULT 0,
