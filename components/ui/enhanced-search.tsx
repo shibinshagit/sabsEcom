@@ -208,8 +208,8 @@ export default function EnhancedSearch({
   }
 
   const defaultPlaceholder = shop === "A" 
-    ? "Search beauty products..." 
-    : "Search style accessories..."
+    ? "Search spare parts..." 
+    : "Search accessories..."
 
   return (
     <div ref={searchRef} className={`relative ${className}`}>
@@ -225,7 +225,7 @@ export default function EnhancedSearch({
           onChange={(e) => handleSearch(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => searchTerm.length >= 2 && setShowDropdown(true)}
-          className="w-full pl-12 pr-16 h-12 rounded-full bg-white border-0 text-base shadow-lg focus:shadow-xl transition-all duration-300 focus:ring-2 focus:ring-blue-500/20 focus:outline-none placeholder:text-gray-400"
+          className="w-full pl-12 pr-16 h-12 bg-background border border-border text-base shadow-sm focus:shadow-md transition-all duration-300 focus:ring-2 focus:ring-foreground/10 focus:outline-none placeholder:text-muted-foreground"
         />
         
         {/* Loading or Clear Button */}
@@ -280,7 +280,7 @@ export default function EnhancedSearch({
                   <div className="flex items-center gap-2">
                     {/* <Sparkles className="w-4 h-4 text-blue-500" /> */}
                     <span className="text-sm font-medium text-gray-700">
-                      Found {searchResults.length} result{searchResults.length > 1 ? 's' : ''} in Shop {shop === "A" ? "Beauty" : "Style"}
+                      Found {searchResults.length} result{searchResults.length > 1 ? 's' : ''} in Shop {shop === "A" ? "Parts" : "Accessories"}
                     </span>
                   </div>
                 </div>

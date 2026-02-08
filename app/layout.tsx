@@ -22,17 +22,9 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" })
 
 export const metadata: Metadata = {
-  title: "SABS - ONLINE STORE",
-  description: "Your trusted source for GADGETS AND COSMETICS.",
-  generator: "Shah",
-  icons: {
-    icon: [
-      { url: '/logo.png', sizes: '32x32', type: 'image/png' },
-      { url: '/logo.png', sizes: '16x16', type: 'image/png' },
-    ],
-    shortcut: '/logo.png',
-    apple: '/logo.png',
-  },
+  title: "Motoclub kottackal - ONLINE spare parts and accessories",
+  description: "Your trusted source for spare parts and accessories.",
+  generator: "Motoclub kottackal",
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

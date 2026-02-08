@@ -205,9 +205,9 @@ function ShippingPolicyContent() {
                 Our customer service team is here to help with any shipping questions or concerns.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
-                <span>📧 support@sabsonline.com</span>
-                <span>📱 WhatsApp: +971-56666-7178</span>
-                <span>⏰ Sun-Thu: 9AM-6PM GST</span>
+                <span>📧 support@motoclub.in</span>
+                <span>📱 WhatsApp: +91-9995442239</span>
+                <span>⏰ Mon-Sat: 9AM-6PM IST</span>
               </div>
             </CardContent>
           </Card>

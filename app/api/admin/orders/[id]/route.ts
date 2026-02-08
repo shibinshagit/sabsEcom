@@ -107,7 +107,7 @@ async function sendStatusUpdateEmail(order: any, newStatus: string, trackingUrl?
           ` : ''}
 
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-            <p style="margin: 0; color: #666; font-size: 14px;">Thank you for choosing Sabs Online!</p>
+            <p style="margin: 0; color: #666; font-size: 14px;">Thank you for choosing Motoclub Kottakkal!</p>
             <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Status updated on ${new Date().toLocaleString()}</p>
           </div>
         </div>

@@ -7,13 +7,13 @@ interface ProductMetadataProps {
 export async function generateMetadata({ params }: ProductMetadataProps): Promise<Metadata> {
   try {
     // Fetch product data for metadata
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://sabsonlinestore.com'}/api/admin/products/${params.id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://motoclub.in'}/api/admin/products/${params.id}`, {
       cache: 'no-store' // Ensure fresh data for metadata
     })
     
     if (!response.ok) {
       return {
-        title: 'Product Not Found - Sabs Online',
+        title: 'Product Not Found - Motoclub Kottakkal',
         description: 'The requested product could not be found.',
       }
     }
@@ -23,8 +23,8 @@ export async function generateMetadata({ params }: ProductMetadataProps): Promis
     // Get the first image or fallback
     const productImage = product.image_urls?.[0] || '/logo.png'
     const productName = product.name || 'Product'
-    const productDescription = product.description || 'Quality products from Sabs Online store'
-    const shopName = product.shop_category === 'A' ? 'Beauty' : product.shop_category === 'B' ? 'Style' : 'Beauty & Style'
+    const productDescription = product.description || 'Quality products from Motoclub Kottakkal'
+    const shopName = product.shop_category === 'A' ? 'Spare Parts' : product.shop_category === 'B' ? 'Accessories' : 'Parts & Accessories'
     
     // Format price for display
     const formatPrice = (price: number, currency: string) => {
@@ -45,8 +45,8 @@ export async function generateMetadata({ params }: ProductMetadataProps): Promis
     //   }
     // }
 
-    const title = `${productName} | Sabs Online ${shopName}`
-    const description = `${productDescription} | Available at Sabs Online ${shopName} store. Quality products with fast delivery.`
+    const title = `${productName} | Motoclub Kottakkal ${shopName}`
+    const description = `${productDescription} | Available at Motoclub Kottakkal ${shopName}. Reliable products with fast delivery.`
     
     return {
       title,
@@ -55,11 +55,11 @@ export async function generateMetadata({ params }: ProductMetadataProps): Promis
         title,
         description,
         type: 'website',
-        url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sabsonlinestore.com'}/product/${params.id}`,
-        siteName: 'Sabs Online',
+        url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://motoclub.in'}/product/${params.id}`,
+        siteName: 'Motoclub Kottakkal',
         images: [
           {
-            url: productImage.startsWith('http') ? productImage : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sabsonlinestore.com'}${productImage}`,
+            url: productImage.startsWith('http') ? productImage : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://motoclub.in'}${productImage}`,
             width: 800,
             height: 600,
             alt: productName,
@@ -71,9 +71,9 @@ export async function generateMetadata({ params }: ProductMetadataProps): Promis
         card: 'summary_large_image',
         title,
         description,
-        images: [productImage.startsWith('http') ? productImage : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sabsonlinestore.com'}${productImage}`],
-        creator: '@sabsonline',
-        site: '@sabsonline',
+        images: [productImage.startsWith('http') ? productImage : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://motoclub.in'}${productImage}`],
+        creator: '@motoclubkottakkal',
+        site: '@motoclubkottakkal',
       },
       other: {
         // WhatsApp specific meta tags
@@ -85,15 +85,15 @@ export async function generateMetadata({ params }: ProductMetadataProps): Promis
         // 'product:price:currency': product.variants?.[0]?.price_aed ? 'AED' : 'INR',
         // Product metadata without specific pricing
         'product:availability': product.is_available ? 'in stock' : 'out of stock',
-        'product:brand': 'Sabs Online',
+        'product:brand': 'Motoclub Kottakkal',
         'product:category': product.category_name || 'Products',
       }
     }
   } catch (error) {
     console.error('Error generating metadata:', error)
     return {
-      title: 'Sabs Online - Quality Products',
-      description: 'Discover quality products at Sabs Online store with fast delivery.',
+      title: 'Motoclub Kottakkal - Spare Parts & Accessories',
+      description: 'Discover spare parts and accessories at Motoclub Kottakkal with fast delivery.',
     }
   }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import CountrySelectionWrapper from './country-selection-wrapper'
+// import CountrySelectionWrapper from './country-selection-wrapper'
 
 export default function ConditionalCountrySelection() {
   const pathname = usePathname()
@@ -11,5 +11,7 @@ export default function ConditionalCountrySelection() {
     return null
   }
   
-  return <CountrySelectionWrapper />
+  // Currency/country selection disabled for India-only for now.
+  // return <CountrySelectionWrapper />
+  return null
 }

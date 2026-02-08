@@ -23,7 +23,7 @@ export default function BottomTabs() {
   const { user: clerkUser } = useUser()
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
 
-  const shopType = shop === "A" ? "cosmetics" : "accessories"
+  const shopType = shop === "A" ? "parts" : "accessories"
 
   const navItems = [
     { href: "/products", icon: Home, label: "Home", isActive: pathname === "/" },
@@ -34,8 +34,8 @@ export default function BottomTabs() {
     { type: "profile" }, 
   ]
 
-  const handleShopToggle = (type: "cosmetics" | "accessories") => {
-    setShop(type === "cosmetics" ? "A" : "B")
+  const handleShopToggle = (type: "parts" | "accessories") => {
+    setShop(type === "parts" ? "A" : "B")
   }
 
   const handleLogout = async () => {
@@ -73,15 +73,15 @@ export default function BottomTabs() {
                       {/* Active Slider with Enhanced Glow */}
                       <div
                         className={`absolute top-1 rounded-full transition-all duration-500 ease-out shadow-xl ${
-                          shopType === "cosmetics" 
+                          shopType === "parts" 
                             ? "bg-gradient-to-r from-orange-400 to-pink-500 shadow-orange-500/50" 
                             : "bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-500/50"
                         }`}
                         style={{
                           width: "calc(50% - 4px)",
                           height: "calc(100% - 8px)",
-                          left: shopType === "cosmetics" ? "4px" : "calc(50% + 0px)",
-                          boxShadow: shopType === "cosmetics" 
+                          left: shopType === "parts" ? "4px" : "calc(50% + 0px)",
+                          boxShadow: shopType === "parts" 
                             ? "0 0 15px rgba(251, 146, 60, 0.6), 0 0 30px rgba(251, 146, 60, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)" 
                             : "0 0 15px rgba(147, 51, 234, 0.6), 0 0 30px rgba(147, 51, 234, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)"
                         }}
@@ -89,19 +89,19 @@ export default function BottomTabs() {
                       
                       <div className="relative flex">
                         <button
-                          onClick={() => handleShopToggle("cosmetics")}
+                          onClick={() => handleShopToggle("parts")}
                           className={`group flex items-center justify-center w-10 h-10 rounded-full transition-all duration-500 relative z-10 transform hover:scale-110 ${
-                            shopType === "cosmetics" 
+                            shopType === "parts" 
                               ? "text-white drop-shadow-lg" 
                               : "text-white/70 hover:text-white hover:drop-shadow-lg"
                           }`}
                         >
                           <Sparkles className={`w-4 h-4 transition-all duration-300 ${
-                            shopType === "cosmetics" 
+                            shopType === "parts" 
                               ? "drop-shadow-[0_0_6px_rgba(255,255,255,0.8)] animate-pulse" 
                               : "group-hover:drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
                           }`} />
-                          {shopType === "cosmetics" && (
+                          {shopType === "parts" && (
                             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-400/20 to-pink-500/20 animate-ping"></div>
                           )}
                         </button>
@@ -126,15 +126,15 @@ export default function BottomTabs() {
                       
                       {/* Floating Particles Effect */}
                       <div className="absolute inset-0 overflow-hidden rounded-full pointer-events-none">
-                        <div className={`absolute w-0.5 h-0.5 bg-white rounded-full animate-bounce ${shopType === "cosmetics" ? "left-3 top-1.5" : "right-3 top-1.5"}`} style={{animationDelay: "0s"}}></div>
-                        <div className={`absolute w-0.5 h-0.5 bg-white/60 rounded-full animate-bounce ${shopType === "cosmetics" ? "left-4 bottom-2" : "right-4 bottom-2"}`} style={{animationDelay: "0.5s"}}></div>
-                        <div className={`absolute w-0.5 h-0.5 bg-white/40 rounded-full animate-bounce ${shopType === "cosmetics" ? "left-5 top-2.5" : "right-5 top-2.5"}`} style={{animationDelay: "1s"}}></div>
+                        <div className={`absolute w-0.5 h-0.5 bg-white rounded-full animate-bounce ${shopType === "parts" ? "left-3 top-1.5" : "right-3 top-1.5"}`} style={{animationDelay: "0s"}}></div>
+                        <div className={`absolute w-0.5 h-0.5 bg-white/60 rounded-full animate-bounce ${shopType === "parts" ? "left-4 bottom-2" : "right-4 bottom-2"}`} style={{animationDelay: "0.5s"}}></div>
+                        <div className={`absolute w-0.5 h-0.5 bg-white/40 rounded-full animate-bounce ${shopType === "parts" ? "left-5 top-2.5" : "right-5 top-2.5"}`} style={{animationDelay: "1s"}}></div>
                       </div>
                     </div>
                     <span className={`mt-1 text-xs font-medium transition-colors duration-300 ${
                       shop === "A" ? "text-orange-700" : "text-purple-200"
                     }`}>
-                      {shopType === "cosmetics" ? "Beauty" : "Style"}
+                      {shopType === "parts" ? "Parts" : "Accessories"}
                     </span>
                   </div>
                 )

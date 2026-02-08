@@ -14,9 +14,9 @@ export default function HomePage() {
     <main className="min-h-screen">
 
       <Navbar />
-      {!isAuthenticated && <NewUserSpinnerSection />}
+      {/* {!isAuthenticated && <NewUserSpinnerSection />} */}
 
-      {/* {isAuthenticated && (
+      {/* {isAuthenticated && (v   
         <section className="mt-4">z
           <UserCoupons />
         </section>

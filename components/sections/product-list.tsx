@@ -17,10 +17,10 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { addToWishlistAPI, removeFromWishlistAPI } from '@/lib/store/slices/wishlistSlice'
 import SearchFilters from "@/components/ui/search-filters"
-import ShopSwitchPopup from "@/components/ui/shop-switch-popup"
-import { useShopSwitchPopup } from "@/lib/hooks/useShopSwitchPopup"
-import FloatingShopAd from "@/components/ui/floating-shop-ad"
-import { useFloatingShopAd } from "@/lib/hooks/useFloatingShopAd"
+// import ShopSwitchPopup from "@/components/ui/shop-switch-popup"
+// import { useShopSwitchPopup } from "@/lib/hooks/useShopSwitchPopup"
+// import FloatingShopAd from "@/components/ui/floating-shop-ad"
+// import { useFloatingShopAd } from "@/lib/hooks/useFloatingShopAd"
 
 interface ProductListProps {
   showSpinner?: boolean
@@ -49,19 +49,19 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const { shop } = useShop()
 
   // Shop switching popup
-  const { isPopupOpen, closePopup, switchShop } = useShopSwitchPopup({
-    intervalMinutes: 3, // Show every 3 minutes
-    initialDelayMinutes: 1, // Wait 1 minute before first show
-    maxShowsPerSession: 4 // Max 4 times per session
-  })
+  // const { isPopupOpen, closePopup, switchShop } = useShopSwitchPopup({
+  //   intervalMinutes: 3, // Show every 3 minutes
+  //   initialDelayMinutes: 1, // Wait 1 minute before first show
+  //   maxShowsPerSession: 4 // Max 4 times per session
+  // })
 
   // Floating shop ad
-  const { isAdVisible, closeAd, switchShop: switchShopFromAd } = useFloatingShopAd({
-    showAfterScrollPixels: 400, // Show after scrolling 400px
-    displayDurationMinutes: 2, // Show for 2 minutes
-    cooldownMinutes: 4, // 4 minute cooldown
-    maxShowsPerSession: 3 // Max 3 times per session
-  })
+  // const { isAdVisible, closeAd, switchShop: switchShopFromAd } = useFloatingShopAd({
+  //   showAfterScrollPixels: 400, // Show after scrolling 400px
+  //   displayDurationMinutes: 2, // Show for 2 minutes
+  //   cooldownMinutes: 4, // 4 minute cooldown
+  //   maxShowsPerSession: 3 // Max 3 times per session
+  // })
   const router = useRouter()
 
   const isInWishlist = (productId: number) => {
@@ -145,7 +145,6 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
 
   // Debug currency changes
   useEffect(() => {
-    console.log('Currency changed to:', selectedCurrency)
   }, [selectedCurrency])
 
   useEffect(() => {
@@ -449,11 +448,11 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const getCurrentCategoryName = () => {
     const searchFromUrl = searchParams.get("search")
     if (searchFromUrl) {
-      return `Search results for "${searchFromUrl}" in SHOP ${shop} (${selectedCurrency})`
+      return `Search results for "${searchFromUrl}"`
     }
-    if (selectedCategory === null) return `SHOP ${shop} (${selectedCurrency})`
+    if (selectedCategory === null) return "All Products"
     const category = categories.find((cat) => cat.id === selectedCategory)
-    return `Shop ${shop} - ${category?.name || "Products"} (${selectedCurrency})`
+    return category?.name || "Products"
   }
 
   const lightningDeals = filteredItems.filter((item) => item.is_featured).slice(0, 4)
@@ -468,7 +467,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const newArrivals = filteredItems.filter((item) => item.is_new).slice(0, 12)
 
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className="min-h-screen bg-background relative pt-6 lg:pt-8">
       {/* Search Filters */}
       <SearchFilters
         isSearchActive={isSearchActive}
@@ -526,7 +525,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               {/* <h3 className="text-xl font-bold text-gray-900">{`Lightning deals in ${getCurrentCategoryName() === 'shop A' ? 'Beauty' : 'Accessories'}`}</h3> */}
             
               {currencyFilteredItems.length !== shopFilteredItems.length && (
-                <Badge variant="outline" className="text-orange-600 border-orange-300">
+                <Badge variant="outline" className="text-foreground border-border">
                   Filtered by {selectedCurrency} availability
                 </Badge>
               )}
@@ -540,12 +539,12 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     <div className="max-w-7xl mx-auto">
     
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Zap className="w-5 h-5 text-orange-500" />
-          <h3 className="text-xl font-bold text-gray-900">Lightning deals</h3>
-          <span className="text-gray-500">({lightningDeals.length} items)</span>
+      <div className="flex items-center gap-2">
+        
+          <h3 className="text-xl font-bold text-foreground">Trending now</h3>
+          {/*  <span className="text-muted-foreground">({lightningDeals.length} items)</span> */}
         </div>
-        <ChevronDown className="w-5 h-5 text-gray-400" />
+        <ChevronDown className="w-5 h-5 text-muted-foreground" />
       </div>
       
       {/* Horizontally Scrollable Container */}
@@ -560,20 +559,19 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             // Calculate discount percentage based on selected currency
             let discountPercent = 0;
             if (availableVariant) {
-              console.log('Lightning Deals - Currency:', selectedCurrency, 'Variant:', availableVariant);
               if (selectedCurrency === 'AED' && availableVariant.price_aed && availableVariant.discount_aed && availableVariant.price_aed > availableVariant.discount_aed) {
                 discountPercent = Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100);
-                console.log('AED Discount:', discountPercent, 'Price:', availableVariant.price_aed, 'Discount:', availableVariant.discount_aed);
+            
               } else if (selectedCurrency === 'INR' && availableVariant.price_inr && availableVariant.discount_inr && availableVariant.price_inr > availableVariant.discount_inr) {
                 discountPercent = Math.round(((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100);
-                console.log('INR Discount:', discountPercent, 'Price:', availableVariant.price_inr, 'Discount:', availableVariant.discount_inr);
+               
               }
             }
 
             return (
               <Card
                 key={item.id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border hover:border-orange-200 flex-shrink-0 w-44 lg:w-52"
+                className="bg-card border border-border/70 ring-1 ring-border/40 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group flex-shrink-0 w-44 lg:w-52"
               >
                 <div className="relative">
                   <Image
@@ -586,33 +584,34 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                     alt={item.name || "Product"}
                     width={200}
                     height={200}
-                    className="w-full h-32 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer"
+                    className="w-full h-32 lg:h-40 object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   
                   {/* Ranking Badge */}
-                  <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs lg:text-sm font-bold shadow-lg">
+                  <div className="absolute top-2 left-2 bg-foreground/90 text-background text-white w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs lg:text-sm font-bold">
                     #{index + 1}
                   </div>
 
                   {/* TOP SELLING Badge - only show if featured */}
                   {item.is_featured && (
-                    <Badge className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full shadow-lg animate-pulse font-semibold">
-                      ⭐ TOP SELLING
+                    <Badge className="absolute top-2 right-2 bg-background/90 border border-border bg-green-200 text-foreground text-xs px-2 py-1 font-semibold">
+                      Trending
                     </Badge>
                   )}
 
                   {/* Feature Badge */}
-                  <Badge className="absolute bottom-2 left-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+                  {/* <Badge className="absolute bottom-2 left-2 bg-background/90 border border-border text-foreground text-xs px-2 py-1">
                     {item.features?.[0]
                       ? item.features[0].length > 7
                         ? item.features[0].slice(0, 7) + "..."
                         : item.features[0]
                       : "Assured"}
-                  </Badge>
+                  </Badge> */}
 
                   {/* Discount Percentage Badge */}
                   {discountPercent > 0 && (
-                    <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
+                    <Badge className="absolute bottom-2 right-2 bg-foreground text-background bg-black text-white text-xs px-2 py-1 font-bold">
                       -{discountPercent}% 
                     </Badge>
                   )}
@@ -635,7 +634,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         ) : (
                           <>
                             {/* Discounted Price with smaller decimal */}
-                            <span className="text-red-500 font-bold text-sm lg:text-base">
+                  <span className="text-foreground font-bold text-sm lg:text-base">
                               {formatPriceWithSmallDecimals(
                                 availableVariant.discount_aed,
                                 availableVariant.discount_inr,
@@ -646,8 +645,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                             </span>
 
                             {/* Original Price if discount is available */}
-                            {discountPercent > 0 && (
-                              <span className="text-gray-500 text-xs line-through">
+                            {/* {discountPercent > 0 && (
+                              <span className="text-muted-foreground text-xs line-through">
                                {formatPriceWithSmallDecimals(
                                 availableVariant.price_aed,
                                 availableVariant.price_inr,
@@ -656,35 +655,35 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                                 "#6B7280"  
                               )}
                               </span>
-                            )}
+                            )} */}
                           </>
                         )}
                       </div>
                     )}
                   </div>
 
-                  <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
+                  <p className="text-xs lg:text-sm text-muted-foreground mt-1 line-clamp-2">{item.name}</p>
 
-                  <Button
+                  {/* <Button
                     onClick={() => router.push(`/product/${item.id}`)}
-                    className="w-full mt-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
+                    className="w-full mt-3 bg-foreground text-background py-2 text-xs lg:text-sm font-medium transition-all duration-200"
                   >
                     Buy Now
-                  </Button>
+                  </Button> */}
                   
-                  <Button
+                  {/* <Button
                     onClick={() => handleToggleWishlist(item)}
-                    className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
+                    className={`w-full mt-2 py-2 text-xs lg:text-sm font-medium transition-all duration-200 ${
                       isInWishlist(item.id)
-                        ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-md'
-                        : 'bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700'
+                        ? 'bg-foreground text-background'
+                        : 'bg-muted text-foreground'
                     }`}
                   >
                     <div className="flex items-center justify-center gap-1">
                       <Heart className={`w-3 h-3 ${isInWishlist(item.id) ? 'fill-current' : ''}`} />
                       {isInWishlist(item.id) ? 'Saved' : 'Save'}
                     </div>
-                  </Button>
+                  </Button> */}
                 </CardContent>
               </Card>
             );
@@ -702,10 +701,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             {!isSearchActive && (
               <div className="flex items-center justify-between mb-4 lg:mb-6">
                 <div className="flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-green-500" />
-                  <span className="font-bold text-lg lg:text-xl">Fast Selling Products</span>
+                  {/* <Tag className="w-5 h-5 text-foreground" /> */}
+                  <span className="font-bold text-lg lg:text-xl">New Arrivals</span>
                 </div>
-                <ChevronDown className="w-5 h-5 text-gray-400" />
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
               </div>
             )}
             
@@ -713,16 +712,16 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             {isSearchActive && (
               <div className="flex items-center justify-between mb-4 lg:mb-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-foreground animate-pulse" />
                   <span className="font-bold text-lg lg:text-xl">Search Results</span>
-                  <span className="text-gray-500">({filteredItems.length} products)</span>
+                  {/* <span className="text-muted-foreground">({filteredItems.length} products)</span> */}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
                   </Button>
@@ -736,10 +735,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               >
                 {[...Array(10)].map((_, i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="bg-gray-300 h-40 lg:h-48 rounded-xl mb-3"></div>
-                    <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                    <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-                    <div className="h-6 bg-gray-300 rounded w-1/2"></div>
+                    <div className="bg-muted h-40 lg:h-48 mb-3"></div>
+                    <div className="h-4 bg-muted mb-2"></div>
+                    <div className="h-4 bg-muted w-3/4 mb-2"></div>
+                    <div className="h-6 bg-muted w-1/2"></div>
                   </div>
                 ))}
               </div>
@@ -758,13 +757,13 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   // Calculate discount percentage based on selected currency
   let discountPercent = 0;
   if (availableVariant) {
-    console.log('Main Grid - Currency:', selectedCurrency, 'Variant:', availableVariant);
+   
     if (selectedCurrency === 'AED' && availableVariant.price_aed && availableVariant.discount_aed && availableVariant.price_aed > availableVariant.discount_aed) {
       discountPercent = Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100);
-      console.log('AED Main Discount:', discountPercent, 'Price:', availableVariant.price_aed, 'Discount:', availableVariant.discount_aed);
+    
     } else if (selectedCurrency === 'INR' && availableVariant.price_inr && availableVariant.discount_inr && availableVariant.price_inr > availableVariant.discount_inr) {
       discountPercent = Math.round(((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100);
-      console.log('INR Main Discount:', discountPercent, 'Price:', availableVariant.price_inr, 'Discount:', availableVariant.discount_inr);
+      
     }
   }
 
@@ -792,7 +791,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
   return (
     <div key={item.id} className="cursor-pointer">
       <Card
-        className={`bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group ${
+        className={`bg-card border border-border/70 ring-1 ring-border/40 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group ${
           viewMode === "list" ? "flex items-center" : ""
         }`}
       >
@@ -813,25 +812,26 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
             width={200}
             height={200}
             className={`object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer ${
-              viewMode === "list" ? "w-32 h-32 rounded-lg" : "w-full h-40 lg:h-48"
+              viewMode === "list" ? "w-32 h-32" : "w-full h-40 lg:h-48"
             }`}
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
           {item.is_new && (
-            <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+            <Badge className="absolute top-2 left-2 bg-foreground text-background text-xs px-2 py-1">
               NEW
             </Badge>
           )}
 
           {item.condition_type && item.condition_type !== "none" && (
   <Badge
-    className={`absolute top-2 right-2 ${badgeColor} text-white text-xs px-2 py-1 rounded capitalize`}
+    className={`absolute top-2 right-2 ${badgeColor} text-white text-xs px-2 py-1 capitalize`}
   >
     {conditionLabel}
   </Badge>
 )}
   {discountPercent > 0 && (
-                    <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
+                    <Badge className="absolute bottom-2 right-2 bg-foreground text-background text-xs px-2 py-1 font-bold">
                       {discountPercent}% off
                     </Badge>
                   )}
@@ -843,7 +843,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
         >
           <div className="flex items-center justify-between mb-2">
             {/* Price */}
-            <p className="text-red-500 font-bold text-sm lg:text-lg">
+            <p className="text-foreground font-bold text-sm lg:text-lg">
              {availableVariant && (
     <div className="flex items-center gap-2 flex-wrap">
       {(
@@ -901,7 +901,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
           </div>
 
           {/* Product Name */}
-          <h3 className={`font-medium text-gray-900 mb-2 ${
+          <h3 className={`font-semibold text-foreground mb-2 ${
             viewMode === "list" 
               ? "text-base lg:text-lg line-clamp-2" 
               : "text-sm lg:text-base line-clamp-2"
@@ -910,7 +910,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
           </h3>
 
           {viewMode === "list" && (
-            <p className="text-sm text-gray-600 line-clamp-3 mb-3">
+            <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
               {item.description}
             </p>
           )}
@@ -919,11 +919,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
 <div className="flex gap-2">
   <Button
     onClick={() => router.push(`/product/${item.id}`)}
-    className={`flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 flex items-center justify-center gap-2 ${
-      viewMode === "list" 
-        ? "hover:from-orange-600 hover:to-red-600 hover:scale-102" 
-        : "hover:from-orange-600 hover:to-red-600 hover:scale-105"
-    } active:scale-95`}
+    className={`flex-1 bg-foreground text-background py-2 lg:py-3 text-sm lg:text-base font-semibold transition-all duration-200 flex items-center bg-green-500 text-white justify-center gap-2 shadow-sm hover:shadow-md`}
     disabled={!item.is_available}
   >
     {item.is_available ? (
@@ -938,10 +934,10 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
 
   <Button
     onClick={() => handleToggleWishlist(item)}
-    className={`px-3 lg:px-4 rounded-full py-2 text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
+    className={`px-3 lg:px-4 py-2 text-sm font-semibold transition-all duration-200  ${
       isInWishlist(item.id)
-        ? "bg-red-500 hover:bg-red-600 text-white"
-        : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+        ? "bg-foreground text-background"
+        : "bg-background text-foreground hover:bg-muted"
     }`}
   >
     <Heart
@@ -962,12 +958,12 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
             {isSearchLoading && (
               <div className="text-center py-16">
                 <div className="flex justify-center mb-4">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                  <Loader2 className="w-8 h-8 animate-spin text-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-semibold text-foreground mb-2">
                   Searching for "{searchParams.get("search")}"...
                 </h3>
-                <p className="text-gray-500">
+                <p className="text-muted-foreground">
                   Finding the best products for you
                 </p>
               </div>
@@ -979,10 +975,10 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
                 <div className="text-6xl mb-4">🔍</div>
                 {searchParams.get("search") ? (
                   <>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-xl font-semibold text-foreground mb-2">
                       No products found for "{searchParams.get("search")}"
                     </h3>
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-muted-foreground mb-4">
                       Try different keywords or browse categories below
                     </p>
                     <Button
@@ -990,16 +986,16 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
                         setSearchTerm("")
                         router.push("/products")
                       }}
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      className="bg-foreground text-background hover:bg-foreground/90"
                     >
                       Clear Search
                     </Button>
                   </>
                 ) : (
                   <>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found in Shop {shop === "A" ? "Beauty" : "Style"}</h3>
-                    <p className="text-gray-500">
-                      No products available with {selectedCurrency} pricing. Try switching currency or check the other shop.
+                    <h3 className="text-xl font-semibold text-foreground mb-2">No products found</h3>
+                    <p className="text-muted-foreground">
+                      No products available for the current pricing and filters.
                     </p>
                   </>
                 )}
@@ -1009,19 +1005,21 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
         </div>
       </div>
 
-      {/* Shop Switch Popup */}
+      {/* Shop Switch Popup (disabled for single shop for now)
       <ShopSwitchPopup
         isOpen={isPopupOpen}
         onClose={closePopup}
         onSwitchShop={switchShop}
       />
+      */}
 
-      {/* Floating Shop Ad */}
+      {/* Floating Shop Ad (disabled for single shop for now)
       <FloatingShopAd
         isVisible={isAdVisible}
         onClose={closeAd}
         onSwitchShop={switchShopFromAd}
       />
+      */}
     </div>
     
   )

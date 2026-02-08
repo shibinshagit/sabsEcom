@@ -66,7 +66,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #f97316, #dc2626); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Order Confirmed!</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Thank you for your order with Sabs Online</p>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Thank you for your order with Motoclub Kottakkal</p>
         </div>
 
         <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
@@ -125,7 +125,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
           </div>
 
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-            <p style="margin: 0; color: #666; font-size: 14px;">Thank you for choosing Sabs Online!</p>
+            <p style="margin: 0; color: #666; font-size: 14px;">Thank you for choosing Motoclub Kottakkal!</p>
             <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">We'll contact you soon with updates about your order.</p>
           </div>
         </div>
@@ -136,7 +136,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: customerEmail,
-      subject: `Order Confirmation ${orderNumber} - Sabs Online`,
+      subject: `Order Confirmation ${orderNumber} - Motoclub Kottakkal`,
       html: emailHtml,
     }
 
@@ -151,7 +151,7 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
 // Function to send admin notification email
 async function sendAdminNotificationEmail(orderData: any, orderId: number, orderNumber: string) {
   try {
-    const adminEmail = process.env.ORDER_ALERT_MAIL || "sabsorder@gmail.com"
+    const adminEmail = process.env.ORDER_ALERT_MAIL || "motoclubkottackal@gmail.com"
 
     if (!adminEmail) {
       console.error('ORDER_ALERT_MAIL environment variable not configured')
@@ -339,7 +339,7 @@ async function sendAdminNotificationEmail(orderData: any, orderId: number, order
 
         <!-- Footer -->
         <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-            <p style="margin: 0; color: #666; font-size: 14px;">This is an automated notification from Sabs Online</p>
+            <p style="margin: 0; color: #666; font-size: 14px;">This is an automated notification from Motoclub Kottakkal</p>
             <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Order received on ${new Date().toLocaleString()}</p>
           </div>
       </body>

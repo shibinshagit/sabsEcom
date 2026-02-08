@@ -682,7 +682,7 @@ const conditionColors = {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Verified className="w-4 h-4 text-blue-500" />
-                      <span className="text-gray-600">Sabs Verified</span>
+                      <span className="text-gray-600">Motoclub Verified</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
   <Shield className="w-4 h-4 text-purple-500" />

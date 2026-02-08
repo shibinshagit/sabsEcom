@@ -1,6 +1,6 @@
 "use client"
 
-import { Truck, RotateCcw, Shield, Zap, Cpu, Heart, Sparkles } from "lucide-react"
+import { Truck, Shield, Zap, Heart, Sparkles } from "lucide-react"
 import { useShop } from "@/lib/contexts/shop-context"
 import { motion } from "framer-motion"
 import { useState, useEffect, useRef } from "react"
@@ -14,100 +14,52 @@ const Services = () => {
     setIsMounted(true)
   }, [])
 
-  const services =
-    shop === "A"
-      ? [
-          {
-            icon: Truck,
-            title: "Free shipping",
-            subtitle: "Beauty delivered",
-            bgColor: "bg-pink-50",
-            borderColor: "border-pink-200",
-            iconColor: "text-pink-600",
-            titleColor: "text-pink-700",
-            subtitleColor: "text-pink-600",
-            gradient: "from-pink-100 to-rose-100",
-          },
-          {
-            icon: Heart,
-            title: "Authentic Products",
-            subtitle: "Genuine brands",
-            bgColor: "bg-purple-50",
-            borderColor: "border-purple-200",
-            iconColor: "text-purple-600",
-            titleColor: "text-purple-700",
-            subtitleColor: "text-purple-600",
-            gradient: "from-purple-100 to-indigo-100",
-          },
-          {
-            icon: Heart,
-            title: "Result guarantee",
-            subtitle: "100% authentic",
-            bgColor: "bg-rose-50",
-            borderColor: "border-rose-200",
-            iconColor: "text-rose-600",
-            titleColor: "text-rose-700",
-            subtitleColor: "text-rose-600",
-            gradient: "from-rose-100 to-pink-100",
-          },
-          {
-            icon: Sparkles,
-            title: "Premium quality",
-            subtitle: "High standards",
-            bgColor: "bg-orange-50",
-            borderColor: "border-orange-200",
-            iconColor: "text-orange-600",
-            titleColor: "text-orange-700",
-            subtitleColor: "text-orange-600",
-            gradient: "from-orange-100 to-amber-100",
-          },
-        ]
-      : [
-          {
-            icon: Truck,
-            title: "Fast delivery",
-            subtitle: "Tech in 24hrs",
-            bgColor: "bg-blue-50",
-            borderColor: "border-blue-200",
-            iconColor: "text-blue-600",
-            titleColor: "text-blue-700",
-            subtitleColor: "text-blue-600",
-            gradient: "from-blue-100 to-cyan-100",
-          },
-          {
-            icon: Shield,
-            title: "High Quality",
-            subtitle: "Safe & trusted",
-            bgColor: "bg-indigo-50",
-            borderColor: "border-indigo-200",
-            iconColor: "text-indigo-600",
-            titleColor: "text-indigo-700",
-            subtitleColor: "text-indigo-600",
-            gradient: "from-indigo-100 to-blue-100",
-          },
-          {
-            icon: Cpu,
-            title: "Latest Models",
-            subtitle: "Top brands",
-            bgColor: "bg-purple-50",
-            borderColor: "border-purple-200",
-            iconColor: "text-purple-600",
-            titleColor: "text-purple-700",
-            subtitleColor: "text-purple-600",
-            gradient: "from-purple-100 to-violet-100",
-          },
-          {
-            icon: Zap,
-            title: "Fast support",
-            subtitle: "24/7 tech help",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-            iconColor: "text-cyan-600",
-            titleColor: "text-cyan-700",
-            subtitleColor: "text-cyan-600",
-            gradient: "from-cyan-100 to-teal-100",
-          },
-        ]
+  const services = [
+    {
+      icon: Truck,
+      title: "Fast delivery",
+      subtitle: shop === "A" ? "Parts delivered" : "Accessories delivered",
+      bgColor: "bg-background",
+      borderColor: "border-border",
+      iconColor: "text-foreground",
+      titleColor: "text-foreground",
+      subtitleColor: "text-muted-foreground",
+      gradient: "from-black/5 to-black/10",
+    },
+    {
+      icon: Shield,
+      title: "Trusted quality",
+      subtitle: "Verified products",
+      bgColor: "bg-background",
+      borderColor: "border-border",
+      iconColor: "text-foreground",
+      titleColor: "text-foreground",
+      subtitleColor: "text-muted-foreground",
+      gradient: "from-black/5 to-black/10",
+    },
+    {
+      icon: Heart,
+      title: "Authentic brands",
+      subtitle: "Carefully selected",
+      bgColor: "bg-background",
+      borderColor: "border-border",
+      iconColor: "text-foreground",
+      titleColor: "text-foreground",
+      subtitleColor: "text-muted-foreground",
+      gradient: "from-black/5 to-black/10",
+    },
+    {
+      icon: Sparkles,
+      title: "Customer support",
+      subtitle: "Quick response",
+      bgColor: "bg-background",
+      borderColor: "border-border",
+      iconColor: "text-foreground",
+      titleColor: "text-foreground",
+      subtitleColor: "text-muted-foreground",
+      gradient: "from-black/5 to-black/10",
+    },
+  ]
 
   // Duplicate services for seamless looping
   const loopedServices = [...services, ...services]
@@ -186,12 +138,10 @@ const Services = () => {
                   className={`
                     ${service.bgColor} 
                     border ${service.borderColor} 
-                    rounded-xl 
                     p-4 sm:p-5 lg:p-6 
                     flex items-center 
                     gap-3 sm:gap-4 
                     bg-gradient-to-br ${service.gradient}
-                    animate-pulse-glow
                     cursor-pointer
                     relative
                     overflow-hidden

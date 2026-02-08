@@ -1,7 +1,7 @@
 // Admin Security Configuration
 export const ADMIN_CONFIG = {
   // Secret access key - change this to your own secret
-  SECRET_ACCESS_KEY: process.env.ADMIN_SECRET_KEY || "sabs-admin-2025-secure",
+  SECRET_ACCESS_KEY: process.env.ADMIN_SECRET_KEY || "motoclub-admin-2026-secure",
   
   // Admin registration settings - disabled by default, only super admin can add users
   REGISTRATION_ENABLED: false,
@@ -11,7 +11,7 @@ export const ADMIN_CONFIG = {
   MAX_ADMIN_USERS: parseInt(process.env.MAX_ADMIN_USERS || "5"),
   
   // Super admin configuration
-  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || "sabsorder@gmail.com",
+  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL || "admin@motoclub.in",
   SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@2025",
   
   // Admin roles

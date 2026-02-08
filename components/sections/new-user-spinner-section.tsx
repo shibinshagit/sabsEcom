@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Gift, Sparkles, Zap } from "lucide-react"
+import { Gift, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import SpinnerWheel from "@/components/ui/offer-spinner"
 import { useShop } from "@/lib/contexts/shop-context"
@@ -15,28 +15,15 @@ const NewUserSpinnerSection: React.FC = () => {
   const isAuthenticated = false
 
   const getShopContent = () => {
-    if (shop === "A") {
-      return {
-        title: "Exclusive Offers for New Users Claim Now!",
-        subtitle: "Spin to get Beauty Discounts",
-        description: "Beauty coupon bundle waiting!",
-        discount: "Get up to 100% OFF on beauty products!",
-        icon: <Sparkles className="w-6 h-6 lg:w-8 lg:h-8 text-white animate-bounce" />,
-        gradient: "bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-500",
-        textColor: "text-orange-600",
-        hoverColor: "hover:bg-gray-100 border-orange-200"
-      }
-    } else {
-      return {
-        title: "Exclusive Offers for New Users Claim Now!",
-        subtitle: "Spin to get Style Discounts", 
-        description: "Style coupon bundle waiting!",
-        discount: "Get up to 100% OFF on style accessories!",
-        icon: <Zap className="w-6 h-6 lg:w-8 lg:h-8 text-white animate-bounce" />,
-        gradient: "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700",
-        textColor: "text-purple-600",
-        hoverColor: "hover:bg-gray-100 border-purple-200"
-      }
+    return {
+      title: "Exclusive Offers for New Users Claim Now!",
+      subtitle: shop === "A" ? "Spin to get Parts Discounts" : "Spin to get Accessories Discounts",
+      description: shop === "A" ? "Spare parts coupon bundle waiting!" : "Accessories coupon bundle waiting!",
+      discount: shop === "A" ? "Get up to 100% OFF on spare parts!" : "Get up to 100% OFF on accessories!",
+      icon: <Sparkles className="w-6 h-6 lg:w-8 lg:h-8 text-background animate-bounce" />,
+      gradient: "bg-foreground",
+      textColor: "text-foreground",
+      hoverColor: "hover:bg-muted border-border"
     }
   }
 
@@ -48,29 +35,29 @@ const NewUserSpinnerSection: React.FC = () => {
         <div className="px-4 lg:px-6 mt-4 lg:mt-6">
           <div className="max-w-7xl mx-auto">
             <div
-              className={`rounded-2xl p-6 lg:p-8 text-center relative overflow-hidden shadow-xl border-4 border-white transition-all duration-500 ${shopContent.gradient}`}
+              className={`p-6 lg:p-8 text-center relative overflow-hidden shadow-sm border border-border transition-all duration-500 ${shopContent.gradient}`}
             >
               <div className="relative z-10">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <Gift className="w-6 h-6 lg:w-8 lg:h-8 text-white animate-bounce" />
-                  <h3 className="text-white font-bold text-xl lg:text-3xl">
+                  <Gift className="w-6 h-6 lg:w-8 lg:h-8 text-background animate-bounce" />
+                  <h3 className="text-background font-bold text-xl lg:text-3xl">
                     {shopContent.title}
                   </h3>
                   {shopContent.icon}
                 </div>
-                <p className="text-white text-lg lg:text-2xl font-bold mb-1">
+                <p className="text-background text-lg lg:text-2xl font-bold mb-1">
                   {shopContent.subtitle}
                 </p>
-                <p className="text-white/90 text-sm lg:text-base mb-6">
+                <p className="text-background/80 text-sm lg:text-base mb-6">
                   {shopContent.description}
                 </p>
                 <Button
                   onClick={() => setShowSpinner(true)}
-                  className={`bg-white rounded-full px-8 lg:px-16 py-4 lg:py-6 font-bold text-lg lg:text-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 border-2 ${shopContent.textColor} ${shopContent.hoverColor}`}
+                  className={`bg-background px-8 lg:px-16 py-4 lg:py-6 font-bold text-lg lg:text-2xl shadow-sm transition-all duration-300 ${shopContent.textColor} ${shopContent.hoverColor}`}
                 >
                   🎁 SPIN NOW!
                 </Button>
-                <p className="text-white/80 text-xs lg:text-sm mt-3">
+                <p className="text-background/70 text-xs lg:text-sm mt-3">
                   {shopContent.discount}
                 </p>
               </div>
