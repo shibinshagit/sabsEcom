@@ -317,9 +317,9 @@ function CancellationPolicyContent() {
                 Our customer service team is available 24/7 to help you with order cancellations.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
-                <span>📧 cancel@motoclub.in</span>
-                <span>📱 WhatsApp: +91-9995442239</span>
-                <span>⏰ Mon-Sat: 9AM-6PM IST</span>
+                <span>📧 cancel@sabsonline.com</span>
+                <span>📱 WhatsApp: +971-56666-7178</span>
+                <span>⏰ Available 24/7</span>
               </div>
             </CardContent>
           </Card>

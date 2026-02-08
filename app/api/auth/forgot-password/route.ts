@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     `
 
     // Create reset URL
-    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://motoclub.in'}/reset-password?token=${resetToken}`
+    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sabsonlinestore.com'}/reset-password?token=${resetToken}`
 
     // Send reset email
     const emailHtml = `
@@ -61,14 +61,14 @@ export async function POST(request: Request) {
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #f97316, #dc2626); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 28px;">🔐 Password Reset</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Reset your Motoclub Kottakkal password</p>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Reset your Sabs Online password</p>
         </div>
 
         <div style="background: #fff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px;">
           <h2 style="color: #f97316; margin-bottom: 20px;">Hi ${user.name || 'there'}!</h2>
 
           <p style="margin-bottom: 20px;">
-            We received a request to reset the password for your Motoclub Kottakkal account associated with <strong>${email}</strong>.
+            We received a request to reset the password for your Sabs Online account associated with <strong>${email}</strong>.
           </p>
 
           <p style="margin-bottom: 20px;">
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
           <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
             <p style="margin: 0; color: #666; font-size: 14px;">Need help? Contact us at <a href="tel:+919037888193" style="color: #f97316;">+91 9037888193</a></p>
-            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">This email was sent by Motoclub Kottakkal</p>
+            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">This email was sent by Sabs Online</p>
           </div>
         </div>
       </body>
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: '🔐 Reset Your Password - Motoclub Kottakkal',
+      subject: '🔐 Reset Your Password - Sabs Online',
       html: emailHtml,
     }
 

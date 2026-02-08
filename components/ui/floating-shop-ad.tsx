@@ -25,32 +25,32 @@ export default function FloatingShopAd({ isVisible, onClose, onSwitchShop }: Flo
   if (!isVisible) return null
 
   const otherShop = shop === "A" ? "B" : "A"
-  const currentShopName = shop === "A" ? "Parts" : "Accessories"
-  const otherShopName = otherShop === "A" ? "Parts" : "Accessories"
+  const currentShopName = shop === "A" ? "Beauty" : "Style"
+  const otherShopName = otherShop === "A" ? "Beauty" : "Style"
   
   const shopData = {
     A: {
-      name: "Spare Parts",
-      shortName: "Parts",
+      name: "Beauty Products",
+      shortName: "Beauty",
       icon: <Sparkles className="w-5 h-5" />,
       gradient: "from-orange-400 via-pink-500 to-red-500",
       bgGradient: "from-orange-50 to-pink-50",
       textColor: "text-orange-600",
-      description: "Genuine spare parts available!",
-      offer: "Best Deals",
-      features: ["Engine Parts", "Brake Parts", "Suspension"],
+      description: "Premium beauty essentials await!",
+      offer: "Up to 50% OFF",
+      features: ["Skincare", "Makeup", "Fragrances"],
       emoji: "✨"
     },
     B: {
-      name: "Accessories", 
-      shortName: "Accessories",
+      name: "Style Accessories", 
+      shortName: "Style",
       icon: <Watch className="w-5 h-5" />,
       gradient: "from-purple-400 via-blue-500 to-indigo-600",
       bgGradient: "from-purple-50 to-blue-50",
       textColor: "text-purple-600",
-      description: "Accessories for every ride!",
+      description: "Trendy accessories collection!",
       offer: "New Arrivals",
-      features: ["Lighting", "Luggage", "Riding Gear"],
+      features: ["Watches", "Jewelry", "Gadgets"],
       emoji: "⌚"
     }
   }

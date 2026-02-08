@@ -821,8 +821,8 @@ export default function AdminSettings() {
                       onChange={(e) => updateShopFeaturesSetting("default_shop", e.target.value)}
                       className="w-full bg-gray-700 border-gray-600 text-white h-10 mt-2 rounded-md px-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                     >
-                      <option value="A">Shop A - Spare Parts</option>
-                      <option value="B">Shop B - Accessories</option>
+                      <option value="A">Shop A - Beauty Products</option>
+                      <option value="B">Shop B - Style Accessories</option>
                     </select>
                     <p className="text-gray-400 text-xs mt-1">Shop that users see when they first visit the site</p>
                   </div>
@@ -849,11 +849,11 @@ export default function AdminSettings() {
                     Current Shop Configuration
                   </h4>
                   <div className="text-sm text-gray-300 space-y-1">
-                    <p>• Default Shop: <strong>{getShopFeaturesSetting("default_shop") === "B" ? "Shop B - Accessories" : "Shop A - Spare Parts"}</strong></p>
+                    <p>• Default Shop: <strong>{getShopFeaturesSetting("default_shop") === "B" ? "Shop B - Style Accessories" : "Shop A - Beauty Products"}</strong></p>
                     <p>• Shop Switching: <span className={getShopFeaturesSetting("shop_switch_enabled") === "true" ? "text-green-400" : "text-red-400"}>
                       {getShopFeaturesSetting("shop_switch_enabled") === "true" ? "Enabled" : "Disabled"}
                     </span></p>
-                    <p>• Current Admin Shop: <strong>Shop {shop} - {shop === "A" ? "Spare Parts" : "Accessories"}</strong></p>
+                    <p>• Current Admin Shop: <strong>Shop {shop} - {shop === "A" ? "Beauty Products" : "Style Accessories"}</strong></p>
                   </div>
                 </div>
               </CardContent>

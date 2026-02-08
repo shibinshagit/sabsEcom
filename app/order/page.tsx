@@ -376,9 +376,9 @@ export default function OrderPage() {
 
             let currentShop = localStorage.getItem('currentShop')
             if (!currentShop) {
-              const isStyleShop = window.location.href.includes('accessories') ||
-                document.title.includes('Accessories') ||
-                document.querySelector('title')?.textContent?.includes('Accessories')
+              const isStyleShop = window.location.href.includes('style') ||
+                document.title.includes('Style') ||
+                document.querySelector('title')?.textContent?.includes('Style')
               currentShop = isStyleShop ? 'B' : 'B'
             }
 
@@ -651,9 +651,9 @@ export default function OrderPage() {
 
       let currentShop = localStorage.getItem('currentShop')
       if (!currentShop) {
-        const isStyleShop = window.location.href.includes('accessories') ||
-          document.title.includes('Accessories') ||
-          document.querySelector('title')?.textContent?.includes('Accessories')
+        const isStyleShop = window.location.href.includes('style') ||
+          document.title.includes('Style') ||
+          document.querySelector('title')?.textContent?.includes('Style')
         currentShop = isStyleShop ? 'B' : 'B'
       }
 
@@ -747,10 +747,10 @@ export default function OrderPage() {
         }
 
         if (result.error) {
-          if (result.error.includes("only valid for Beauty Shop") || result.error.includes("only valid for Spare Parts")) {
-            errorMessage = "This offer is only valid for the Spare Parts shop. Switch to Spare Parts to use this offer."
-          } else if (result.error.includes("only valid for Style Shop") || result.error.includes("only valid for Accessories")) {
-            errorMessage = "This offer is only valid for the Accessories shop. Switch to Accessories to use this offer."
+          if (result.error.includes("only valid for Beauty Shop")) {
+            errorMessage = "This offer is only valid for Beauty Shop. Switch to Beauty Shop to use this offer."
+          } else if (result.error.includes("only valid for Style Shop")) {
+            errorMessage = "This offer is only valid for Style Shop. Switch to Style Shop to use this offer."
           } else if (result.error.includes("new customers")) {
             errorMessage = "This offer is exclusively for new customers."
           } else if (result.error.includes("already used this offer")) {
@@ -1062,7 +1062,7 @@ export default function OrderPage() {
           key: razorpayOrderResult.key,
           amount: razorpayOrderResult.amount,
           currency: razorpayOrderResult.currency,
-          name: "Motoclub Kottakkal",
+          name: "SABS online store",
           description: "Order Payment",
           order_id: razorpayOrderResult.orderId,
           handler: async (response: any) => {
@@ -1205,7 +1205,7 @@ export default function OrderPage() {
     const totalText = selectedCurrency === 'AED' ? `AED ${finalTotal.toFixed(2)}` : `₹${finalTotal.toFixed(2)}`
     const orderNumber = `#${Date.now().toString().slice(-6)}`
 
-    let message = `*MOTOCLUB KOTTACKAL ORDER* ${orderNumber}\n`
+    let message = `*SABS ONLINE ORDER* ${orderNumber}\n`
     message += `═════════════════\n\n`
 
     message += `*CUSTOMER INFO*\n`

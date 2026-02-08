@@ -18,24 +18,24 @@ export default function ShopSwitchPopup({ isOpen, onClose, onSwitchShop }: ShopS
   if (!isOpen) return null
 
   const otherShop = shop === "A" ? "B" : "A"
-  const currentShopName = shop === "A" ? "Spare Parts" : "Accessories"
-  const otherShopName = otherShop === "A" ? "Spare Parts" : "Accessories"
+  const currentShopName = shop === "A" ? "Beauty Products" : "Style Accessories"
+  const otherShopName = otherShop === "A" ? "Beauty Products" : "Style Accessories"
   
   const shopData = {
     A: {
-      name: "Spare Parts",
+      name: "Beauty Products",
       icon: <Sparkles className="w-8 h-8" />,
       gradient: "from-orange-400 via-pink-500 to-red-500",
-      description: "Genuine parts for reliable rides",
-      features: ["Engine Parts", "Brake Parts", "Suspension", "Electrical"],
+      description: "Discover premium beauty essentials",
+      features: ["Premium Skincare", "Makeup Essentials", "Beauty Tools", "Fragrances"],
       emoji: "✨"
     },
     B: {
-      name: "Accessories", 
+      name: "Style Accessories", 
       icon: <Watch className="w-8 h-8" />,
       gradient: "from-purple-400 via-blue-500 to-indigo-600",
-      description: "Everyday accessories for riders",
-      features: ["Lighting", "Luggage", "Riding Gear", "Maintenance"],
+      description: "Explore trendy style accessories",
+      features: ["Smart Watches", "Fashion Jewelry", "Tech Gadgets", "Lifestyle Items"],
       emoji: "⌚"
     }
   }

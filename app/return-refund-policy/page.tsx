@@ -246,9 +246,9 @@ function ReturnRefundPolicyContent() {
                 Our friendly customer service team is here to assist you with any return or refund questions.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
-                <span>📧 returns@motoclub.in</span>
-                <span>📱 WhatsApp: +91-9995442239</span>
-                <span>⏰ Mon-Sat: 9AM-6PM IST</span>
+                <span>📧 returns@sabsonline.com</span>
+                <span>📱 WhatsApp: +971-56666-7178</span>
+                <span>⏰ Sun-Thu: 9AM-6PM GST</span>
               </div>
             </CardContent>
           </Card>

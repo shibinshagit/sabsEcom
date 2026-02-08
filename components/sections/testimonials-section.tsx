@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Quote, Star, Sparkles } from "lucide-react"
+import { Quote, Star, Heart, Zap } from "lucide-react"
 import Image from "next/image"
 import { useShop } from "@/lib/contexts/shop-context"
 
@@ -51,19 +51,37 @@ export default function TestimonialsSection() {
     }
   }, [testimonials.length])
 
-  const theme = {
-    bg: "bg-background",
-    cardBg: "bg-card border border-border",
-    title: "text-foreground",
-    text: "text-muted-foreground",
-    quote: "text-foreground",
-    star: "fill-foreground text-foreground",
-    indicator: "bg-foreground",
-    indicatorInactive: "bg-muted",
-    shadow: "shadow-sm",
-    icon: Sparkles,
-    floatingElements: "from-black/10 to-black/20",
-  }
+  // Enhanced theming
+  const theme =
+    shop === "A"
+      ? {
+          // Cosmetics Theme
+          bg: "bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100",
+          cardBg: "bg-white/90 backdrop-blur-xl border-pink-100",
+          title: "font-serif text-gray-800",
+          text: "text-gray-700",
+          quote: "text-pink-500",
+          star: "fill-pink-400 text-pink-400",
+          indicator: "bg-pink-500",
+          indicatorInactive: "bg-pink-200",
+          shadow: "shadow-pink-100",
+          icon: Heart,
+          floatingElements: "from-pink-400/20 to-rose-400/20",
+        }
+      : {
+          // Gadgets Theme
+          bg: "bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800",
+          cardBg: "bg-slate-800/90 backdrop-blur-xl border-cyan-500/20",
+          title: "font-mono text-cyan-100",
+          text: "text-gray-300",
+          quote: "text-cyan-400",
+          star: "fill-cyan-400 text-cyan-400",
+          indicator: "bg-cyan-500",
+          indicatorInactive: "bg-cyan-500/30",
+          shadow: "shadow-cyan-500/20",
+          icon: Zap,
+          floatingElements: "from-cyan-400/20 to-blue-400/20",
+        }
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -81,12 +99,14 @@ export default function TestimonialsSection() {
             What Our Customers Say
           </h2>
           <div className="animate-pulse">
-            <div className={`${theme.cardBg} shadow-sm p-12 md:p-20`}>
-              <div className="h-6 bg-muted mb-6"></div>
-              <div className="h-6 bg-muted mb-6 w-3/4 mx-auto"></div>
-              <div className="h-6 bg-muted mb-10 w-1/2 mx-auto"></div>
-              <div className="w-24 h-24 bg-muted mx-auto mb-6"></div>
-              <div className="h-6 bg-muted w-1/3 mx-auto"></div>
+            <div className={`${theme.cardBg} shadow-2xl rounded-3xl p-12 md:p-20 border`}>
+              <div className={`h-6 ${shop === "A" ? "bg-pink-200" : "bg-slate-700"} rounded mb-6`}></div>
+              <div className={`h-6 ${shop === "A" ? "bg-pink-200" : "bg-slate-700"} rounded mb-6 w-3/4 mx-auto`}></div>
+              <div className={`h-6 ${shop === "A" ? "bg-pink-200" : "bg-slate-700"} rounded mb-10 w-1/2 mx-auto`}></div>
+              <div
+                className={`w-24 h-24 ${shop === "A" ? "bg-pink-200" : "bg-slate-700"} rounded-full mx-auto mb-6`}
+              ></div>
+              <div className={`h-6 ${shop === "A" ? "bg-pink-200" : "bg-slate-700"} rounded w-1/3 mx-auto`}></div>
             </div>
           </div>
         </div>
@@ -101,7 +121,7 @@ export default function TestimonialsSection() {
           <h2 className={`text-5xl md:text-6xl font-bold mb-16 ${theme.title} animate-fade-in`}>
             What Our Customers Say
           </h2>
-          <div className={`${theme.cardBg} shadow-sm p-12 md:p-20`}>
+          <div className={`${theme.cardBg} shadow-2xl rounded-3xl p-12 md:p-20 border`}>
             <p className={`${theme.text} text-xl`}>No testimonials available at the moment.</p>
           </div>
         </div>
@@ -116,7 +136,7 @@ export default function TestimonialsSection() {
         {[...Array(12)].map((_, i) => (
           <div
             key={i}
-            className={`absolute w-3 h-3 bg-gradient-to-r ${theme.floatingElements} animate-float opacity-40`}
+            className={`absolute w-3 h-3 bg-gradient-to-r ${theme.floatingElements} rounded-full animate-float opacity-40`}
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -130,11 +150,11 @@ export default function TestimonialsSection() {
       <div className="max-w-6xl mx-auto px-4 text-center relative z-10">
         <div className="mb-16 animate-fade-in">
           <div className="flex justify-center mb-6">
-            <IconComponent className="w-12 h-12 text-foreground animate-pulse" />
+            <IconComponent className={`w-12 h-12 ${shop === "A" ? "text-pink-500" : "text-cyan-400"} animate-pulse`} />
           </div>
           <h2 className={`text-5xl md:text-7xl font-bold mb-6 ${theme.title} leading-tight`}>What Our Customers Say</h2>
-          <p className="text-xl md:text-2xl text-muted-foreground font-light">
-            {shop === "A" ? "Real stories from riders who trust our parts" : "Feedback from riders who love our accessories"}
+          <p className={`text-xl md:text-2xl ${shop === "A" ? "text-rose-600" : "text-cyan-400"} font-light`}>
+            {shop === "A" ? "Real stories from our beauty community" : "Testimonials from tech enthusiasts worldwide"}
           </p>
         </div>
 
@@ -146,10 +166,10 @@ export default function TestimonialsSection() {
             }`}
           >
             <div
-              className={`relative ${theme.cardBg} ${theme.shadow} p-12 md:p-20 animate-scale-in border transform hover:-translate-y-1 transition-all duration-500`}
+              className={`relative ${theme.cardBg} ${theme.shadow} shadow-2xl rounded-3xl p-12 md:p-20 animate-scale-in border transform hover:scale-105 transition-all duration-500`}
             >
               <Quote
-                className={`absolute -top-8 left-1/2 transform -translate-x-1/2 w-16 h-16 ${theme.quote} bg-white p-3 shadow-sm`}
+                className={`absolute -top-8 left-1/2 transform -translate-x-1/2 w-16 h-16 ${theme.quote} bg-white rounded-full p-3 shadow-xl ${shop === "B" ? "bg-slate-800" : ""}`}
               />
 
               <p className={`${theme.text} text-xl md:text-2xl leading-relaxed mb-8 font-light italic`}>
@@ -160,7 +180,7 @@ export default function TestimonialsSection() {
               <div className="flex justify-center mb-8 gap-1">{renderStars(testimonial.rating)}</div>
 
               <div className="flex flex-col items-center">
-                <div className="relative w-24 h-24 overflow-hidden mb-6 shadow-sm">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden mb-6 shadow-xl">
                   {testimonial.customer_avatar ? (
                     <Image
                       src={testimonial.customer_avatar || "/placeholder.svg"}
@@ -169,14 +189,20 @@ export default function TestimonialsSection() {
                       className="object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <span className="text-foreground text-3xl font-bold">{testimonial.customer_name.charAt(0)}</span>
+                    <div
+                      className={`w-full h-full ${
+                        shop === "A"
+                          ? "bg-gradient-to-br from-pink-400 to-rose-400"
+                          : "bg-gradient-to-br from-cyan-400 to-blue-400"
+                      } flex items-center justify-center`}
+                    >
+                      <span className="text-white text-3xl font-bold">{testimonial.customer_name.charAt(0)}</span>
                     </div>
                   )}
                 </div>
                 <h3 className={`font-bold text-2xl mb-2 ${theme.title}`}>{testimonial.customer_name}</h3>
                 {testimonial.customer_role && (
-                  <span className="text-muted-foreground text-lg">
+                  <span className={`${shop === "A" ? "text-gray-500" : "text-gray-400"} text-lg`}>
                     {testimonial.customer_role}
                   </span>
                 )}
@@ -192,8 +218,8 @@ export default function TestimonialsSection() {
               <button
                 key={i}
                 onClick={() => setCurrent(i)}
-                className={`w-4 h-4 transition-all duration-300 transform hover:scale-125 ${
-                  i === current ? `${theme.indicator} scale-125 shadow-sm` : theme.indicatorInactive
+                className={`w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-125 ${
+                  i === current ? `${theme.indicator} scale-125 shadow-lg` : theme.indicatorInactive
                 }`}
               />
             ))}

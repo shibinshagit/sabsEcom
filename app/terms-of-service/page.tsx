@@ -49,14 +49,14 @@ function TermsOfServiceContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-600">
-                This Terms of Service agreement ("Terms") governs your access to and use of Motoclub Kottakkal's website,
+                This Terms of Service agreement ("Terms") governs your access to and use of SabsOnline's website, 
                 mobile application, and services (collectively, the "Services").
               </p>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2">Key Points</h4>
                 <ul className="text-blue-800 text-sm space-y-1">
-                  <li>• These terms form a legally binding agreement between you and Motoclub Kottakkal</li>
+                  <li>• These terms form a legally binding agreement between you and SabsOnline</li>
                   <li>• By using our services, you accept these terms in full</li>
                   <li>• We may update these terms from time to time</li>
                   <li>• Continued use after changes means you accept the new terms</li>
@@ -67,10 +67,10 @@ function TermsOfServiceContent() {
                 <div className="border rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-2">Who We Are</h4>
                   <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Motoclub Kottakkal</li>
-                    <li>• Registered in India</li>
+                    <li>• SabsOnline LLC</li>
+                    <li>• Registered in UAE</li>
                     <li>• E-commerce platform</li>
-                    <li>• Spare parts & accessories</li>
+                    <li>• Beauty & Style products</li>
                   </ul>
                 </div>
 
@@ -254,7 +254,7 @@ function TermsOfServiceContent() {
                 <h4 className="font-semibold text-blue-900 mb-2">Our Content</h4>
                 <p className="text-blue-800 text-sm">
                   All content on our website, including text, images, logos, and software, 
-                  is owned by or licensed to Motoclub Kottakkal and protected by copyright laws.
+                  is owned by or licensed to SabsOnline and protected by copyright laws.
                 </p>
               </div>
 
@@ -449,7 +449,7 @@ function TermsOfServiceContent() {
                 <div>
                   <h4 className="font-semibold mb-2">Legal Contact</h4>
                   <ul className="text-gray-300 space-y-1">
-                    <li>📧 legal@motoclub.in</li>
+                    <li>📧 legal@sabsonline.com</li>
                     <li>📱 Customer Service</li>
                     <li>⏰ Business Hours</li>
                   </ul>

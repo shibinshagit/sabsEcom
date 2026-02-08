@@ -746,7 +746,7 @@ const formatPrice = (product: Product) => {
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                     className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="Brand name"
+                    placeholder="Sabs, Faiza, Goree"
                   />
                 </div>
 
