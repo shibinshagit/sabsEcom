@@ -13,6 +13,7 @@ import WishlistSync from '@/components/wishlist-sync'
 import CartSync from '@/components/cart-sync'
 import { Toaster } from 'react-hot-toast'
 import ConditionalCountrySelection from '@/components/ui/conditional-country-selection'
+import { Analytics } from '@vercel/analytics/next'
 
 import {
   ClerkProvider,
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </StoreProvider>
             </SettingsProvider>
           </AuthProvider>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
