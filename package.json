@@ -43,6 +43,7 @@
     "@reduxjs/toolkit": "latest",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@vercel/analytics": "^1.6.1",
     "@vercel/blob": "latest",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
