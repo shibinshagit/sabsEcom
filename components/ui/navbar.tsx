@@ -21,6 +21,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useShop } from "@/lib/contexts/shop-context"
 import LoginModal from "@/components/auth/login-modal"
 import { useUser } from "@clerk/nextjs"
+import { NavbarSkeleton } from "@/components/ui/navbar-skeleton"
 
 const baseNavigation = [
   { name: "All Products", href: "/products" },
@@ -1327,7 +1328,7 @@ function Nav() {
 
 export default function Navbar() {
   return (
-    <Suspense fallback={<div>Loading navbar...</div>}>
+    <Suspense fallback={<NavbarSkeleton />}>
       <Nav />
     </Suspense>
   )

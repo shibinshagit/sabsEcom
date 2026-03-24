@@ -5,6 +5,7 @@ import Services from "@/components/sections/services"
 import NewUserSpinnerSection from "@/components/sections/new-user-spinner-section"
 import UserCoupons from "@/components/sections/user-coupons"
 import ProductList from "@/components/sections/product-list"
+import { ProductListSkeleton } from "@/components/sections/product-list-skeleton"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { Suspense } from "react"
 
@@ -21,7 +22,7 @@ export default function HomePage() {
           <UserCoupons />
         </section>
       )} */}
-      <Suspense fallback={<div>Loading navbar...</div>}>
+      <Suspense fallback={<ProductListSkeleton />}>
         <ProductList />
       
       </Suspense>
