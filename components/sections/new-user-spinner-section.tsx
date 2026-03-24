@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Gift, Sparkles, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import SpinnerWheel from "@/components/ui/offer-spinner"
@@ -9,10 +9,29 @@ import { useShop } from "@/lib/contexts/shop-context"
 
 const NewUserSpinnerSection: React.FC = () => {
   const [showSpinner, setShowSpinner] = useState(false)
+  const [hasActiveOffer, setHasActiveOffer] = useState<boolean | null>(null)
   const { shop } = useShop()
 
-  const shouldShowSpinButton = true
-  const isAuthenticated = false
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/offers/active")
+        if (!res.ok) {
+          if (!cancelled) setHasActiveOffer(false)
+          return
+        }
+        const data = await res.json()
+        const list = Array.isArray(data) ? data : []
+        if (!cancelled) setHasActiveOffer(list.length > 0)
+      } catch {
+        if (!cancelled) setHasActiveOffer(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const getShopContent = () => {
     if (shop === "A") {
@@ -42,9 +61,13 @@ const NewUserSpinnerSection: React.FC = () => {
 
   const shopContent = getShopContent()
 
+  if (hasActiveOffer !== true) {
+    return null
+  }
+
   return (
     <div>
-      {shouldShowSpinButton && !showSpinner && (
+      {!showSpinner && (
         <div className="px-4 lg:px-6 mt-4 lg:mt-6">
           <div className="max-w-7xl mx-auto">
             <div

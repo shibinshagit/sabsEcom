@@ -382,24 +382,22 @@ function Nav() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-8">
                 {/* Logo */}
-                <Link href="/" className="flex items-center space-x-3 group">
+                <Link href="/" className="flex items-center group shrink-0" aria-label={settings.restaurant_name}>
                   {settings.restaurant_logo ? (
-                    <div className="relative w-10 h-10 transition-transform duration-300 group-hover:scale-110">
+                    <div className="relative w-44 h-14 transition-transform duration-300 group-hover:scale-110">
                       <Image
                         src={settings.restaurant_logo || "/placeholder.svg"}
-                        alt={settings.restaurant_name}
+                        alt=""
                         fill
-                        className="object-contain"
+                        className="object-contain object-left"
+                        sizes="176px"
                       />
                     </div>
                   ) : (
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
-                      <ShoppingBag className="w-5 h-5 text-white" />
+                    <div className="w-44 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                      <ShoppingBag className="w-8 h-8 text-white" />
                     </div>
                   )}
-                  <h1 className="text-2xl font-bold text-white">
-                    {shop === "A" ? `${settings.restaurant_name} - Beauty` : `${settings.restaurant_name} - Style`}
-                  </h1>
                 </Link>
 
                 {/* Enhanced Search Bar */}
@@ -841,9 +839,23 @@ function Nav() {
         <div className="hidden md:block lg:hidden">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between mb-3">
-              <h1 className="text-xl font-bold text-white">
-                {shop === "A" ? `${settings.restaurant_name} - Beauty` : `${settings.restaurant_name} - Style`}
-              </h1>
+              <Link href="/" className="flex items-center group shrink-0" aria-label={settings.restaurant_name}>
+                {settings.restaurant_logo ? (
+                  <div className="relative w-36 h-12 transition-transform duration-300 group-hover:scale-110">
+                    <Image
+                      src={settings.restaurant_logo || "/placeholder.svg"}
+                      alt=""
+                      fill
+                      className="object-contain object-left"
+                      sizes="144px"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-36 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                    <ShoppingBag className="w-7 h-7 text-white" />
+                  </div>
+                )}
+              </Link>
               <div className="flex items-center gap-3">
                 {/* Currency Dropdown for Tablet */}
                 <DropdownMenu>
@@ -1093,31 +1105,32 @@ function Nav() {
         {/* Mobile Header */}
         <div className="block md:hidden">
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-3">
-              <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className="text-white p-0">
-                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </Button>
-               <Link href="/" className="flex items-center space-x-3 group">
+            <div className="grid grid-cols-3 items-center gap-2 mb-3">
+              <div className="flex justify-start min-w-0">
+                <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className="text-white p-0 shrink-0">
+                  {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </Button>
+              </div>
+              <div className="flex justify-center min-w-0">
+                <Link href="/" className="flex items-center justify-center group" aria-label={settings.restaurant_name}>
                   {settings.restaurant_logo ? (
-                    <div className="relative w-10 h-10 transition-transform duration-300 group-hover:scale-110">
+                    <div className="relative w-28 h-11 transition-transform duration-300 group-hover:scale-110">
                       <Image
                         src={settings.restaurant_logo || "/placeholder.svg"}
-                        alt={settings.restaurant_name}
+                        alt=""
                         fill
-                        className="object-contain"
+                        className="object-contain object-center"
+                        sizes="112px"
                       />
                     </div>
                   ) : (
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
-                      <ShoppingBag className="w-5 h-5 text-white" />
+                    <div className="w-28 h-11 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                      <ShoppingBag className="w-6 h-6 text-white" />
                     </div>
                   )}
-                  <h1 className="text-2xl font-bold text-white">
-                    {shop === "A" ? `Beauty` : `Style`}
-                  </h1>
                 </Link>
-             
-              <div className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center justify-end gap-2 min-w-0">
                 {/* Currency for Mobile */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
