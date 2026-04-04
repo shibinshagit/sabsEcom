@@ -15,15 +15,15 @@ export default function Footer() {
   const theme =
     shop === "A"
       ? {
-          // Beauty Theme - Warm colors
-          bg: "bg-gradient-to-br from-pink-400 via-orange-400 to-pink-500",
+          // Beauty Theme - Premium colors
+          bg: "bg-gradient-to-br from-zinc-950 via-slate-900 to-violet-950",
           text: "text-white",
-          accent: "text-pink-100",
-          hover: "hover:text-pink-200",
-          logo: "bg-gradient-to-r from-pink-500 to-orange-600",
-          border: "border-pink-300/30",
-          icon: Heart,
-          socialHover: "hover:text-pink-200 hover:scale-110",
+          accent: "text-rose-200",
+          hover: "hover:text-rose-300",
+          logo: "bg-gradient-to-r from-rose-500 to-fuchsia-600",
+          border: "border-white/20",
+          icon: Sparkles,
+          socialHover: "hover:text-rose-300 hover:scale-110",
           description:
             "Sabs Online Store story began in 2015 in Dubai. we have created a niche for our customers with our high-quality products and our attention to detail in service.",
           shopName: "SABS ONLINE",

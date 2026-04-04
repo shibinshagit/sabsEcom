@@ -19,47 +19,47 @@ const Services = () => {
       ? [
           {
             icon: Truck,
-            title: "Free shipping",
-            subtitle: "Beauty delivered",
-            bgColor: "bg-pink-50",
-            borderColor: "border-pink-200",
-            iconColor: "text-pink-600",
-            titleColor: "text-pink-700",
-            subtitleColor: "text-pink-600",
-            gradient: "from-pink-100 to-rose-100",
+            title: "Express delivery",
+            subtitle: "Fast beauty dispatch",
+            bgColor: "bg-rose-50/80",
+            borderColor: "border-rose-200/70",
+            iconColor: "text-rose-600",
+            titleColor: "text-zinc-900",
+            subtitleColor: "text-zinc-600",
+            gradient: "from-white to-rose-50/90",
           },
           {
             icon: Heart,
             title: "Authentic Products",
             subtitle: "Genuine brands",
-            bgColor: "bg-purple-50",
-            borderColor: "border-purple-200",
-            iconColor: "text-purple-600",
-            titleColor: "text-purple-700",
-            subtitleColor: "text-purple-600",
-            gradient: "from-purple-100 to-indigo-100",
+            bgColor: "bg-violet-50/80",
+            borderColor: "border-violet-200/70",
+            iconColor: "text-violet-600",
+            titleColor: "text-zinc-900",
+            subtitleColor: "text-zinc-600",
+            gradient: "from-white to-violet-50/90",
           },
           {
             icon: Heart,
             title: "Result guarantee",
             subtitle: "100% authentic",
-            bgColor: "bg-rose-50",
-            borderColor: "border-rose-200",
-            iconColor: "text-rose-600",
-            titleColor: "text-rose-700",
-            subtitleColor: "text-rose-600",
-            gradient: "from-rose-100 to-pink-100",
+            bgColor: "bg-fuchsia-50/80",
+            borderColor: "border-fuchsia-200/70",
+            iconColor: "text-fuchsia-600",
+            titleColor: "text-zinc-900",
+            subtitleColor: "text-zinc-600",
+            gradient: "from-white to-fuchsia-50/90",
           },
           {
             icon: Sparkles,
             title: "Premium quality",
             subtitle: "High standards",
-            bgColor: "bg-orange-50",
-            borderColor: "border-orange-200",
-            iconColor: "text-orange-600",
-            titleColor: "text-orange-700",
-            subtitleColor: "text-orange-600",
-            gradient: "from-orange-100 to-amber-100",
+            bgColor: "bg-stone-50",
+            borderColor: "border-stone-200",
+            iconColor: "text-violet-600",
+            titleColor: "text-zinc-900",
+            subtitleColor: "text-zinc-600",
+            gradient: "from-white to-stone-50",
           },
         ]
       : [
@@ -191,12 +191,12 @@ const Services = () => {
                     flex items-center 
                     gap-3 sm:gap-4 
                     bg-gradient-to-br ${service.gradient}
-                    animate-pulse-glow
                     cursor-pointer
                     relative
                     overflow-hidden
                     min-w-[250px] sm:min-w-[300px] lg:min-w-[280px]
                     mx-2
+                    shadow-sm hover:shadow-md
                   `}
                   variants={cardVariants}
                   initial="hidden"

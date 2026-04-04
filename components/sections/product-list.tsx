@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart, Loader2 } from "lucide-react"
+import { Star, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -47,6 +47,27 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
   const searchParams = useSearchParams()
   const categoryFromUrl = searchParams.get("category")
   const { shop } = useShop()
+  const isShopA = shop === "A"
+  const accentTextClass = isShopA ? "text-fuchsia-600" : "text-orange-500"
+  const accentBadgeClass = isShopA
+    ? "bg-gradient-to-r from-fuchsia-500 to-violet-600"
+    : "bg-gradient-to-r from-orange-500 to-red-500"
+  const primaryButtonClass = isShopA
+    ? "bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-700 hover:to-violet-700"
+    : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+  const lightningFlowerAssets = [
+    { src: "/images/pink-flower-white-background-cutout.png", top: "6%", left: "4%", size: 68, delay: "0s", duration: "5.2s", opacity: 0.34 },
+    { src: "/images/top-view-pink-flower-with-drops-cutout.png", top: "14%", left: "18%", size: 84, delay: "0.6s", duration: "6.1s", opacity: 0.3 },
+    { src: "/images/pink-flower-white-background-cutout.png", top: "9%", left: "35%", size: 64, delay: "1.2s", duration: "4.8s", opacity: 0.3 },
+    { src: "/images/top-view-pink-flower-with-drops-cutout.png", top: "13%", left: "54%", size: 90, delay: "1.8s", duration: "6.4s", opacity: 0.28 },
+    { src: "/images/pink-flower-white-background-cutout.png", top: "8%", left: "73%", size: 70, delay: "2.2s", duration: "5.4s", opacity: 0.32 },
+    { src: "/images/top-view-pink-flower-with-drops-cutout.png", top: "15%", left: "88%", size: 62, delay: "2.8s", duration: "4.9s", opacity: 0.26 },
+    { src: "/images/top-view-pink-flower-with-drops-cutout.png", top: "56%", left: "8%", size: 78, delay: "0.4s", duration: "5.8s", opacity: 0.3 },
+    { src: "/images/pink-flower-white-background-cutout.png", top: "69%", left: "26%", size: 66, delay: "1.1s", duration: "5.1s", opacity: 0.3 },
+    { src: "/images/top-view-pink-flower-with-drops-cutout.png", top: "64%", left: "44%", size: 92, delay: "1.9s", duration: "6.6s", opacity: 0.26 },
+    { src: "/images/pink-flower-white-background-cutout.png", top: "71%", left: "66%", size: 74, delay: "2.4s", duration: "5.3s", opacity: 0.3 },
+    { src: "/images/top-view-pink-flower-with-drops-cutout.png", top: "62%", left: "84%", size: 86, delay: "3s", duration: "6.2s", opacity: 0.28 },
+  ]
 
   // Shop switching popup
   const { isPopupOpen, closePopup, switchShop } = useShopSwitchPopup({
@@ -526,7 +547,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               {/* <h3 className="text-xl font-bold text-gray-900">{`Lightning deals in ${getCurrentCategoryName() === 'shop A' ? 'Beauty' : 'Accessories'}`}</h3> */}
             
               {currencyFilteredItems.length !== shopFilteredItems.length && (
-                <Badge variant="outline" className="text-orange-600 border-orange-300">
+                <Badge
+                  variant="outline"
+                  className={isShopA ? "text-fuchsia-700 border-fuchsia-300" : "text-orange-600 border-orange-300"}
+                >
                   Filtered by {selectedCurrency} availability
                 </Badge>
               )}
@@ -535,165 +559,194 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         </div>
 
         {/* Lightning Deals Section - Only show when not searching */}
-    {lightningDeals.length > 0 && !isSearchActive && (
-  <div className="px-4 lg:px-6 mt-6">
-    <div className="max-w-7xl mx-auto">
-    
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Zap className="w-5 h-5 text-orange-500" />
-          <h3 className="text-xl font-bold text-gray-900">Lightning deals</h3>
-          <span className="text-gray-500">({lightningDeals.length} items)</span>
-        </div>
-        <ChevronDown className="w-5 h-5 text-gray-400" />
-      </div>
-      
-      {/* Horizontally Scrollable Container */}
-      <div className="relative">
-        <div className="flex gap-3 lg:gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {lightningDeals.map((item, index) => {
-            // Get the best available variant
-            const availableVariant = item.variants?.find((v: any) => 
-              v.available_aed || v.available_inr
-            ) || item.variants?.[0];
-            
-            // Calculate discount percentage based on selected currency
-            let discountPercent = 0;
-            if (availableVariant) {
-              console.log('Lightning Deals - Currency:', selectedCurrency, 'Variant:', availableVariant);
-              if (selectedCurrency === 'AED' && availableVariant.price_aed && availableVariant.discount_aed && availableVariant.price_aed > availableVariant.discount_aed) {
-                discountPercent = Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100);
-                console.log('AED Discount:', discountPercent, 'Price:', availableVariant.price_aed, 'Discount:', availableVariant.discount_aed);
-              } else if (selectedCurrency === 'INR' && availableVariant.price_inr && availableVariant.discount_inr && availableVariant.price_inr > availableVariant.discount_inr) {
-                discountPercent = Math.round(((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100);
-                console.log('INR Discount:', discountPercent, 'Price:', availableVariant.price_inr, 'Discount:', availableVariant.discount_inr);
-              }
-            }
-
-            return (
-              <Card
-                key={item.id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border hover:border-orange-200 flex-shrink-0 w-44 lg:w-52"
+        {lightningDeals.length > 0 && !isSearchActive && (
+          <div className="px-4 lg:px-6 mt-6">
+            <div className="max-w-7xl mx-auto">
+              <section
+                className={`relative isolate overflow-hidden rounded-2xl border p-4 lg:p-6 ${
+                  isShopA
+                    ? "bg-white/24 border-white/45 backdrop-blur-3xl [backdrop-filter:blur(28px)_saturate(180%)] ring-1 ring-white/55 shadow-[0_28px_90px_-28px_rgba(139,92,246,0.55)]"
+                    : "bg-white border-orange-100"
+                }`}
               >
-                <div className="relative">
-                  <Image
-                    key={item.id}
-                    onClick={() => router.push(`/product/${item.id}`)}
-                    src={
-                      item.image_urls?.[0] ||
-                      `/placeholder.svg?height=200&width=200&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
-                    }
-                    alt={item.name || "Product"}
-                    width={200}
-                    height={200}
-                    className="w-full h-32 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer"
-                  />
-                  
-                  {/* Ranking Badge */}
-                  <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs lg:text-sm font-bold shadow-lg">
-                    #{index + 1}
+                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white/42 via-white/8 to-violet-100/20" />
+                <div className="pointer-events-none absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/65 via-white/12 to-transparent" />
+                <div className="pointer-events-none absolute inset-[1px] rounded-[15px] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(255,255,255,0.24)]" />
+                <div className="pointer-events-none absolute -top-28 right-0 h-80 w-80 rounded-full bg-fuchsia-400/45 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-32 left-6 h-80 w-80 rounded-full bg-violet-400/42 blur-3xl" />
+                {isShopA && (
+                  <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    {lightningFlowerAssets.map((flower, idx) => (
+                      <div
+                        key={`lightning-image-flower-${idx}`}
+                        className="absolute"
+                        style={{
+                          top: flower.top,
+                          left: flower.left,
+                          opacity: flower.opacity,
+                          animation: `softFloat ${flower.duration} ease-in-out ${flower.delay} infinite`,
+                        }}
+                      >
+                        <Image
+                          src={flower.src}
+                          alt=""
+                          width={flower.size}
+                          height={flower.size}
+                          className="select-none saturate-125 drop-shadow-[0_0_12px_rgba(219,39,119,0.35)]"
+                        />
+                      </div>
+                    ))}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-fuchsia-100/18 to-violet-100/24" />
+                    <div className="absolute left-[10%] top-[24%] h-36 w-36 rounded-full bg-fuchsia-300/35 blur-2xl animate-[pulse_3.8s_ease-in-out_infinite]" />
+                    <div className="absolute right-[12%] bottom-[18%] h-32 w-32 rounded-full bg-rose-300/35 blur-2xl animate-[pulse_4.6s_ease-in-out_infinite]" />
+                    <div className="absolute right-[32%] top-[46%] h-24 w-24 rounded-full bg-violet-300/30 blur-2xl animate-[pulse_5.2s_ease-in-out_infinite]" />
                   </div>
+                )}
 
-                  {/* TOP SELLING Badge - only show if featured */}
-                  {item.is_featured && (
-                    <Badge className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full shadow-lg animate-pulse font-semibold">
-                      ⭐ TOP SELLING
-                    </Badge>
-                  )}
-
-                  {/* Feature Badge */}
-                  <Badge className="absolute bottom-2 left-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-2 py-1 rounded-full shadow-lg">
-                    {item.features?.[0]
-                      ? item.features[0].length > 7
-                        ? item.features[0].slice(0, 7) + "..."
-                        : item.features[0]
-                      : "Assured"}
-                  </Badge>
-
-                  {/* Discount Percentage Badge */}
-                  {discountPercent > 0 && (
-                    <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
-                      -{discountPercent}% 
-                    </Badge>
-                  )}
+                <div className="relative z-10 flex items-end justify-between gap-4 mb-6">
+                  <div className={`space-y-1.5 rounded-xl px-4 py-3 border backdrop-blur-md ${
+                    isShopA
+                      ? "bg-white/34 border-white/60 [backdrop-filter:blur(18px)_saturate(170%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_30px_-18px_rgba(192,38,211,0.55)]"
+                      : "bg-white/60 border-white/70"
+                  }`}>
+                    <h3 className="text-xl lg:text-3xl font-bold text-zinc-900 tracking-[-0.02em] leading-tight">Handpicked For You</h3>
+                    {/* <p className="text-sm lg:text-base text-zinc-600">{lightningDeals.length} curated picks with limited-time savings</p> */}
+                  </div>
+                
                 </div>
 
-                <CardContent className="p-3 lg:p-4">
-                  {/* Enhanced Price Section */}
-                  <div className="mb-2">
-                    {availableVariant && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {(
-                          // Check currency availability
-                          (selectedCurrency === "AED" && !availableVariant.available_aed) ||
-                          (selectedCurrency === "INR" && !availableVariant.available_inr)
-                        ) ? (
-                          // Show "Not Available" in red if unavailable
-                          <span className="text-red-600 font-bold text-sm lg:text-base">
-                            Not Available
-                          </span>
-                        ) : (
-                          <>
-                            {/* Discounted Price with smaller decimal */}
-                            <span className="text-red-500 font-bold text-sm lg:text-base">
-                              {formatPriceWithSmallDecimals(
-                                availableVariant.discount_aed,
-                                availableVariant.discount_inr,
-                                "AED",
-                                true,             // show symbol
-                                "#ef4444"    // color applied
-                              )}
-                            </span>
+                <div className="relative z-10 -mx-1 px-1">
+                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+                    {lightningDeals.map((item, index) => {
+                      // Get the best available variant
+                      const availableVariant = item.variants?.find((v: any) =>
+                        v.available_aed || v.available_inr
+                      ) || item.variants?.[0]
 
-                            {/* Original Price if discount is available */}
+                      // Calculate discount percentage based on selected currency
+                      let discountPercent = 0
+                      if (availableVariant) {
+                        console.log("Lightning Deals - Currency:", selectedCurrency, "Variant:", availableVariant)
+                        if (selectedCurrency === "AED" && availableVariant.price_aed && availableVariant.discount_aed && availableVariant.price_aed > availableVariant.discount_aed) {
+                          discountPercent = Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100)
+                          console.log("AED Discount:", discountPercent, "Price:", availableVariant.price_aed, "Discount:", availableVariant.discount_aed)
+                        } else if (selectedCurrency === "INR" && availableVariant.price_inr && availableVariant.discount_inr && availableVariant.price_inr > availableVariant.discount_inr) {
+                          discountPercent = Math.round(((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100)
+                          console.log("INR Discount:", discountPercent, "Price:", availableVariant.price_inr, "Discount:", availableVariant.discount_inr)
+                        }
+                      }
+
+                      return (
+                        <Card
+                          key={item.id}
+                          className={`snap-start rounded-lg overflow-hidden transition-all duration-300 border backdrop-blur-xl ${
+                            isShopA
+                              ? "bg-white/42 [backdrop-filter:blur(16px)_saturate(160%)] border-white/55 ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_14px_34px_-24px_rgba(147,51,234,0.5)] hover:ring-fuchsia-300/70 hover:border-white/70"
+                              : "bg-white border-zinc-200/80 hover:border-orange-200 shadow-sm hover:shadow-lg"
+                          } flex-shrink-0 w-[220px] sm:w-[240px] lg:w-[260px]`}
+                        >
+                          <div className="relative">
+                            <div className={`absolute inset-x-0 top-0 h-1 ${isShopA ? "bg-gradient-to-r from-fuchsia-500 via-violet-500 to-rose-500" : "bg-gradient-to-r from-orange-500 to-red-500"}`} />
+                            <Image
+                              key={item.id}
+                              onClick={() => router.push(`/product/${item.id}`)}
+                              src={
+                                item.image_urls?.[0] ||
+                                `/placeholder.svg?height=200&width=200&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
+                              }
+                              alt={item.name || "Product"}
+                              width={260}
+                              height={260}
+                              className="w-full h-40 lg:h-48 object-cover transition-transform duration-500 hover:scale-[1.04] cursor-pointer"
+                            />
+
+                            <div className="absolute top-2 left-2 bg-zinc-900/90 text-white rounded-md px-2 py-1 text-[11px] font-semibold shadow-md">
+                              #{index + 1}
+                            </div>
+
                             {discountPercent > 0 && (
-                              <span className="text-gray-500 text-xs line-through">
-                               {formatPriceWithSmallDecimals(
-                                availableVariant.price_aed,
-                                availableVariant.price_inr,
-                                "AED",
-                                true,           
-                                "#6B7280"  
-                              )}
-                              </span>
+                              <Badge className={`absolute top-2 right-2 ${accentBadgeClass} text-white text-[10px] px-2 py-1 rounded-md shadow-sm font-semibold`}>
+                                Save {discountPercent}%
+                              </Badge>
                             )}
-                          </>
-                        )}
-                      </div>
-                    )}
+
+                            {item.is_featured && (
+                              <Badge className="absolute bottom-2 left-2 bg-white/95 text-zinc-800 text-[10px] px-2 py-1 rounded-md shadow-sm font-semibold border border-zinc-200">
+                                Top Selling
+                              </Badge>
+                            )}
+                          </div>
+
+                          <CardContent className="p-4">
+                            <p className="text-sm text-zinc-900 line-clamp-2 leading-snug font-medium">{item.name}</p>
+
+                            <div className="mt-2 min-h-[36px]">
+                              {availableVariant && (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {(
+                                    (selectedCurrency === "AED" && !availableVariant.available_aed) ||
+                                    (selectedCurrency === "INR" && !availableVariant.available_inr)
+                                  ) ? (
+                                    <span className="text-red-600 font-semibold text-sm">Not Available</span>
+                                  ) : (
+                                    <>
+                                      <span className="text-rose-600 font-semibold text-sm lg:text-base">
+                                        {formatPriceWithSmallDecimals(
+                                          availableVariant.discount_aed,
+                                          availableVariant.discount_inr,
+                                          "AED",
+                                          true,
+                                          "#e11d48"
+                                        )}
+                                      </span>
+                                      {discountPercent > 0 && (
+                                        <span className="text-zinc-500 text-xs line-through">
+                                          {formatPriceWithSmallDecimals(
+                                            availableVariant.price_aed,
+                                            availableVariant.price_inr,
+                                            "AED",
+                                            true,
+                                            "#6B7280"
+                                          )}
+                                        </span>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                              <Button
+                                onClick={() => router.push(`/product/${item.id}`)}
+                                className={`${primaryButtonClass} text-white rounded-md py-2 text-xs font-medium transition-all duration-200 hover:opacity-95 shadow-sm`}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                onClick={() => handleToggleWishlist(item)}
+                                className={`rounded-md py-2 text-xs font-medium transition-all duration-200 ${
+                                  isInWishlist(item.id)
+                                    ? "bg-zinc-900 hover:bg-zinc-800 text-white shadow-sm"
+                                    : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200"
+                                }`}
+                              >
+                                <span className="inline-flex items-center justify-center gap-1">
+                                  <Heart className={`w-3.5 h-3.5 ${isInWishlist(item.id) ? "fill-current" : ""}`} />
+                                  {isInWishlist(item.id) ? "Saved" : "Save"}
+                                </span>
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
                   </div>
-
-                  <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
-
-                  <Button
-                    onClick={() => router.push(`/product/${item.id}`)}
-                    className="w-full mt-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
-                  >
-                    Buy Now
-                  </Button>
-                  
-                  <Button
-                    onClick={() => handleToggleWishlist(item)}
-                    className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
-                      isInWishlist(item.id)
-                        ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-md'
-                        : 'bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      <Heart className={`w-3 h-3 ${isInWishlist(item.id) ? 'fill-current' : ''}`} />
-                      {isInWishlist(item.id) ? 'Saved' : 'Save'}
-                    </div>
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+                </div>
+              </section>
+            </div>
+          </div>
+        )}
 
         {/* Main Products Grid */}
         <div className="px-4 lg:px-6 mt-6 pb-8">
@@ -831,7 +884,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
   </Badge>
 )}
   {discountPercent > 0 && (
-                    <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
+                    <Badge className={`absolute bottom-2 right-2 ${accentBadgeClass} text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse`}>
                       {discountPercent}% off
                     </Badge>
                   )}
@@ -919,10 +972,8 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
 <div className="flex gap-2">
   <Button
     onClick={() => router.push(`/product/${item.id}`)}
-    className={`flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 flex items-center justify-center gap-2 ${
-      viewMode === "list" 
-        ? "hover:from-orange-600 hover:to-red-600 hover:scale-102" 
-        : "hover:from-orange-600 hover:to-red-600 hover:scale-105"
+    className={`flex-1 ${primaryButtonClass} text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 flex items-center justify-center gap-2 ${
+      viewMode === "list" ? "hover:scale-102" : "hover:scale-105"
     } active:scale-95`}
     disabled={!item.is_available}
   >
@@ -990,7 +1041,7 @@ const badgeColor = conditionColors[item.condition_type as keyof typeof condition
                         setSearchTerm("")
                         router.push("/products")
                       }}
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      className={isShopA ? "bg-fuchsia-600 hover:bg-fuchsia-700 text-white" : "bg-orange-500 hover:bg-orange-600 text-white"}
                     >
                       Clear Search
                     </Button>
