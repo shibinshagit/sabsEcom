@@ -51,30 +51,16 @@ export default function BottomTabs() {
       <div className="fixed bottom-0 left-0 right-0 z-50 md:block lg:hidden">
         <div className={`relative rounded-t-2xl backdrop-blur-xl border-t shadow-lg transition-all duration-300 ${
           shop === "A" 
-            ? "bg-white/26 border-white/50 [backdrop-filter:blur(22px)_saturate(170%)] ring-1 ring-white/45 shadow-[0_-14px_40px_-20px_rgba(139,92,246,0.55)]" 
+            ? "bg-gradient-to-r from-yellow-400/60 via-orange-400/60 to-yellow-500/60 border-yellow-300/30" 
             : "bg-gradient-to-r from-purple-600/60 via-blue-600/60 to-indigo-700/60 border-purple-300/30"
         }`}>
           <div className={`absolute inset-0 pointer-events-none transition-all duration-300 ${
             shop === "A"
-              ? "bg-gradient-to-br from-white/45 via-fuchsia-100/18 to-violet-100/22"
+              ? "bg-gradient-to-r from-[#f6d365]/20 to-[#fda085]/20"
               : "bg-gradient-to-r from-purple-500/20 to-indigo-500/20"
           }`} />
-          {shop === "A" && (
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="absolute inset-[1px] bg-gradient-to-b from-white/60 via-white/10 to-transparent" />
-              <div className="absolute -top-16 left-[8%] opacity-30 animate-[softFloat_6s_ease-in-out_infinite]">
-                <Image src="/images/pink-flower-white-background-cutout.png" alt="" width={52} height={52} className="select-none saturate-125" />
-              </div>
-              <div className="absolute -top-12 right-[18%] opacity-24 animate-[softFloat_7.2s_ease-in-out_0.5s_infinite]">
-                <Image src="/images/top-view-pink-flower-with-drops-cutout.png" alt="" width={58} height={58} className="select-none saturate-125" />
-              </div>
-              <div className="absolute bottom-0 right-[4%] opacity-18 animate-[softFloat_7s_ease-in-out_0.9s_infinite]">
-                <Image src="/images/pink-flower-white-background-cutout.png" alt="" width={44} height={44} className="select-none saturate-125" />
-              </div>
-            </div>
-          )}
 
-          <div className={`relative flex items-center justify-between px-5 py-3 ${shop === "A" ? "text-zinc-900" : ""}`}>
+          <div className="relative flex items-center justify-between px-5 py-3">
             {navItems.map((item, index) => {
               // Toggle switch
               if (item.type === "toggle") {
@@ -146,7 +132,7 @@ export default function BottomTabs() {
                       </div>
                     </div>
                     <span className={`mt-1 text-xs font-medium transition-colors duration-300 ${
-                      shop === "A" ? "text-zinc-800" : "text-purple-200"
+                      shop === "A" ? "text-orange-700" : "text-purple-200"
                     }`}>
                       {shopType === "cosmetics" ? "Beauty" : "Style"}
                     </span>
@@ -161,13 +147,13 @@ export default function BottomTabs() {
                     {isAuthenticated ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className={`relative transition-all duration-300 ${shop === "A" ? "rounded-xl px-2 py-1 bg-white/35 border border-white/45 backdrop-blur-md" : ""} ${
+                          <button className={`relative transition-all duration-300 ${
                             pathname === "/profile"
                               ? shop === "A" 
-                                ? "text-zinc-900" 
+                                ? "text-orange-600" 
                                 : "text-purple-200"
                               : shop === "A"
-                              ? "text-zinc-700 hover:text-zinc-900"
+                              ? "text-gray-600 hover:text-gray-800"
                               : "text-gray-300 hover:text-white"
                           }`}>
                             <div className="relative mb-0.5">
@@ -252,9 +238,9 @@ export default function BottomTabs() {
                     ) : (
                       <button
                         onClick={handleLoginClick}
-                        className={`relative transition-all duration-300 ${shop === "A" ? "rounded-xl px-2 py-1 bg-white/35 border border-white/45 backdrop-blur-md" : ""} ${
+                        className={`relative transition-all duration-300 ${
                           shop === "A"
-                            ? "text-zinc-700 hover:text-zinc-900"
+                            ? "text-gray-600 hover:text-gray-800"
                             : "text-gray-300 hover:text-white"
                         }`}
                       >
@@ -275,13 +261,13 @@ export default function BottomTabs() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative flex flex-col items-center transition-all duration-300 ${shop === "A" ? "rounded-xl px-2 py-1 bg-white/35 border border-white/45 backdrop-blur-md" : ""} ${
+                  className={`relative flex flex-col items-center transition-all duration-300 ${
                     item.isActive 
                       ? shop === "A" 
-                        ? "text-zinc-900" 
+                        ? "text-orange-600" 
                         : "text-purple-200"
                       : shop === "A"
-                      ? "text-zinc-700 hover:text-zinc-900"
+                      ? "text-gray-600 hover:text-gray-800"
                       : "text-gray-300 hover:text-white"
                   }`}
                 >
