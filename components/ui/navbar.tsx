@@ -371,19 +371,68 @@ function Nav() {
         <Banner page={currentPage} />
       </div>
       <nav
-        className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${shop === "A"
-          ? "bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-600"
+        className={`sticky top-0 z-40 shadow-lg transition-all duration-300 relative isolate overflow-visible ${isScrolled ? "shadow-xl" : ""} ${shop === "A"
+          ? "bg-white/24 border-b border-white/45 backdrop-blur-3xl [backdrop-filter:blur(24px)_saturate(170%)] ring-1 ring-white/45 shadow-[0_18px_60px_-28px_rgba(139,92,246,0.55)]"
           : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
           }`}
         style={{ top: "var(--banner-height, 0px)" }}
       >
+        {shop === "A" && (
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/45 via-fuchsia-100/18 to-violet-100/22" />
+            <div className="absolute inset-[1px] bg-gradient-to-b from-white/65 via-white/10 to-transparent" />
+            <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-fuchsia-400/35 blur-3xl" />
+            <div className="absolute -bottom-28 left-8 h-72 w-72 rounded-full bg-violet-400/30 blur-3xl" />
+            <div className="absolute left-[8%] top-[16%] opacity-30 animate-[softFloat_6.2s_ease-in-out_infinite]">
+              <Image
+                src="/images/pink-flower-white-background-cutout.png"
+                alt=""
+                width={74}
+                height={74}
+                className="select-none saturate-125 drop-shadow-[0_0_10px_rgba(219,39,119,0.32)]"
+              />
+            </div>
+            <div className="absolute left-[28%] top-[10%] opacity-26 animate-[softFloat_7.2s_ease-in-out_0.6s_infinite]">
+              <Image
+                src="/images/top-view-pink-flower-with-drops-cutout.png"
+                alt=""
+                width={82}
+                height={82}
+                className="select-none saturate-125 drop-shadow-[0_0_10px_rgba(219,39,119,0.32)]"
+              />
+            </div>
+            <div className="absolute right-[20%] top-[12%] opacity-24 animate-[softFloat_7.8s_ease-in-out_0.9s_infinite]">
+              <Image
+                src="/images/pink-flower-white-background-cutout.png"
+                alt=""
+                width={68}
+                height={68}
+                className="select-none saturate-125 drop-shadow-[0_0_10px_rgba(219,39,119,0.32)]"
+              />
+            </div>
+            <div className="absolute right-[6%] top-[20%] opacity-22 animate-[softFloat_6.8s_ease-in-out_0.4s_infinite]">
+              <Image
+                src="/images/top-view-pink-flower-with-drops-cutout.png"
+                alt=""
+                width={60}
+                height={60}
+                className="select-none saturate-125 drop-shadow-[0_0_10px_rgba(219,39,119,0.32)]"
+              />
+            </div>
+          </div>
+        )}
+        <div className="relative z-10">
         {/* Desktop Header */}
         <div className="hidden lg:block">
           <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className={`flex items-center justify-between mb-4 ${shop === "A" ? "text-zinc-900" : ""}`}>
               <div className="flex items-center gap-8">
                 {/* Logo */}
-                <Link href="/" className="flex items-center group shrink-0" aria-label={settings.restaurant_name}>
+                <Link
+                  href="/"
+                  className={`flex items-center group shrink-0 ${shop === "A" ? "bg-black/80 rounded-2xl px-3 py-2 border border-white/10 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)]" : ""}`}
+                  aria-label={settings.restaurant_name}
+                >
                   {settings.restaurant_logo ? (
                     <div className="relative w-44 h-14 transition-transform duration-300 group-hover:scale-110">
                       <Image
@@ -413,7 +462,7 @@ function Nav() {
                 {/* Currency Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3 flex items-center gap-2">
+                    <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-3 flex items-center gap-2`}>
                       <Globe className="w-5 h-5" />
                       <span className="font-semibold">{selectedCurrency}</span>
                     </Button>
@@ -466,13 +515,13 @@ function Nav() {
                 </DropdownMenu>
 
                 <Link href="/orders">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
+                  <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-3`}>
                     <ShoppingBag className="w-6 h-6" />
                   </Button>
                 </Link>
 
                 <Link href="/wishlist" className="relative group">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
+                  <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-3`}>
                     <Heart className={`w-6 h-6 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
                     {wishlistCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
@@ -483,7 +532,7 @@ function Nav() {
                 </Link>
 
                 <Link href="/order" className="relative group">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
+                  <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-3`}>
                     <ShoppingCart className="w-6 h-6" />
                     {cartCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
@@ -496,7 +545,7 @@ function Nav() {
                 {isAuthenticated ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
+                      <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-3`}>
                         {user?.isClerkUser ? (
                           clerkUser?.imageUrl ? (
                             <Image
@@ -581,7 +630,7 @@ function Nav() {
                 ) : (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
+                      <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-3`}>
                         <User className="w-6 h-6" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -633,7 +682,7 @@ function Nav() {
                         className={`hidden lg:flex items-center rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
                           pathname === '/products' && !searchParams.get('category')
                             ? `bg-white ${shop === "A" ? "text-fuchsia-700" : "text-purple-600"} shadow-lg`
-                            : "text-white hover:bg-white/20"
+                            : `${shop === "A" ? "bg-white/30 border border-white/45 text-zinc-900 hover:bg-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"}`
                         }`}
                       >
                         All Products
@@ -731,10 +780,10 @@ function Nav() {
                             key={category.id}
                             href={item.href}
                             onClick={(e) => handleNavClick(item, e)}
-                            className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 relative ${
+                            className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 relative backdrop-blur-md ${
                               isActiveCategoryLink(item)
-                                ? `bg-white ${shop === "A" ? "text-fuchsia-700" : "text-purple-600"} shadow-lg`
-                                : "text-white hover:bg-white/20"
+                                ? `${shop === "A" ? "bg-white/70 border border-white/70 text-zinc-900 ring-1 ring-white/70 shadow-[0_8px_24px_-14px_rgba(17,24,39,0.45)]" : "bg-white text-purple-600 shadow-lg"}`
+                                : `${shop === "A" ? "bg-white/30 border border-white/45 text-zinc-900 hover:bg-white/45" : "text-white hover:bg-white/20"}`
                             } ${
                               category.is_special 
                                 ? `border-2 ${shop === "A" ? "border-fuchsia-500 shadow-fuchsia-500/35" : "border-purple-400 shadow-purple-400/30"} shadow-lg` 
@@ -839,8 +888,12 @@ function Nav() {
         {/* Tablet Header */}
         <div className="hidden md:block lg:hidden">
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-3">
-              <Link href="/" className="flex items-center group shrink-0" aria-label={settings.restaurant_name}>
+            <div className={`flex items-center justify-between mb-3 ${shop === "A" ? "text-zinc-900" : ""}`}>
+              <Link
+                href="/"
+                className={`flex items-center group shrink-0 ${shop === "A" ? "bg-black/80 rounded-2xl px-3 py-2 border border-white/10 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)]" : ""}`}
+                aria-label={settings.restaurant_name}
+              >
                 {settings.restaurant_logo ? (
                   <div className="relative w-36 h-12 transition-transform duration-300 group-hover:scale-110">
                     <Image
@@ -861,7 +914,7 @@ function Nav() {
                 {/* Currency Dropdown for Tablet */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2 flex items-center gap-1">
+                    <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-2 flex items-center gap-1`}>
                       <Globe className="w-4 h-4" />
                       <span className="text-sm font-semibold">{selectedCurrency}</span>
                     </Button>
@@ -893,12 +946,12 @@ function Nav() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
+                <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-2`}>
                   <Bell className="w-5 h-5" />
                 </Button>
 
                 <Link href="/wishlist" className="relative">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
+                  <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-2`}>
                     <Heart className={`w-5 h-5 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
                     {wishlistCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
@@ -910,7 +963,7 @@ function Nav() {
 
                 {/* Cart and Profile icons - visible on tablet */}
                 <Link href="/order" className="relative">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
+                  <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-2`}>
                     <ShoppingBag className="w-5 h-5" />
                     {cartCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
@@ -923,7 +976,7 @@ function Nav() {
                 {isAuthenticated ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
+                      <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-2`}>
                         {user?.isClerkUser && clerkUser?.imageUrl ? (
                           <Image
                             src={clerkUser.imageUrl}
@@ -977,7 +1030,7 @@ function Nav() {
                   <Button
                     onClick={handleLoginClick}
                     variant="ghost"
-                    className="text-white hover:bg-white/20 rounded-full p-2"
+                    className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} rounded-full p-2`}
                   >
                     <User className="w-5 h-5" />
                   </Button>
@@ -1002,17 +1055,21 @@ function Nav() {
               
               {/* Search Dropdown for Tablet */}
               {showSearchDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-80 overflow-y-auto">
+                <div className={`absolute top-full left-0 right-0 mt-2 rounded-lg shadow-xl border z-[80] max-h-80 overflow-y-auto ${
+                  shop === "A"
+                    ? "bg-white/70 border-white/70 backdrop-blur-2xl [backdrop-filter:blur(18px)_saturate(160%)]"
+                    : "bg-white border-gray-200"
+                }`}>
                   {searchResults.length > 0 ? (
                     <>
-                      <div className="px-3 py-2 bg-gray-50 border-b text-xs font-medium text-gray-600">
+                      <div className={`px-3 py-2 border-b text-xs font-medium ${shop === "A" ? "bg-white/55 border-white/60 text-zinc-700" : "bg-gray-50 text-gray-600 border-gray-200"}`}>
                         {searchResults.length} result{searchResults.length > 1 ? 's' : ''}
                       </div>
                       {searchResults.map((product: any) => (
                         <div
                           key={product.id}
                           onClick={() => handleSearchResultClick(product.id)}
-                          className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                          className={`flex items-center gap-3 p-3 cursor-pointer border-b last:border-b-0 ${shop === "A" ? "hover:bg-white/55 border-white/50" : "hover:bg-gray-50 border-gray-200"}`}
                         >
                           <Image
                             src={product.image_urls?.[0] || "/placeholder.svg"}
@@ -1035,7 +1092,7 @@ function Nav() {
                       ))}
                       <div
                         onClick={handleViewAllResults}
-                        className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium text-sm border-t"
+                        className={`p-3 text-center cursor-pointer font-medium text-sm border-t ${shop === "A" ? "text-fuchsia-700 hover:bg-white/55 border-white/60" : "text-orange-600 hover:bg-orange-50 border-gray-200"}`}
                       >
                         View all results
                       </div>
@@ -1080,9 +1137,9 @@ function Nav() {
                       key={item.name}
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-fuchsia-700" : "text-purple-600"}`
-                        : "text-white hover:bg-white/20"
+                      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap backdrop-blur-md ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                        ? `${shop === "A" ? "bg-white/75 border border-white/70 text-zinc-900 ring-1 ring-white/70" : "bg-white text-purple-600"}`
+                        : `${shop === "A" ? "bg-white/30 border border-white/45 text-zinc-900 hover:bg-white/45" : "text-white hover:bg-white/20"}`
                         }`}
                     >
                       <span className={`flex items-center gap-1 ${
@@ -1106,14 +1163,18 @@ function Nav() {
         {/* Mobile Header */}
         <div className="block md:hidden">
           <div className="px-4 py-3">
-            <div className="grid grid-cols-3 items-center gap-2 mb-3">
+            <div className={`grid grid-cols-3 items-center gap-2 mb-3 ${shop === "A" ? "text-zinc-900" : ""}`}>
               <div className="flex justify-start min-w-0">
-                <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className="text-white p-0 shrink-0">
+                <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className={`${shop === "A" ? "text-zinc-900" : "text-white"} p-0 shrink-0`}>
                   {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                 </Button>
               </div>
               <div className="flex justify-center min-w-0">
-                <Link href="/" className="flex items-center justify-center group" aria-label={settings.restaurant_name}>
+                <Link
+                  href="/"
+                  className={`flex items-center justify-center group ${shop === "A" ? "bg-black/80 rounded-2xl px-3 py-2 border border-white/10 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)]" : ""}`}
+                  aria-label={settings.restaurant_name}
+                >
                   {settings.restaurant_logo ? (
                     <div className="relative w-28 h-11 transition-transform duration-300 group-hover:scale-110">
                       <Image
@@ -1135,7 +1196,7 @@ function Nav() {
                 {/* Currency for Mobile */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-white hover:bg-white/20 p-1">
+                    <Button variant="ghost" className={`${shop === "A" ? "text-zinc-900 hover:bg-white/40 border border-white/45 backdrop-blur-md" : "text-white hover:bg-white/20"} p-1`}>
                       <div className="flex items-center gap-1">
                         <Globe className="w-4 h-4" />
                         <span className="text-xs font-bold">{selectedCurrency}</span>
@@ -1161,7 +1222,7 @@ function Nav() {
                 </DropdownMenu>
 
                 <Link href="/wishlist" className="relative">
-                  <Heart className={`w-5 h-5 text-white ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                  <Heart className={`w-5 h-5 ${shop === "A" ? "text-zinc-900" : "text-white"} ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
                   {wishlistCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
                       {wishlistCount}
@@ -1198,9 +1259,9 @@ function Nav() {
                       key={item.name}
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-fuchsia-700" : "text-purple-600"}`
-                        : "text-white hover:bg-white/20"
+                      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap backdrop-blur-md ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                        ? `${shop === "A" ? "bg-white/75 border border-white/70 text-zinc-900 ring-1 ring-white/70" : "bg-white text-purple-600"}`
+                        : `${shop === "A" ? "bg-white/30 border border-white/45 text-zinc-900 hover:bg-white/45" : "text-white hover:bg-white/20"}`
                         }`}
                     >
                       <span className={`flex items-center gap-1 ${
@@ -1221,16 +1282,20 @@ function Nav() {
 
             {/* Mobile Navigation Menu */}
             {isOpen && (
-              <div className="mt-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl max-h-[40vh] overflow-hidden">
+              <div className={`mt-4 rounded-xl shadow-xl max-h-[40vh] overflow-hidden ${
+                shop === "A"
+                  ? "bg-white/34 border border-white/55 backdrop-blur-2xl [backdrop-filter:blur(18px)_saturate(165%)] ring-1 ring-white/55"
+                  : "bg-white/95 backdrop-blur-sm"
+              }`}>
                 {loading ? (
                   <div className="space-y-2 p-4">
-                    <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-full"></div>
-                    <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-3/4"></div>
-                    <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-1/2"></div>
+                    <div className={`animate-pulse rounded-lg h-10 w-full ${shop === "A" ? "bg-white/55" : "bg-gray-200"}`}></div>
+                    <div className={`animate-pulse rounded-lg h-10 w-3/4 ${shop === "A" ? "bg-white/50" : "bg-gray-200"}`}></div>
+                    <div className={`animate-pulse rounded-lg h-10 w-1/2 ${shop === "A" ? "bg-white/45" : "bg-gray-200"}`}></div>
                   </div>
                 ) : (
                   <div className="overflow-y-auto max-h-[40vh]">
-                    <div className="p-4 space-y-2">
+                    <div className={`p-4 space-y-2 ${shop === "A" ? "bg-gradient-to-br from-white/12 via-white/6 to-fuchsia-100/10" : ""}`}>
                       {/* All Products - Featured */}
                       <Link
                         href="/products"
@@ -1238,10 +1303,10 @@ function Nav() {
                           handleNavClick(baseNavigation[0], e)
                           setIsOpen(false)
                         }}
-                        className={`block px-4 py-3 text-base font-semibold transition-colors rounded-lg border-2 ${
+                        className={`block px-4 py-3 text-base font-semibold transition-colors rounded-lg border-2 backdrop-blur-md ${
                           pathname === '/products' && !searchParams.get('category')
-                            ? `${shop === "A" ? "text-fuchsia-700 bg-fuchsia-50 border-fuchsia-200" : "text-purple-600 bg-purple-50 border-purple-200"}`
-                            : `text-gray-700 hover:bg-gray-50 border-gray-200`
+                            ? `${shop === "A" ? "text-zinc-900 bg-white/70 border-white/70 ring-1 ring-white/70 shadow-[0_8px_20px_-14px_rgba(17,24,39,0.45)]" : "text-purple-600 bg-purple-50 border-purple-200"}`
+                            : `${shop === "A" ? "text-zinc-900 bg-white/30 hover:bg-white/45 border-white/45" : "text-gray-700 hover:bg-gray-50 border-gray-200"}`
                         }`}
                       >
                         All Products
@@ -1250,7 +1315,11 @@ function Nav() {
                        {/* Categories Section */}
                        {categories.length > 0 && (
                          <>
-                           <div className="px-3 py-2 mt-6 text-xs font-medium text-gray-500 uppercase tracking-wider border-t border-gray-200 pt-4">
+                          <div className={`px-3 py-2 mt-6 text-xs font-medium uppercase tracking-wider border-t pt-4 ${
+                            shop === "A"
+                              ? "text-zinc-700 border-white/55 bg-white/20 rounded-md backdrop-blur-sm"
+                              : "text-gray-500 border-gray-200"
+                          }`}>
                              {shop === "A" ? "Beauty Categories" : shop === "B" ? "Style Categories" : "Categories"}
                            </div>
                           <div className="space-y-1 pb-4">
@@ -1269,10 +1338,10 @@ function Nav() {
                                     handleNavClick(item, e)
                                     setIsOpen(false)
                                   }}
-                                  className={`block px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg relative overflow-hidden ${
+                                  className={`block px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg relative overflow-hidden backdrop-blur-md ${
                                     isActiveCategoryLink(item)
-                                      ? `${shop === "A" ? "text-fuchsia-700 bg-fuchsia-50" : "text-purple-600 bg-purple-50"}`
-                                      : `text-gray-600 hover:bg-gray-50`
+                                      ? `${shop === "A" ? "text-zinc-900 bg-white/70 border border-white/70 ring-1 ring-white/70" : "text-purple-600 bg-purple-50"}`
+                                      : `${shop === "A" ? "text-zinc-800 bg-white/25 hover:bg-white/40 border border-white/45" : "text-gray-600 hover:bg-gray-50"}`
                                   } ${
                                     category.is_special 
                                       ? `border-l-4 ${shop === "A" ? "border-fuchsia-500 bg-gradient-to-r from-fuchsia-100/70 to-rose-50/50" : "border-purple-400 bg-gradient-to-r from-purple-50/50 to-pink-50/30"} shadow-md` 
@@ -1318,6 +1387,7 @@ function Nav() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </nav>
 
