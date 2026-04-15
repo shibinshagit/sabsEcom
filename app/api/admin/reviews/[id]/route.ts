@@ -15,15 +15,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json().catch(() => ({}))
     const hasVisible = typeof body.is_visible === "boolean"
     const hasApproved = typeof body.is_approved === "boolean"
-    const hasRating = Number.isInteger(Number(body.rating))
+    const parsedRating = Number(body.rating)
+    const hasRating = Number.isInteger(parsedRating)
     const hasText = typeof body.review_text === "string"
 
     if (!hasVisible && !hasApproved && !hasRating && !hasText) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })
     }
 
-    const rating = Number(body.rating)
-    if (hasRating && (rating < 1 || rating > 5)) {
+    if (hasRating && (parsedRating < 1 || parsedRating > 5)) {
       return NextResponse.json({ error: "Rating must be between 1 and 5" }, { status: 400 })
     }
 
@@ -37,7 +37,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       SET
         is_visible = CASE WHEN ${hasVisible} THEN ${Boolean(body.is_visible)} ELSE is_visible END,
         is_approved = CASE WHEN ${hasApproved} THEN ${Boolean(body.is_approved)} ELSE is_approved END,
-        rating = CASE WHEN ${hasRating} THEN ${rating} ELSE rating END,
+        rating = CASE WHEN ${hasRating} THEN ${hasRating ? parsedRating : null} ELSE rating END,
         review_text = CASE WHEN ${hasText} THEN ${reviewText ?? ""} ELSE review_text END,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${reviewId}
