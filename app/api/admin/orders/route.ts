@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
+import { ensureOrderReturnColumns } from "@/lib/migrations/ensure-order-return-columns"
 
 async function ensureSchema() {
   try {
@@ -40,6 +41,11 @@ async function ensureSchema() {
         currency VARCHAR(3) DEFAULT 'AED',
         special_instructions TEXT,
         status VARCHAR(20) DEFAULT 'pending',
+        return_requested_at TIMESTAMP,
+        return_reason TEXT,
+        return_rejection_reason TEXT,
+        return_processed_at TIMESTAMP,
+        return_processed_by TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -117,6 +123,8 @@ async function ensureSchema() {
       console.log("estimated_completion_time column might already exist or error adding:", error)
     }
 
+    await ensureOrderReturnColumns()
+
     console.log("Schema ensured successfully")
   } catch (error) {
     console.error("Error ensuring schema:", error)
@@ -166,6 +174,11 @@ export async function GET() {
         o.coupon_code,
         COALESCE(o.currency, 'INR') as currency,
         o.status,
+        o.return_requested_at,
+        o.return_reason,
+        o.return_rejection_reason,
+        o.return_processed_at,
+        o.return_processed_by,
         o.tracking_url,
         o.tracking_id,
         o.created_at,
@@ -228,6 +241,11 @@ export async function GET() {
       coupon_code: order.coupon_code,
       currency: order.currency,
       status: order.status,
+      return_requested_at: order.return_requested_at,
+      return_reason: order.return_reason,
+      return_rejection_reason: order.return_rejection_reason,
+      return_processed_at: order.return_processed_at,
+      return_processed_by: order.return_processed_by,
       tracking_url: order.tracking_url,
       tracking_id: order.tracking_id,
       created_at: order.created_at,

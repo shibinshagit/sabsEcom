@@ -77,6 +77,11 @@ export default function OrdersManagement() {
     tracking_id?: string
     created_at: string
     updated_at: string
+    return_requested_at?: string | null
+    return_reason?: string | null
+    return_rejection_reason?: string | null
+    return_processed_at?: string | null
+    return_processed_by?: string | null
     items: Array<{
       id: number
       menu_item_name: string
@@ -173,6 +178,19 @@ export default function OrdersManagement() {
       // Preserve existing tracking info if no new tracking info is entered
       const trackingUrl = trackingUrls[orderId] || order?.tracking_url || ''
       const trackingId = trackingIds[orderId] || order?.tracking_id || ''
+      let returnRejectionReason = order?.return_rejection_reason || ""
+
+      if (newStatus === "return_rejected") {
+        const input = window.prompt(
+          "Enter rejection reason (required):",
+          order?.return_rejection_reason || "",
+        )
+        if (!input || !input.trim()) {
+          alert("Rejection reason is required.")
+          return
+        }
+        returnRejectionReason = input.trim()
+      }
 
       const response = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PUT",
@@ -181,6 +199,7 @@ export default function OrdersManagement() {
           status: newStatus,
           tracking_url: trackingUrl,
           tracking_id: trackingId,
+          return_rejection_reason: returnRejectionReason,
           reduce_stock: newStatus === 'confirmed', // Reduce stock when order is confirmed
           order_items: order?.items
         }),
@@ -325,6 +344,12 @@ export default function OrdersManagement() {
         return <CheckCircle className="w-4 h-4" />
       case "cancel":
         return <AlertCircle className="w-4 h-4" />
+      case "return_requested":
+        return <Clock className="w-4 h-4" />
+      case "return_successful":
+        return <CheckCircle className="w-4 h-4" />
+      case "return_rejected":
+        return <XCircle className="w-4 h-4" />
       default:
         return <Clock className="w-4 h-4" />
     }
@@ -346,9 +371,85 @@ export default function OrdersManagement() {
         return "bg-green-500"
       case "cancel":
         return "bg-red-500"
+      case "return_requested":
+        return "bg-amber-500"
+      case "return_successful":
+        return "bg-emerald-500"
+      case "return_rejected":
+        return "bg-rose-500"
       default:
         return "bg-gray-500"
     }
+  }
+
+  const formatStatusLabel = (status: string) =>
+    status
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+
+  const ReturnStatusTimeline = ({
+    status,
+    requestedAt,
+    processedAt,
+  }: {
+    status: string
+    requestedAt?: string | null
+    processedAt?: string | null
+  }) => {
+    const normalized = status.toLowerCase()
+    const requestedDone = ["return_requested", "return_successful", "return_rejected"].includes(normalized)
+    const processedDone = ["return_successful", "return_rejected"].includes(normalized)
+
+    const requestedLabel = requestedAt ? new Date(requestedAt).toLocaleString() : "Pending"
+    const processedLabel = processedAt ? new Date(processedAt).toLocaleString() : "Pending"
+    const finalLabel = normalized === "return_successful" ? "Approved" : normalized === "return_rejected" ? "Rejected" : "Awaiting Decision"
+
+    return (
+      <div className="mt-3 p-3 bg-gray-800/40 border border-gray-600 rounded-lg">
+        <h6 className="text-sm font-semibold text-white mb-3">Return Timeline</h6>
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-200">
+              <div className={`w-2.5 h-2.5 rounded-full ${requestedDone ? "bg-amber-400" : "bg-gray-500"}`} />
+              <span>Requested</span>
+            </div>
+            <span className="text-gray-400">{requestedLabel}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-200">
+              <div className={`w-2.5 h-2.5 rounded-full ${processedDone ? "bg-blue-400" : "bg-gray-500"}`} />
+              <span>Processed</span>
+            </div>
+            <span className="text-gray-400">{processedLabel}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-200">
+              <div
+                className={`w-2.5 h-2.5 rounded-full ${
+                  normalized === "return_successful"
+                    ? "bg-emerald-400"
+                    : normalized === "return_rejected"
+                      ? "bg-rose-400"
+                      : "bg-gray-500"
+                }`}
+              />
+              <span>Final Decision</span>
+            </div>
+            <span
+              className={
+                normalized === "return_successful"
+                  ? "text-emerald-300"
+                  : normalized === "return_rejected"
+                    ? "text-rose-300"
+                    : "text-gray-400"
+              }
+            >
+              {finalLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const getPaymentIcon = (orderType: string) => {
@@ -493,6 +594,9 @@ export default function OrdersManagement() {
                   <SelectItem value="out for delivery" className="text-white">Out for Delivery</SelectItem>
                   <SelectItem value="delivered" className="text-white">Delivered</SelectItem>
                   <SelectItem value="cancel" className="text-white">Cancelled</SelectItem>
+                  <SelectItem value="return_requested" className="text-white">Return Requested</SelectItem>
+                  <SelectItem value="return_successful" className="text-white">Return Successful</SelectItem>
+                  <SelectItem value="return_rejected" className="text-white">Return Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -723,7 +827,7 @@ export default function OrdersManagement() {
                       <div className="flex items-center space-x-2">
                         <div className={`w-2 h-2 rounded-full ${getStatusColor(order.status)}`}></div>
                         <Badge variant="outline" className="capitalize text-white">
-                          {order.status}
+                          {formatStatusLabel(order.status)}
                         </Badge>
                       </div>
                     </TableCell>
@@ -758,7 +862,7 @@ export default function OrdersManagement() {
                                   </div>
                                   <span>Order {order.order_number} - {order.customer_name}</span>
                                   <Badge className={`ml-auto ${getStatusColor(order.status)} text-white px-3 py-1 text-sm font-medium`}>
-                                    {order.status.toUpperCase()}
+                                    {formatStatusLabel(order.status)}
                                   </Badge>
                                 </DialogTitle>
                                 <p className="text-gray-400 mt-2 text-sm">
@@ -1197,6 +1301,35 @@ export default function OrdersManagement() {
                                                 </div>
                                               </div>
                                             </div>
+
+                                  {selectedOrder.return_requested_at && (
+                                    <div className="mt-6 p-4 bg-amber-600/10 border border-amber-500/30 rounded-lg">
+                                      <h5 className="font-semibold text-amber-300 mb-2">Return Request Details</h5>
+                                      <p className="text-sm text-amber-100">
+                                        Requested on: {new Date(selectedOrder.return_requested_at).toLocaleString()}
+                                      </p>
+                                      {selectedOrder.return_reason && (
+                                        <p className="text-sm text-amber-200 mt-2">
+                                          Reason: {selectedOrder.return_reason}
+                                        </p>
+                                      )}
+                                      {selectedOrder.return_rejection_reason && (
+                                        <p className="text-sm text-rose-300 mt-2">
+                                          Rejection reason: {selectedOrder.return_rejection_reason}
+                                        </p>
+                                      )}
+                                      {selectedOrder.return_processed_at && (
+                                        <p className="text-xs text-gray-300 mt-2">
+                                          Processed: {new Date(selectedOrder.return_processed_at).toLocaleString()}
+                                        </p>
+                                      )}
+                                      <ReturnStatusTimeline
+                                        status={selectedOrder.status}
+                                        requestedAt={selectedOrder.return_requested_at}
+                                        processedAt={selectedOrder.return_processed_at}
+                                      />
+                                    </div>
+                                  )}
                                           </div>
                                         </div>
                                       </div>
@@ -1291,6 +1424,9 @@ export default function OrdersManagement() {
                             <SelectItem value="out for delivery" className="text-white">Out for Delivery</SelectItem>
                             <SelectItem value="delivered" className="text-white">Delivered</SelectItem>
                             <SelectItem value="cancel" className="text-white">Cancel</SelectItem>
+                            <SelectItem value="return_requested" className="text-white">Return Requested</SelectItem>
+                            <SelectItem value="return_successful" className="text-white">Return Successful</SelectItem>
+                            <SelectItem value="return_rejected" className="text-white">Return Rejected</SelectItem>
                           </SelectContent>
                         </Select>
                         {updating === order.id && (

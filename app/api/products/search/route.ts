@@ -1,9 +1,12 @@
 // app/api/products/search/route.ts
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
+import { ensureProductReviewsTable } from "@/lib/migrations/ensure-product-reviews-table"
 
 export async function GET(request: Request) {
   try {
+    await ensureProductReviewsTable()
+
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')?.trim()
     const shop = searchParams.get('shop') // 'A', 'B', or null for both
@@ -28,6 +31,8 @@ export async function GET(request: Request) {
       SELECT
         p.*,
         c.name AS category_name,
+        COALESCE(rs.average_rating, 0) AS average_rating,
+        COALESCE(rs.review_count, 0) AS review_count,
         COALESCE(
           json_agg(
             json_build_object(
@@ -61,6 +66,15 @@ export async function GET(request: Request) {
         ) AS relevance_score
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN (
+        SELECT
+          product_id,
+          ROUND(AVG(rating)::numeric, 1) AS average_rating,
+          COUNT(*)::int AS review_count
+        FROM product_reviews
+        WHERE is_visible = TRUE AND is_approved = TRUE
+        GROUP BY product_id
+      ) rs ON rs.product_id = p.id
       LEFT JOIN product_variants v ON p.id = v.product_id
       WHERE p.is_available = TRUE
         ${shop && ['A', 'B'].includes(shop) ? 
@@ -82,7 +96,7 @@ export async function GET(request: Request) {
           OR LOWER(p.specifications_text) ILIKE ${`%${query.toLowerCase()}%`}
           OR LOWER(p.sku) ILIKE ${`%${query.toLowerCase()}%`}
         )
-      GROUP BY p.id, c.name, c.sort_order
+      GROUP BY p.id, c.name, c.sort_order, rs.average_rating, rs.review_count
       HAVING (
         CASE WHEN LOWER(p.name) LIKE ${`%${query.toLowerCase()}%`} THEN 100 ELSE 0 END +
         CASE WHEN LOWER(p.name) ILIKE ${`%${query.toLowerCase()}%`} THEN 80 ELSE 0 END +

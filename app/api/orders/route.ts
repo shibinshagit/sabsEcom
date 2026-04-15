@@ -5,6 +5,7 @@ import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { currentUser } from "@clerk/nextjs/server"
 import nodemailer from 'nodemailer'
+import { ensureOrderReturnColumns } from "@/lib/migrations/ensure-order-return-columns"
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production")
 
@@ -429,6 +430,11 @@ async function ensureOrdersTableExists() {
           currency VARCHAR(3) DEFAULT 'AED',
           special_instructions TEXT,
           status VARCHAR(20) DEFAULT 'pending',
+          return_requested_at TIMESTAMP,
+          return_reason TEXT,
+          return_rejection_reason TEXT,
+          return_processed_at TIMESTAMP,
+          return_processed_by TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -450,7 +456,12 @@ async function ensureOrdersTableExists() {
         { name: 'coupon_code', definition: 'VARCHAR(50)', check: 'coupon_code' },
         { name: 'currency', definition: 'VARCHAR(3) DEFAULT \'AED\'', check: 'currency' },
         { name: 'tracking_url', definition: 'TEXT', check: 'tracking_url' },
-        { name: 'tracking_id', definition: 'VARCHAR(100)', check: 'tracking_id' }
+        { name: 'tracking_id', definition: 'VARCHAR(100)', check: 'tracking_id' },
+        { name: 'return_requested_at', definition: 'TIMESTAMP', check: 'return_requested_at' },
+        { name: 'return_reason', definition: 'TEXT', check: 'return_reason' },
+        { name: 'return_rejection_reason', definition: 'TEXT', check: 'return_rejection_reason' },
+        { name: 'return_processed_at', definition: 'TIMESTAMP', check: 'return_processed_at' },
+        { name: 'return_processed_by', definition: 'TEXT', check: 'return_processed_by' }
       ]
 
       for (const column of columnsToAdd) {
@@ -473,6 +484,8 @@ async function ensureOrdersTableExists() {
 
       console.log('Orders table schema updated successfully')
     }
+
+    await ensureOrderReturnColumns()
   } catch (error) {
     console.error('Error setting up orders table:', error)
     throw error

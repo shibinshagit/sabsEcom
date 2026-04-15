@@ -13,12 +13,13 @@ import { Button } from "@/components/ui/button"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe, AlertCircle, Plus, Minus, Truck, Shield, RotateCcw, Award, Zap, ChevronRight, Eye, Sparkles, Verified } from "lucide-react"
+import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe, AlertCircle, Plus, Minus, Truck, Shield, Award, Zap, ChevronRight, Eye, Sparkles, Verified, MessageSquare } from "lucide-react"
 import Image from "next/image"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Textarea } from "@/components/ui/textarea"
 import toast from 'react-hot-toast'
 import LoginModal from "@/components/auth/login-modal"
 import RecommendedProducts from "@/components/sections/recommended-products"
@@ -64,6 +65,16 @@ interface Product {
   variants: Variant[]
 }
 
+interface ProductReview {
+  id: number
+  rating: number
+  review_text: string
+  is_approved?: boolean
+  customer_name?: string
+  user_email?: string
+  created_at: string
+}
+
 
 
 export default function ProductPage() {
@@ -81,6 +92,15 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null)
+  const [reviews, setReviews] = useState<ProductReview[]>([])
+  const [averageRating, setAverageRating] = useState(0)
+  const [reviewCount, setReviewCount] = useState(0)
+  const [canReview, setCanReview] = useState(false)
+  const [userReview, setUserReview] = useState<ProductReview | null>(null)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewText, setReviewText] = useState("")
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [reviewsLoading, setReviewsLoading] = useState(true)
 
   // Animation states
   const [showBlur, setShowBlur] = useState(false)
@@ -164,6 +184,10 @@ export default function ProductPage() {
     fetchProduct()
   }, [params.id])
 
+  useEffect(() => {
+    fetchReviews()
+  }, [params.id, isAuthenticated])
+
   const fetchProduct = async () => {
     try {
       const response = await fetch(`/api/admin/products/${params.id}`)
@@ -197,6 +221,29 @@ export default function ProductPage() {
       }, 2000)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchReviews = async () => {
+    try {
+      setReviewsLoading(true)
+      const response = await fetch(`/api/products/${params.id}/reviews`)
+      if (!response.ok) {
+        return
+      }
+
+      const data = await response.json()
+      setAverageRating(Number(data.average_rating || 0))
+      setReviewCount(Number(data.review_count || 0))
+      setReviews(Array.isArray(data.reviews) ? data.reviews : [])
+      setCanReview(Boolean(data.can_review))
+      setUserReview(data.user_review || null)
+      setReviewRating(Number(data.user_review?.rating || 0))
+      setReviewText(data.user_review?.review_text || "")
+    } catch (error) {
+      console.error("Error fetching reviews:", error)
+    } finally {
+      setReviewsLoading(false)
     }
   }
 
@@ -257,6 +304,49 @@ export default function ProductPage() {
       toast.error('This variant is out of stock')
     } else if (variant.stock_quantity <= 5) {
       toast.warn(`Only ${variant.stock_quantity} items left in stock!`)
+    }
+  }
+
+  const handleSubmitReview = async () => {
+    if (!isAuthenticated) {
+      openModal()
+      return
+    }
+
+    if (!canReview) {
+      toast.error("Only customers who purchased this product can review it")
+      return
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      toast.error("Please select a star rating")
+      return
+    }
+
+    try {
+      setReviewSubmitting(true)
+      const response = await fetch(`/api/products/${params.id}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating: reviewRating,
+          review_text: reviewText.trim(),
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        toast.error(data?.error || "Failed to submit review")
+        return
+      }
+
+      toast.success("Review submitted for admin approval")
+      await fetchReviews()
+    } catch (error) {
+      console.error("Error submitting review:", error)
+      toast.error("Failed to submit review")
+    } finally {
+      setReviewSubmitting(false)
     }
   }
 
@@ -624,12 +714,19 @@ const conditionColors = {
                       {product.name}
                     </h1>
                     <div className="flex items-center gap-4 flex-wrap">
-                      {/* <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        ))}
-                        <span className="text-sm text-gray-600 ml-1">(4.8 • 234 reviews)</span>
-                      </div> */}
+                      {reviewCount > 0 && (
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                            />
+                          ))}
+                          <span className="text-sm text-gray-600 ml-1">
+                            {averageRating.toFixed(1)} ({reviewCount} review{reviewCount > 1 ? "s" : ""})
+                          </span>
+                        </div>
+                      )}
                       {product.is_new && (
                       <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
                         <Award className="w-3 h-3 mr-1" />
@@ -820,6 +917,114 @@ const conditionColors = {
                       </div>
                     ))}
                   </div>
+                </Card>
+
+                <Card className="p-6 border-0 shadow-lg rounded-2xl">
+                  <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-yellow-500" />
+                    Reviews & Ratings
+                  </h3>
+
+                  {reviewsLoading ? (
+                    <p className="text-sm text-gray-500">Loading reviews...</p>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-5 h-5 ${i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {reviewCount > 0
+                            ? `${averageRating.toFixed(1)} average from ${reviewCount} review${reviewCount > 1 ? "s" : ""}`
+                            : "No reviews yet"}
+                        </p>
+                      </div>
+
+                      <div className="border rounded-xl p-4 bg-gray-50 mb-4">
+                        <p className="text-sm font-semibold text-gray-800 mb-2">
+                          {userReview ? "Update your review" : "Write a review"}
+                        </p>
+                        <div className="flex items-center gap-1 mb-3">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              className="p-1"
+                              aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                            >
+                              <Star
+                                className={`w-5 h-5 ${star <= reviewRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <Textarea
+                          value={reviewText}
+                          onChange={(e) => setReviewText(e.target.value)}
+                          placeholder="Share your experience (optional)"
+                          className="min-h-[96px] bg-white"
+                          maxLength={1000}
+                        />
+                        <div className="flex items-center justify-between mt-3 gap-3">
+                          <p className="text-xs text-gray-500">
+                            {canReview
+                              ? "Only verified buyers can submit ratings."
+                              : "Buy this product first to submit a review."}
+                          </p>
+                          <Button
+                            type="button"
+                            onClick={handleSubmitReview}
+                            disabled={!canReview || reviewSubmitting}
+                            className="bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                          >
+                            {reviewSubmitting ? "Saving..." : userReview ? "Update Review" : "Submit Review"}
+                          </Button>
+                        </div>
+                        {userReview && userReview.is_approved === false && (
+                          <p className="text-xs text-amber-600 mt-2">
+                            Your review is pending admin approval before it appears publicly.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        {reviews.slice(0, 5).map((review) => (
+                          <div key={review.id} className="border rounded-xl p-3">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <p className="font-medium text-sm text-gray-900">
+                                {review.customer_name || review.user_email || "Customer"}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(review.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 mb-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-3.5 h-3.5 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                                />
+                              ))}
+                            </div>
+                            {review.review_text ? (
+                              <p className="text-sm text-gray-700 leading-relaxed">{review.review_text}</p>
+                            ) : (
+                              <p className="text-xs text-gray-400">No comment added.</p>
+                            )}
+                          </div>
+                        ))}
+                        {reviews.length === 0 && (
+                          <p className="text-sm text-gray-500">Be the first to review this product.</p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </Card>
               </div>
 

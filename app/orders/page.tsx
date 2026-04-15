@@ -7,7 +7,7 @@ import { useLoginModal } from '@/lib/stores/useLoginModal'
 import Footer from "@/components/ui/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, Send, Box, ChevronDown, ChevronUp, ExternalLink, PackageCheck, Zap, MapPin, Home } from "lucide-react"
+import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, ChefHat, Package, Send, Box, ChevronDown, ChevronUp, ExternalLink, PackageCheck, Zap, MapPin, Home, MessageCircle, RotateCcw } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { format } from "path"
@@ -85,6 +85,48 @@ const OrderTimeline = ({ currentStatus }: { currentStatus: string }) => {
           <div>
             <p className="font-semibold text-red-800">Order Cancelled</p>
             <p className="text-sm text-red-600">This order has been cancelled</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (currentStatus.toLowerCase() === "return_requested") {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center gap-3">
+          <RotateCcw className="w-6 h-6 text-amber-600" />
+          <div>
+            <p className="font-semibold text-amber-800">Return Requested</p>
+            <p className="text-sm text-amber-700">Your return request is under review.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (currentStatus.toLowerCase() === "return_successful") {
+    return (
+      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center gap-3">
+          <CheckCircle className="w-6 h-6 text-emerald-600" />
+          <div>
+            <p className="font-semibold text-emerald-800">Return Successful</p>
+            <p className="text-sm text-emerald-700">Your return has been completed successfully.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (currentStatus.toLowerCase() === "return_rejected") {
+    return (
+      <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center gap-3">
+          <XCircle className="w-6 h-6 text-rose-600" />
+          <div>
+            <p className="font-semibold text-rose-800">Return Rejected</p>
+            <p className="text-sm text-rose-700">Your return request was not approved.</p>
           </div>
         </div>
       </div>
@@ -209,6 +251,78 @@ const OrderTimeline = ({ currentStatus }: { currentStatus: string }) => {
   )
 }
 
+const ReturnTimeline = ({
+  status,
+  requestedAt,
+  processedAt,
+  rejectionReason,
+}: {
+  status: string
+  requestedAt?: string | null
+  processedAt?: string | null
+  rejectionReason?: string | null
+}) => {
+  const normalized = status.toLowerCase()
+  const requestedDone = ["return_requested", "return_successful", "return_rejected"].includes(normalized)
+  const processedDone = ["return_successful", "return_rejected"].includes(normalized)
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 mb-4">
+      <h4 className="font-semibold text-amber-800 text-sm sm:text-base mb-2">Return Timeline</h4>
+      <div className="space-y-2 text-xs sm:text-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-amber-800">
+            <div className={`w-2.5 h-2.5 rounded-full ${requestedDone ? "bg-amber-500" : "bg-amber-200"}`} />
+            <span>Requested</span>
+          </div>
+          <span className="text-amber-700">{requestedAt ? new Date(requestedAt).toLocaleString() : "Pending"}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-amber-800">
+            <div className={`w-2.5 h-2.5 rounded-full ${processedDone ? "bg-blue-500" : "bg-amber-200"}`} />
+            <span>Processed</span>
+          </div>
+          <span className="text-amber-700">{processedAt ? new Date(processedAt).toLocaleString() : "Pending"}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-amber-800">
+            <div
+              className={`w-2.5 h-2.5 rounded-full ${
+                normalized === "return_successful"
+                  ? "bg-emerald-500"
+                  : normalized === "return_rejected"
+                    ? "bg-rose-500"
+                    : "bg-amber-200"
+              }`}
+            />
+            <span>Decision</span>
+          </div>
+          <span
+            className={
+              normalized === "return_successful"
+                ? "text-emerald-700"
+                : normalized === "return_rejected"
+                  ? "text-rose-700"
+                  : "text-amber-700"
+            }
+          >
+            {normalized === "return_successful"
+              ? "Approved"
+              : normalized === "return_rejected"
+                ? "Rejected"
+                : "Awaiting review"}
+          </span>
+        </div>
+        {normalized === "return_rejected" && rejectionReason && (
+          <div className="mt-2 p-2 bg-rose-50 border border-rose-200 rounded text-rose-700">
+            <span className="font-medium">Rejection reason:</span> {rejectionReason}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 interface OrderItem {
   id: number
   menu_item_name: string
@@ -234,6 +348,12 @@ interface Order {
   tracking_url?: string
   tracking_id?: string
   created_at: string
+  updated_at: string
+  return_requested_at?: string | null
+  return_reason?: string | null
+  return_processed_at?: string | null
+  return_processed_by?: string | null
+  return_rejection_reason?: string | null
   items: OrderItem[]
 }
 
@@ -271,7 +391,7 @@ export default function OrdersPage() {
   }
 
   const isOrderCollapsible = (status: string) => {
-    const collapsibleStatuses = ['delivered', 'cancelled', 'cancel', 'completed']
+    const collapsibleStatuses = ['delivered', 'cancelled', 'cancel', 'completed', 'return_successful', 'return_rejected']
     return collapsibleStatuses.includes(status.toLowerCase())
   }
 
@@ -306,6 +426,54 @@ export default function OrdersPage() {
     }
   }
 
+  const getReturnWindowInfo = (order: Order) => {
+    const status = order.status.toLowerCase()
+    const returnStatuses = ["return_requested", "return_successful", "return_rejected"]
+    if (returnStatuses.includes(status)) {
+      return { eligible: false, daysLeft: 0, reason: "already_processed" as const }
+    }
+
+    if (!["delivered", "completed"].includes(status)) {
+      return { eligible: false, daysLeft: 0, reason: "not_delivered" as const }
+    }
+
+    const deliveredAt = new Date(order.updated_at || order.created_at)
+    const now = new Date()
+    const diffDays = (now.getTime() - deliveredAt.getTime()) / (1000 * 60 * 60 * 24)
+    const daysLeft = Math.max(0, Math.ceil(7 - diffDays))
+
+    if (diffDays > 7) {
+      return { eligible: false, daysLeft: 0, reason: "expired" as const }
+    }
+
+    return { eligible: true, daysLeft, reason: "ok" as const }
+  }
+
+  const handleRequestReturn = async (order: Order) => {
+    const info = getReturnWindowInfo(order)
+    if (!info.eligible) return
+
+    const reason = window.prompt("Reason for return (optional):", "") || ""
+
+    try {
+      const response = await fetch(`/api/orders/${order.id}/return-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to request return")
+      }
+
+      await fetchUserOrders()
+      alert("Return request submitted. Our team will review it shortly.")
+    } catch (requestError) {
+      alert(requestError instanceof Error ? requestError.message : "Failed to request return")
+    }
+  }
+
   
   const getDisplayStatus = (status: string) => {
     switch (status.toLowerCase()) {
@@ -325,6 +493,12 @@ export default function OrdersPage() {
       case "cancelled":
       case "cancel":
         return "Cancelled"
+      case "return_requested":
+        return "Return Requested"
+      case "return_successful":
+        return "Return Successful"
+      case "return_rejected":
+        return "Return Rejected"
       // case "preparing":
       //   return "Preparing"
       // case "ready":
@@ -352,6 +526,12 @@ export default function OrdersPage() {
       case "cancelled":
       case "cancel":
         return "bg-gradient-to-r from-red-100 to-pink-100 text-red-800 hover:from-red-200 hover:to-pink-200 transition-all duration-300 shadow-md hover:shadow-lg border border-red-200"
+      case "return_requested":
+        return "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 hover:from-amber-200 hover:to-yellow-200 transition-all duration-300 shadow-md hover:shadow-lg border border-amber-200"
+      case "return_successful":
+        return "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 hover:from-emerald-200 hover:to-green-200 transition-all duration-300 shadow-md hover:shadow-lg border border-emerald-200"
+      case "return_rejected":
+        return "bg-gradient-to-r from-rose-100 to-red-100 text-rose-800 hover:from-rose-200 hover:to-red-200 transition-all duration-300 shadow-md hover:shadow-lg border border-rose-200"
       // case "preparing":
       //   return "bg-gradient-to-r from-sky-100 to-blue-100 text-sky-800 hover:from-sky-200 hover:to-blue-200 transition-all duration-300 shadow-md hover:shadow-lg border border-sky-200"
       // case "ready":
@@ -379,6 +559,12 @@ export default function OrdersPage() {
       case "cancelled":
       case "cancel":
         return <XCircle className="w-4 h-4 text-red-600 drop-shadow-sm" />
+      case "return_requested":
+        return <RotateCcw className="w-4 h-4 text-amber-600 drop-shadow-sm" />
+      case "return_successful":
+        return <CheckCircle className="w-4 h-4 text-emerald-600 drop-shadow-sm" />
+      case "return_rejected":
+        return <XCircle className="w-4 h-4 text-rose-600 drop-shadow-sm" />
       // case "preparing":
       //   return <ChefHat className="w-4 h-4 text-sky-600 drop-shadow-sm" />
       // case "ready":
@@ -406,6 +592,12 @@ export default function OrdersPage() {
       case "cancelled":
       case "cancel":
         return "❌ This order has been cancelled"
+      case "return_requested":
+        return "↩️ Return request submitted and under review"
+      case "return_successful":
+        return "✅ Return completed successfully"
+      case "return_rejected":
+        return "❌ Return request was rejected"
       // case "preparing":
       //   return "👨‍🍳 Our team is preparing your order with care"
       // case "ready":
@@ -624,6 +816,69 @@ export default function OrdersPage() {
                       </div>
                     </div>
                   )}
+
+                  {(() => {
+                    const returnInfo = getReturnWindowInfo(order)
+                    const waMessage = encodeURIComponent(
+                      `Hi, I need help with order ${order.order_number}. Status: ${getDisplayStatus(order.status)}.`,
+                    )
+                    const waPhone = "919037888193"
+                    return (
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-3 sm:p-4 mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div>
+                            <h4 className="font-semibold text-amber-800 text-sm sm:text-base">Returns & Help</h4>
+                            {returnInfo.eligible ? (
+                              <p className="text-xs sm:text-sm text-amber-700">
+                                Return available for this order. {returnInfo.daysLeft} day(s) left in the 7-day window.
+                              </p>
+                            ) : order.status.toLowerCase() === "return_requested" ? (
+                              <p className="text-xs sm:text-sm text-amber-700">Return request already submitted and pending review.</p>
+                            ) : order.status.toLowerCase() === "return_successful" ? (
+                              <p className="text-xs sm:text-sm text-emerald-700">Return processed successfully.</p>
+                            ) : order.status.toLowerCase() === "return_rejected" ? (
+                              <p className="text-xs sm:text-sm text-rose-700">Return request was rejected by support.</p>
+                            ) : (
+                              <p className="text-xs sm:text-sm text-amber-700">
+                                Returns can be requested within 7 days after delivery.
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {returnInfo.eligible && (
+                              <button
+                                onClick={() => handleRequestReturn(order)}
+                                className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                                Request Return
+                              </button>
+                            )}
+                            <a
+                              href={`https://wa.me/${waPhone}?text=${waMessage}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              WhatsApp Help
+                            </a>
+                          </div>
+                        </div>
+                        {["return_requested", "return_successful", "return_rejected"].includes(order.status.toLowerCase()) && (
+                          <div className="mt-3">
+                            <ReturnTimeline
+                              status={order.status}
+                              requestedAt={order.return_requested_at}
+                              processedAt={order.return_processed_at}
+                              rejectionReason={order.return_rejection_reason}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                   {/* Order Items */}
                   <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">

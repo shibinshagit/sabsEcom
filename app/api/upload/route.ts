@@ -111,6 +111,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
+    const expectedSizeHeader = request.headers.get("x-file-size")
+    const expectedSize = expectedSizeHeader ? Number(expectedSizeHeader) : null
+    const fileTypeHeader = request.headers.get("x-file-type") || ""
+
+    if (fileTypeHeader.startsWith("video/") && expectedSize && expectedSize > 9 * 1024 * 1024) {
+      return NextResponse.json({ error: "Video upload limit is 9MB for now." }, { status: 413 })
+    }
+
     // Convert ReadableStream to ArrayBuffer
     const reader = request.body.getReader()
     const chunks: Uint8Array[] = []
@@ -130,6 +138,18 @@ export async function POST(request: NextRequest) {
     for (const chunk of chunks) {
       uint8Array.set(chunk, offset)
       offset += chunk.length
+    }
+
+    if (expectedSize && totalLength !== expectedSize) {
+      return NextResponse.json(
+        {
+          error:
+            "Uploaded file was truncated in transit. Please retry with a smaller file (9MB max for video).",
+          expectedSize,
+          receivedSize: totalLength,
+        },
+        { status: 413 },
+      )
     }
 
     // Check if it's an image file

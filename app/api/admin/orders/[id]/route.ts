@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 import nodemailer from 'nodemailer'
+import { ensureOrderReturnColumns } from "@/lib/migrations/ensure-order-return-columns"
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -201,7 +202,7 @@ async function handleStockUpdate(orderId: number, previousStatus: string, newSta
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { status, tracking_url, tracking_id } = await request.json()
+    const { status, tracking_url, tracking_id, return_processed_by, return_rejection_reason } = await request.json()
     const resolvedParams = await params
     const id = parseInt(resolvedParams.id)
 
@@ -209,7 +210,20 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 })
     }
 
-    const validStatuses = ["pending", "confirmed", "packed", "dispatched", "out for delivery", "delivered", "cancel"]
+    await ensureOrderReturnColumns()
+
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "packed",
+      "dispatched",
+      "out for delivery",
+      "delivered",
+      "cancel",
+      "return_requested",
+      "return_successful",
+      "return_rejected",
+    ]
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: "Invalid status. Valid statuses: " + validStatuses.join(', ') }, { status: 400 })
     }
@@ -239,6 +253,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const previousStatus = currentOrder.status
+    const normalizedStatus = String(status || "").toLowerCase()
+    const isReturnProcessed = normalizedStatus === "return_successful" || normalizedStatus === "return_rejected"
+    const rejectionReason = typeof return_rejection_reason === "string" ? return_rejection_reason.trim() : ""
+
+    if (normalizedStatus === "return_rejected" && !rejectionReason) {
+      return NextResponse.json({ error: "Return rejection reason is required" }, { status: 400 })
+    }
     
     // Handle stock management based on status changes
     await handleStockUpdate(id, previousStatus, status, currentOrder.items, currentOrder.order_number)
@@ -250,6 +271,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         status = ${status},
         tracking_url = ${tracking_url || null},
         tracking_id = ${tracking_id || null},
+        return_rejection_reason = CASE
+          WHEN ${normalizedStatus === 'return_rejected'} THEN ${rejectionReason}
+          WHEN ${normalizedStatus === 'return_successful'} THEN NULL
+          ELSE return_rejection_reason
+        END,
+        return_processed_at = CASE WHEN ${isReturnProcessed} THEN CURRENT_TIMESTAMP ELSE return_processed_at END,
+        return_processed_by = CASE WHEN ${isReturnProcessed} THEN ${return_processed_by || 'admin'} ELSE return_processed_by END,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING 
@@ -272,6 +300,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         discount_amount,
         coupon_code,
         status,
+        return_requested_at,
+        return_reason,
+        return_rejection_reason,
+        return_processed_at,
+        return_processed_by,
         tracking_url,
         tracking_id,
         created_at,
@@ -323,6 +356,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       discount_amount: parseFloat(order.discount_amount || '0'),
       coupon_code: order.coupon_code,
       status: order.status,
+      return_requested_at: order.return_requested_at,
+      return_reason: order.return_reason,
+      return_rejection_reason: order.return_rejection_reason,
+      return_processed_at: order.return_processed_at,
+      return_processed_by: order.return_processed_by,
       tracking_url: order.tracking_url,
       tracking_id: order.tracking_id,
       created_at: order.created_at,
@@ -365,6 +403,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
         COALESCE(o.delivery_fee, 0) as delivery_fee,
         o.total_amount as final_total,
         o.status,
+        o.return_requested_at,
+        o.return_reason,
+        o.return_rejection_reason,
+        o.return_processed_at,
+        o.return_processed_by,
         o.special_instructions,
         o.created_at,
         o.updated_at,
@@ -407,6 +450,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
       delivery_fee: parseFloat(order.delivery_fee || '0'),
       final_total: parseFloat(order.final_total || '0'),
       status: order.status,
+      return_requested_at: order.return_requested_at,
+      return_reason: order.return_reason,
+      return_rejection_reason: order.return_rejection_reason,
+      return_processed_at: order.return_processed_at,
+      return_processed_by: order.return_processed_by,
       special_instructions: order.special_instructions,
       created_at: order.created_at,
       updated_at: order.updated_at,

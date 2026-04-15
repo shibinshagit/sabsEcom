@@ -34,15 +34,17 @@ export async function PUT(
     } = body
 
     // Validate required fields
-    if (!name || !description || !category_id) {
+    if (!name || !category_id) {
+      console.error("PUT /products validation failed: missing name or category_id", { name, category_id })
       return NextResponse.json(
-        { error: "Name, description, and category_id are required" },
+        { error: "Name and category_id are required" },
         { status: 400 }
       )
     }
 
     // Validate category_id is a number
     if (isNaN(Number(category_id))) {
+      console.error("PUT /products validation failed: invalid category_id", { category_id })
       return NextResponse.json(
         { error: "Category ID must be a valid number" },
         { status: 400 }
@@ -51,6 +53,7 @@ export async function PUT(
 
     // Validate variants array
     if (!Array.isArray(variants) || variants.length === 0) {
+      console.error("PUT /products validation failed: missing variants", { variants })
       return NextResponse.json(
         { error: "At least one variant is required" },
         { status: 400 }
@@ -59,6 +62,7 @@ export async function PUT(
 
     // Validate shop_category
     if (!shop_category || !['A', 'B', 'Both'].includes(shop_category)) {
+      console.error("PUT /products validation failed: invalid shop_category", { shop_category })
       return NextResponse.json(
         { error: "Shop category is required and must be 'A', 'B', or 'Both'" },
         { status: 400 }
@@ -67,6 +71,7 @@ export async function PUT(
 
     // Validate product ID
     if (!id || isNaN(Number(id))) {
+      console.error("PUT /products validation failed: invalid id", { id })
       return NextResponse.json(
         { error: "Invalid product ID" },
         { status: 400 }

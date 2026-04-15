@@ -5,15 +5,11 @@ import {
   LayoutDashboard,
   ShoppingBag,
   ListOrdered,
-  Users,
   Settings,
   Image as ImageIcon,
   Tag,
+  Clapperboard,
   Star,
-  BookOpen,
-  Calendar,
-  Menu,
-  MessageCircle,
 } from "lucide-react"
 
 const tabs = [
@@ -23,9 +19,8 @@ const tabs = [
   { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/banners", label: "Banners", icon: ImageIcon },
   { href: "/admin/slider", label: "Slider", icon: ImageIcon },
-  { href: "/admin/testimonials", label: "Testimonials", icon: Star },
-  { href: "/admin/about", label: "About", icon: BookOpen },
-//   { href: "/admin/reservations", label: "Reservations", icon: Calendar },
+  { href: "/admin/before-after-videos", label: "Videos", icon: Clapperboard },
+  { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ]
 

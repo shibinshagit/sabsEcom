@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
 import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
+import { ensureOrderReturnColumns } from "@/lib/migrations/ensure-order-return-columns"
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production")
 
@@ -35,10 +36,16 @@ export async function GET() {
         final_total DECIMAL(10,2) NOT NULL,
         special_instructions TEXT,
         status VARCHAR(20) DEFAULT 'pending',
+        return_requested_at TIMESTAMP,
+        return_reason TEXT,
+        return_rejection_reason TEXT,
+        return_processed_at TIMESTAMP,
+        return_processed_by TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `
+    await ensureOrderReturnColumns()
 
     await sql`
       CREATE TABLE IF NOT EXISTS order_items (

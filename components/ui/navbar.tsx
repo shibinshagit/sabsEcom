@@ -372,7 +372,7 @@ function Nav() {
       </div>
       <nav
         className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${shop === "A"
-          ? "bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-600"
+          ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
           : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
           }`}
         style={{ top: "var(--banner-height, 0px)" }}
@@ -515,7 +515,7 @@ function Nav() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-80 p-0 border-0 shadow-2xl">
-                      <div className="bg-gradient-to-br from-rose-500 via-fuchsia-500 to-violet-600 rounded-t-lg p-6">
+                      <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-6">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                             {user?.isClerkUser && clerkUser?.imageUrl ? (
@@ -586,7 +586,7 @@ function Nav() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-64 p-0 border-0 shadow-2xl">
-                      <div className="bg-gradient-to-br from-rose-500 via-fuchsia-500 to-violet-600 rounded-t-lg p-6">
+                      <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-6">
                         <div className="text-center">
                           <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mx-auto mb-3">
                             <User className="w-6 h-6 text-white" />
@@ -599,7 +599,7 @@ function Nav() {
                       <div className="bg-white rounded-b-lg p-4">
                         <Button
                           onClick={handleLoginClick}
-                          className="w-full bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-medium py-3 rounded-lg transition-colors"
+                          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-lg transition-colors"
                         >
                           Sign In / Login
                         </Button>
@@ -632,7 +632,7 @@ function Nav() {
                         onClick={(e) => handleNavClick(baseNavigation[0], e)}
                         className={`hidden lg:flex items-center rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
                           pathname === '/products' && !searchParams.get('category')
-                            ? `bg-white ${shop === "A" ? "text-fuchsia-700" : "text-purple-600"} shadow-lg`
+                            ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
                             : "text-white hover:bg-white/20"
                         }`}
                       >
@@ -652,7 +652,7 @@ function Nav() {
                                   href={`/products?category=${category.slug || category.id}`}
                                   className={`block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors ${
                                     category.is_special 
-                                      ? `border-l-2 ${shop === "A" ? "border-fuchsia-500 hover:bg-fuchsia-50" : "border-purple-400 hover:bg-purple-50"}` 
+                                      ? `border-l-2 ${shop === "A" ? "border-orange-500 hover:bg-orange-100" : "border-purple-400 hover:bg-purple-50"}` 
                                       : ""
                                   }`}
                                   onClick={(e) => {
@@ -668,7 +668,7 @@ function Nav() {
                                   <div className="flex items-center justify-between">
                                     <span>{category.name}</span>
                                     {category.is_special && (
-                                      <span className={`text-xs ${shop === "A" ? "text-fuchsia-600" : "text-purple-600"}`}>✨</span>
+                                      <span className={`text-xs ${shop === "A" ? "text-orange-500" : "text-purple-600"}`}>✨</span>
                                     )}
                                   </div>
                                 </Link>
@@ -733,11 +733,11 @@ function Nav() {
                             onClick={(e) => handleNavClick(item, e)}
                             className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 relative ${
                               isActiveCategoryLink(item)
-                                ? `bg-white ${shop === "A" ? "text-fuchsia-700" : "text-purple-600"} shadow-lg`
+                                ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
                                 : "text-white hover:bg-white/20"
                             } ${
                               category.is_special 
-                                ? `border-2 ${shop === "A" ? "border-fuchsia-500 shadow-fuchsia-500/35" : "border-purple-400 shadow-purple-400/30"} shadow-lg` 
+                                ? `border-2 ${shop === "A" ? "border-orange-500 shadow-orange-500/40" : "border-purple-400 shadow-purple-400/30"} shadow-lg` 
                                 : ""
                             }`}
                           >
@@ -746,7 +746,7 @@ function Nav() {
                               {category.is_special && (
                                 <span className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full font-bold ${
                                   shop === "A" 
-                                    ? "bg-fuchsia-600 text-white" 
+                                    ? "bg-orange-500 text-white" 
                                     : "bg-purple-400 text-purple-900"
                                 }`}>
                                   ✨
@@ -938,7 +938,7 @@ function Nav() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-64 p-0 border-0 shadow-2xl">
-                      <div className="bg-gradient-to-br from-rose-500 via-fuchsia-500 to-violet-600 rounded-t-lg p-4">
+                      <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                             {user?.isClerkUser && clerkUser?.imageUrl ? (
@@ -1081,7 +1081,7 @@ function Nav() {
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
                       className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-fuchsia-700" : "text-purple-600"}`
+                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
                         : "text-white hover:bg-white/20"
                         }`}
                     >
@@ -1199,7 +1199,7 @@ function Nav() {
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
                       className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-fuchsia-700" : "text-purple-600"}`
+                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
                         : "text-white hover:bg-white/20"
                         }`}
                     >
@@ -1240,7 +1240,7 @@ function Nav() {
                         }}
                         className={`block px-4 py-3 text-base font-semibold transition-colors rounded-lg border-2 ${
                           pathname === '/products' && !searchParams.get('category')
-                            ? `${shop === "A" ? "text-fuchsia-700 bg-fuchsia-50 border-fuchsia-200" : "text-purple-600 bg-purple-50 border-purple-200"}`
+                            ? `${shop === "A" ? "text-orange-600 bg-orange-50 border-orange-200" : "text-purple-600 bg-purple-50 border-purple-200"}`
                             : `text-gray-700 hover:bg-gray-50 border-gray-200`
                         }`}
                       >
@@ -1271,18 +1271,18 @@ function Nav() {
                                   }}
                                   className={`block px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg relative overflow-hidden ${
                                     isActiveCategoryLink(item)
-                                      ? `${shop === "A" ? "text-fuchsia-700 bg-fuchsia-50" : "text-purple-600 bg-purple-50"}`
+                                      ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
                                       : `text-gray-600 hover:bg-gray-50`
                                   } ${
                                     category.is_special 
-                                      ? `border-l-4 ${shop === "A" ? "border-fuchsia-500 bg-gradient-to-r from-fuchsia-100/70 to-rose-50/50" : "border-purple-400 bg-gradient-to-r from-purple-50/50 to-pink-50/30"} shadow-md` 
+                                      ? `border-l-4 ${shop === "A" ? "border-orange-500 bg-gradient-to-r from-orange-100/70 to-amber-50/50" : "border-purple-400 bg-gradient-to-r from-purple-50/50 to-pink-50/30"} shadow-md` 
                                       : ""
                                   }`}
                                 >
                                   {category.is_special && (
                                     <div className={`absolute inset-0 bg-gradient-to-r ${
                                       shop === "A" 
-                                        ? "from-fuchsia-200/20 via-rose-200/30 to-violet-200/20" 
+                                        ? "from-orange-200/20 via-amber-200/30 to-yellow-200/20" 
                                         : "from-purple-200/20 via-pink-200/30 to-indigo-200/20"
                                     } animate-pulse`}></div>
                                   )}
@@ -1291,7 +1291,7 @@ function Nav() {
                                     {category.is_special && (
                                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse ${
                                         shop === "A" 
-                                          ? "bg-gradient-to-r from-fuchsia-500 to-rose-500 text-white" 
+                                          ? "bg-gradient-to-r from-orange-400 to-amber-500 text-white" 
                                           : "bg-gradient-to-r from-purple-400 to-pink-500 text-white"
                                       }`}>
                                         ✨ Special
@@ -1301,7 +1301,7 @@ function Nav() {
                                   {category.is_special && (
                                     <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${
                                       shop === "A" 
-                                        ? "from-transparent via-fuchsia-500 to-transparent" 
+                                        ? "from-transparent via-orange-400 to-transparent" 
                                         : "from-transparent via-purple-400 to-transparent"
                                     } animate-pulse`}></div>
                                   )}

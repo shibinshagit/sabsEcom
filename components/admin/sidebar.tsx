@@ -5,18 +5,14 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   ShoppingBag,
-  Calendar,
   Settings,
   Menu,
   Tags,
-  ImageIcon,
-  MessageSquare,
-  Star,
-  Info,
   BadgePercent,
   Users,
   Shield,
-  icons
+  Clapperboard,
+  Star
 } from "lucide-react"
 
 const navigation = [
@@ -30,6 +26,8 @@ const navigation = [
   // { name: "Banners", href: "/admin/banners", icon: MessageSquare },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Admin Users", href: "/admin/users", icon: Shield },
+  { name: "Video Results", href: "/admin/before-after-videos", icon: Clapperboard },
+  { name: "Reviews", href: "/admin/reviews", icon: Star },
   { name: "Settings", href: "/admin/settings", icon: Settings },
   { name: "Spinner-Offers", href: "/admin/offer", icon: BadgePercent },
   { name: "Coupon Management", href: "/admin/welcome-coupons", icon: BadgePercent }
