@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, CheckCircle, XCircle, Copy, Tag, Calendar, Percent, IndianRupee, MinusCircle, AlertCircle, Gift, Zap, Sparkles } from "lucide-react";
+import { useCurrency } from "@/lib/contexts/currency-context";
 
 interface Coupon {
   id: number;
   code: string;
   title: string;
   description: string;
-  discount_type: "flat" | "percentage";
-  discount_value: string;
+  discount_type: "flat" | "percentage" | "cash";
+  discount_value?: string;
+  discount_value_inr?: string;
+  discount_value_aed?: string;
   minimum_purchase_aed?: string;
   minimum_purchase_inr?: string;
   maximum_discount?: string | null;
@@ -21,11 +24,16 @@ interface Coupon {
   valid_to: string;
 }
 
-export default function UserCoupons() {
+interface UserCouponsProps {
+  variant?: "full" | "compact";
+}
+
+export default function UserCoupons({ variant = "full" }: UserCouponsProps) {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const { selectedCurrency, getCurrencySymbol } = useCurrency();
 
   useEffect(() => {
     setMounted(true);
@@ -58,10 +66,11 @@ export default function UserCoupons() {
     fetchCoupons();
   }, []);
 
-  const copyToClipboard = (code: string) => {
+  const copyToClipboard = (code: string, silent = false) => {
     navigator.clipboard.writeText(code);
-    // Using simple alert instead of toast for compatibility
-    alert(`Copied: ${code}`);
+    if (!silent) {
+      alert(`Copied: ${code}`);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -85,7 +94,7 @@ export default function UserCoupons() {
     if (!isActive || expired) return "from-gray-300 to-gray-400";
     
     // Different gradients based on discount type
-    if (coupon.discount_type === "percentage") {
+    if (isPercentageDiscount(coupon)) {
       return "from-purple-500 to-pink-600";
     } else {
       return "from-blue-500 to-teal-600";
@@ -93,23 +102,44 @@ export default function UserCoupons() {
   };
 
   const getDiscountIcon = (discountType: string) => {
-    return discountType === "percentage" ? 
+    const normalized = normalizeDiscountType(discountType);
+    return normalized === "percentage" ? 
       <Percent className="w-5 h-5" /> : 
       <IndianRupee className="w-5 h-5" />;
   };
 
   const getDiscountDisplay = (coupon: Coupon) => {
-    if (coupon.discount_type === "percentage") {
-      return `${coupon.discount_value}% OFF`;
+    const discountValue = getDiscountValue(coupon);
+    if (!discountValue) return "Special Offer";
+
+    if (isPercentageDiscount(coupon)) {
+      return `${discountValue}% OFF`;
     } else {
       return (
         <>
-          <IndianRupee className="inline w-4 h-4 mr-1" />
-          {coupon.discount_value} OFF
+          {selectedCurrency === "INR" ? <IndianRupee className="inline w-4 h-4 mr-1" /> : null}
+          {selectedCurrency !== "INR" ? `${getCurrencySymbol(selectedCurrency)} ` : ""}
+          {discountValue} OFF
         </>
       );
     }
   };
+
+  const getDiscountValue = (coupon: Coupon) => {
+    if (selectedCurrency === "INR") {
+      return coupon.discount_value_inr || coupon.discount_value || "";
+    }
+    return coupon.discount_value_aed || coupon.discount_value || "";
+  };
+
+  const normalizeDiscountType = (discountType?: string) => {
+    const raw = String(discountType || "").trim().toLowerCase();
+    if (raw === "percentage" || raw === "percent") return "percentage";
+    if (raw === "cash" || raw === "flat") return "flat";
+    return "flat";
+  };
+
+  const isPercentageDiscount = (coupon: Coupon) => normalizeDiscountType(coupon.discount_type) === "percentage";
 
   const getMinimumPurchase = (coupon: Coupon) => {
     if (coupon.minimum_purchase_inr) {
@@ -155,6 +185,7 @@ export default function UserCoupons() {
   };
 
   if (loading) {
+    if (variant === "compact") return null;
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">
@@ -168,6 +199,7 @@ export default function UserCoupons() {
   }
 
   if (error) {
+    if (variant === "compact") return null;
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center max-w-md p-6 border border-red-200 rounded-2xl bg-red-50">
@@ -187,6 +219,62 @@ export default function UserCoupons() {
 
   const activeCoupons = mounted ? coupons.filter(c => c.is_active && new Date(c.valid_to) >= new Date()) : [];
   const expiredCoupons = mounted ? coupons.filter(c => new Date(c.valid_to) < new Date()) : [];
+
+  if (variant === "compact") {
+    if (!mounted || activeCoupons.length === 0) return null;
+
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
+            <Gift className="w-4 h-4 text-indigo-500" />
+            Active Coupons
+          </h3>
+          <span className="text-xs font-medium text-gray-500">{activeCoupons.length} available</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+          {activeCoupons.slice(0, 3).map((coupon) => (
+            <div key={coupon.id} className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2.5 text-white">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold truncate">{coupon.title || "Exclusive Coupon"}</p>
+                  <span className="text-[11px] bg-white/20 px-2 py-1 rounded-full font-medium">
+                    {isPercentageDiscount(coupon) ? "PERCENT" : "FLAT"}
+                  </span>
+                </div>
+                <p className="text-xs text-white/90 mt-1">
+                  {getDiscountDisplay(coupon)}
+                </p>
+              </div>
+
+              <div className="px-3 py-3 bg-white">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-gray-500 uppercase tracking-wide">Coupon Code</p>
+                    <code className="inline-block mt-1 text-xs font-semibold tracking-wide text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md">
+                      {coupon.code}
+                    </code>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(coupon.code, true)}
+                    className="shrink-0 rounded-lg bg-indigo-600 text-white px-2.5 py-1.5 text-xs font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-gray-500">Valid for checkout</span>
+                  <span className="text-[11px] font-medium text-gray-600">{calculateTimeLeft(coupon.valid_to)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6">
@@ -261,7 +349,7 @@ export default function UserCoupons() {
                             </div>
                             <div>
                               <span className="text-sm font-medium bg-white/30 px-3 py-1 rounded-full">
-                                {coupon.discount_type === "percentage" ? "PERCENTAGE" : "FLAT DISCOUNT"}
+                                {isPercentageDiscount(coupon) ? "PERCENTAGE" : "FLAT DISCOUNT"}
                               </span>
                             </div>
                           </div>

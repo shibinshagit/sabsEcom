@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
+import { ensureWelcomeCouponsFrontendVisibilityColumn } from "@/lib/migrations/ensure-welcome-coupons-frontend-visibility";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "your-secret-key-change-in-production"
@@ -28,6 +29,8 @@ async function getUserFromJWT() {
 
 export async function GET() {
   try {
+    await ensureWelcomeCouponsFrontendVisibilityColumn();
+
     const user = await getUserFromJWT();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,12 +63,14 @@ export async function GET() {
         c.valid_from,
         c.valid_to,
         c.is_active,
+        c.show_on_frontend,
         u.is_redeemed,
         u.redeemed_at,
         u.assigned_at
       FROM welcome_coupons_used u
       JOIN welcome_coupons c ON c.id = u.welcome_coupon_id
       WHERE u.user_id = ${internalUserId}
+        AND c.show_on_frontend = TRUE
       ORDER BY c.updated_at DESC, c.created_at DESC
     `;
 

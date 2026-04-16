@@ -21,6 +21,7 @@ import ShopSwitchPopup from "@/components/ui/shop-switch-popup"
 import { useShopSwitchPopup } from "@/lib/hooks/useShopSwitchPopup"
 import FloatingShopAd from "@/components/ui/floating-shop-ad"
 import { useFloatingShopAd } from "@/lib/hooks/useFloatingShopAd"
+import UserCoupons from "@/components/sections/user-coupons"
 
 interface ProductListProps {
   showSpinner?: boolean
@@ -685,6 +686,14 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         </div>
       </div>
     )}
+
+        {isAuthenticated && !isSearchActive && (
+          <div className="px-4 lg:px-6 mt-4">
+            <div className="max-w-7xl mx-auto">
+              <UserCoupons variant="compact" />
+            </div>
+          </div>
+        )}
 
         {/* Main Products Grid */}
         <div className="px-4 lg:px-6 mt-6 pb-8">

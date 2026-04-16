@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
+import { ensureWelcomeCouponsFrontendVisibilityColumn } from "@/lib/migrations/ensure-welcome-coupons-frontend-visibility";
 
 // ===========================
 // GET /api/admin/welcome-coupons/[id]
@@ -9,6 +10,8 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureWelcomeCouponsFrontendVisibilityColumn();
+
     const { id } = await context.params;
 
     const [coupon] = await sql`
@@ -36,6 +39,8 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureWelcomeCouponsFrontendVisibilityColumn();
+
     const { id } = await context.params;
     const data = await request.json();
 
@@ -53,6 +58,7 @@ export async function PUT(
       validFrom,
       validTo,
       isActive,
+      showOnFrontend,
       userTypeRestriction,
     } = data;
 
@@ -107,6 +113,7 @@ export async function PUT(
     const maxINR = maxPurchaseInr ?? null;
     const maxAED = maxPurchaseAed ?? null;
     const active = isActive ?? true;
+    const frontendVisible = showOnFrontend ?? true;
 
     const [updated] = await sql`
       UPDATE welcome_coupons
@@ -126,6 +133,7 @@ export async function PUT(
         max_purchase_aed = ${maxAED},
 
         user_type_restriction = ${userType},
+        show_on_frontend = ${frontendVisible},
 
         valid_from = ${validFrom},
         valid_to = ${validTo},
@@ -155,6 +163,8 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureWelcomeCouponsFrontendVisibilityColumn();
+
     const { id } = await context.params;
 
     const result = await sql`

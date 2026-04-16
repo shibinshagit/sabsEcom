@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/database";
+import { ensureWelcomeCouponsFrontendVisibilityColumn } from "@/lib/migrations/ensure-welcome-coupons-frontend-visibility";
 
 export async function GET() {
   try {
+    await ensureWelcomeCouponsFrontendVisibilityColumn();
+
     const coupons = await sql`
       SELECT *
       FROM welcome_coupons
@@ -21,6 +24,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    await ensureWelcomeCouponsFrontendVisibilityColumn();
+
     const data = await request.json();
 
     const {
@@ -41,6 +46,7 @@ export async function POST(request: Request) {
       validFrom,
       validTo,
       isActive,
+      showOnFrontend,
       userTypeRestriction,
     } = data;
 
@@ -112,6 +118,7 @@ export async function POST(request: Request) {
     const maxAED = maxPurchaseAed ?? null;
 
     const active = isActive ?? true;
+    const frontendVisible = showOnFrontend ?? true;
     const userType = userTypeRestriction ?? "all";
 
     // =========================
@@ -135,6 +142,7 @@ export async function POST(request: Request) {
         minimum_purchase_inr, minimum_purchase_aed,
         max_purchase_inr, max_purchase_aed,
         user_type_restriction,
+        show_on_frontend,
         valid_from, valid_to, is_active,
         created_at, updated_at
       )
@@ -145,6 +153,7 @@ export async function POST(request: Request) {
         ${minINR}, ${minAED},
         ${maxINR}, ${maxAED},
         ${userType},
+        ${frontendVisible},
         ${validFrom}, ${validTo}, ${active},
         NOW(), NOW()
       )

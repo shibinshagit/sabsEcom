@@ -73,6 +73,7 @@ export default function WelcomeCouponsPage() {
     validFrom: "",
     validTo: "",
     isActive: true,
+    showOnFrontend: true,
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -109,6 +110,7 @@ export default function WelcomeCouponsPage() {
       validFrom: formatDateForInput(coupon.valid_from),
       validTo: formatDateForInput(coupon.valid_to),
       isActive: coupon.is_active ?? true,
+      showOnFrontend: coupon.show_on_frontend ?? true,
     });
     setShowForm(true);
   }
@@ -186,6 +188,7 @@ export default function WelcomeCouponsPage() {
       validFrom: form.validFrom,
       validTo: form.validTo,
       isActive: form.isActive,
+      showOnFrontend: form.showOnFrontend,
     };
 
     const url = selected
@@ -324,6 +327,13 @@ export default function WelcomeCouponsPage() {
                               {coupon.is_active ? "Active" : "Inactive"}
                             </Badge>
                           )}
+                          <Badge
+                            className={coupon.show_on_frontend !== false
+                              ? "bg-blue-500 text-white hover:bg-blue-600"
+                              : "bg-slate-500 text-white hover:bg-slate-600"}
+                          >
+                            {coupon.show_on_frontend !== false ? "Frontend Visible" : "Frontend Hidden"}
+                          </Badge>
                         </div>
                         <p className="text-xl text-white mb-1">
                           {coupon.title || "Untitled Coupon"}
@@ -608,6 +618,17 @@ export default function WelcomeCouponsPage() {
                 />
                 <Label htmlFor="isActive" className="text-white">
                   {form.isActive ? "Coupon is Active" : "Coupon is Inactive"}
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-3 col-span-2 p-4 rounded bg-slate-700">
+                <Switch
+                  id="showOnFrontend"
+                  checked={form.showOnFrontend}
+                  onCheckedChange={(checked) => updateForm("showOnFrontend", checked)}
+                />
+                <Label htmlFor="showOnFrontend" className="text-white">
+                  {form.showOnFrontend ? "Show this coupon in frontend" : "Hide this coupon from frontend"}
                 </Label>
               </div>
 
