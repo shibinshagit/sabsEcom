@@ -1,18 +1,11 @@
 "use client"
 
-import { Truck, RotateCcw, Shield, Zap, Cpu, Heart, Sparkles } from "lucide-react"
+import { Truck, ShieldCheck, Sparkles, Headset, BadgeCheck, Gem } from "lucide-react"
 import { useShop } from "@/lib/contexts/shop-context"
 import { motion } from "framer-motion"
-import { useState, useEffect, useRef } from "react"
 
 const Services = () => {
   const { shop } = useShop()
-  const [isMounted, setIsMounted] = useState(false)
-  const scrollerRef = useRef(null)
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
 
   const services =
     shop === "A"
@@ -20,209 +13,106 @@ const Services = () => {
           {
             icon: Truck,
             title: "Free shipping",
-            subtitle: "Beauty delivered",
-            bgColor: "bg-pink-50",
-            borderColor: "border-pink-200",
-            iconColor: "text-pink-600",
-            titleColor: "text-pink-700",
-            subtitleColor: "text-pink-600",
-            gradient: "from-pink-100 to-rose-100",
+            subtitle: "Quick beauty delivery across your city",
+            iconColor: "text-rose-500",
+            chip: "Fast Delivery",
           },
           {
-            icon: Heart,
+            icon: BadgeCheck,
             title: "Authentic Products",
-            subtitle: "Genuine brands",
-            bgColor: "bg-purple-50",
-            borderColor: "border-purple-200",
-            iconColor: "text-purple-600",
-            titleColor: "text-purple-700",
-            subtitleColor: "text-purple-600",
-            gradient: "from-purple-100 to-indigo-100",
+            subtitle: "Genuine branded items from trusted sources",
+            iconColor: "text-purple-500",
+            chip: "Verified",
           },
           {
-            icon: Heart,
-            title: "Result guarantee",
-            subtitle: "100% authentic",
-            bgColor: "bg-rose-50",
-            borderColor: "border-rose-200",
-            iconColor: "text-rose-600",
-            titleColor: "text-rose-700",
-            subtitleColor: "text-rose-600",
-            gradient: "from-rose-100 to-pink-100",
+            icon: Gem,
+            title: "Premium Quality",
+            subtitle: "High-standard curation for reliable results",
+            iconColor: "text-amber-500",
+            chip: "Top Rated",
           },
           {
-            icon: Sparkles,
-            title: "Premium quality",
-            subtitle: "High standards",
-            bgColor: "bg-orange-50",
-            borderColor: "border-orange-200",
-            iconColor: "text-orange-600",
-            titleColor: "text-orange-700",
-            subtitleColor: "text-orange-600",
-            gradient: "from-orange-100 to-amber-100",
+            icon: Headset,
+            title: "Friendly Support",
+            subtitle: "Need help choosing? We are here for you",
+            iconColor: "text-cyan-500",
+            chip: "Always On",
           },
         ]
       : [
           {
             icon: Truck,
             title: "Fast delivery",
-            subtitle: "Tech in 24hrs",
-            bgColor: "bg-blue-50",
-            borderColor: "border-blue-200",
-            iconColor: "text-blue-600",
-            titleColor: "text-blue-700",
-            subtitleColor: "text-blue-600",
-            gradient: "from-blue-100 to-cyan-100",
+            subtitle: "Tech and style essentials at your doorstep",
+            iconColor: "text-blue-500",
+            chip: "Same Day",
           },
           {
-            icon: Shield,
-            title: "High Quality",
-            subtitle: "Safe & trusted",
-            bgColor: "bg-indigo-50",
-            borderColor: "border-indigo-200",
-            iconColor: "text-indigo-600",
-            titleColor: "text-indigo-700",
-            subtitleColor: "text-indigo-600",
-            gradient: "from-indigo-100 to-blue-100",
+            icon: ShieldCheck,
+            title: "Safe & trusted",
+            subtitle: "Checked products with reliable warranty support",
+            iconColor: "text-emerald-500",
+            chip: "Secure",
           },
           {
-            icon: Cpu,
+            icon: Sparkles,
             title: "Latest Models",
-            subtitle: "Top brands",
-            bgColor: "bg-purple-50",
-            borderColor: "border-purple-200",
-            iconColor: "text-purple-600",
-            titleColor: "text-purple-700",
-            subtitleColor: "text-purple-600",
-            gradient: "from-purple-100 to-violet-100",
+            subtitle: "New arrivals and trending picks every week",
+            iconColor: "text-violet-500",
+            chip: "Fresh Stock",
           },
           {
-            icon: Zap,
+            icon: Headset,
             title: "Fast support",
-            subtitle: "24/7 tech help",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-            iconColor: "text-cyan-600",
-            titleColor: "text-cyan-700",
-            subtitleColor: "text-cyan-600",
-            gradient: "from-cyan-100 to-teal-100",
+            subtitle: "Quick order and product help when needed",
+            iconColor: "text-cyan-500",
+            chip: "24/7",
           },
         ]
 
-  // Duplicate services for seamless looping
-  const loopedServices = [...services, ...services]
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.2,
-        duration: 0.5,
-      },
-    }),
-    hover: {
-      scale: 1.05,
-      boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
-      transition: {
-        duration: 0.3,
-      },
-    },
-  }
-
   return (
-    <div className="px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 lg:mt-8 pb-8 sm:pb-12 lg:pb-12 overflow-hidden">
-      <style jsx>{`
-        @keyframes pulseGlow {
-          0% {
-            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.1);
-          }
-          50% {
-            box-shadow: 0 0 15px 5px rgba(0, 0, 0, 0.1);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.1);
-          }
-        }
-        @keyframes scroll {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-        .animate-scroll {
-          animation: scroll 20s linear infinite;
-          display: flex;
-          width: calc(100% * 2);
-        }
-        .animate-scroll:hover {
-          animation-play-state: paused;
-        }
-        .animate-pulse-glow {
-          animation: pulseGlow 2s infinite;
-        }
-        @media (max-width: 640px) {
-          .animate-scroll {
-            animation-duration: 15s;
-          }
-        }
-        @media (min-width: 641px) and (max-width: 1024px) {
-          .animate-scroll {
-            animation-duration: 18s;
-          }
-        }
-      `}</style>
+    <section className="px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 lg:mt-8 pb-8 sm:pb-12 lg:pb-12">
       <div className="max-w-7xl mx-auto">
-        <div className="overflow-hidden">
-          <div ref={scrollerRef} className="animate-scroll">
-            {loopedServices.map((service, index) => {
+        <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-4 sm:p-6 lg:p-7 shadow-sm">
+          <div className="mb-4 sm:mb-5">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+              {shop === "A" ? "Why customers love Sabs" : "Why customers trust Sabs"}
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Fast delivery, trusted quality, and friendly support for every order.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {services.map((service, index) => {
               const IconComponent = service.icon
               return (
                 <motion.div
-                  key={`${service.title}-${index}`}
-                  className={`
-                    ${service.bgColor} 
-                    border ${service.borderColor} 
-                    rounded-xl 
-                    p-4 sm:p-5 lg:p-6 
-                    flex items-center 
-                    gap-3 sm:gap-4 
-                    bg-gradient-to-br ${service.gradient}
-                    animate-pulse-glow
-                    cursor-pointer
-                    relative
-                    overflow-hidden
-                    min-w-[250px] sm:min-w-[300px] lg:min-w-[280px]
-                    mx-2
-                  `}
-                  variants={cardVariants}
-                  initial="hidden"
-                  animate={isMounted ? "visible" : "hidden"}
-                  whileHover="hover"
-                  custom={index % services.length}
+                  key={service.title}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.35 }}
+                  transition={{ duration: 0.35, delay: index * 0.08 }}
+                  className="h-full rounded-xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
-                  <motion.div
-                    className="flex-shrink-0"
-                    animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2 }}
-                  >
-                    <IconComponent className={`w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 ${service.iconColor}`} />
-                  </motion.div>
-                  <div>
-                    <p className={`${service.titleColor} font-semibold text-sm sm:text-base lg:text-lg`}>{service.title}</p>
-                    <p className={`${service.subtitleColor} text-xs sm:text-sm lg:text-base`}>{service.subtitle}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={`w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center ${service.iconColor}`}>
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      {service.chip}
+                    </span>
                   </div>
+
+                  <h4 className="mt-3 text-sm sm:text-base font-semibold text-gray-900 min-h-[20px]">{service.title}</h4>
+                  <p className="mt-1 text-xs sm:text-sm text-gray-600 leading-relaxed min-h-[40px]">{service.subtitle}</p>
                 </motion.div>
               )
             })}
           </div>
         </div>
       </div>
-    </div>
+    </section>
   )
 }
 

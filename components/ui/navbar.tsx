@@ -379,237 +379,237 @@ function Nav() {
       >
         {/* Desktop Header */}
         <div className="hidden lg:block">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-8">
-                {/* Logo */}
+          <div className="max-w-7xl mx-auto px-6 py-3">
+            <div className="rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md px-4 py-3 mb-3">
+              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
                 <Link href="/" className="flex items-center group shrink-0" aria-label={settings.restaurant_name}>
                   {settings.restaurant_logo ? (
-                    <div className="relative w-44 h-14 transition-transform duration-300 group-hover:scale-110">
+                    <div
+                      className={`relative w-44 h-14 transition-transform duration-300 group-hover:scale-105 ${
+                        shop === "A" ? "bg-black/90 rounded-xl" : ""
+                      }`}
+                    >
                       <Image
                         src={settings.restaurant_logo || "/placeholder.svg"}
                         alt=""
                         fill
-                        className="object-contain object-left"
+                        className={`object-contain object-center ${shop === "A" ? "p-1" : ""}`}
                         sizes="176px"
                       />
                     </div>
                   ) : (
-                    <div className="w-44 h-14 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
-                      <ShoppingBag className="w-8 h-8 text-white" />
+                    <div className="w-40 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-105">
+                      <ShoppingBag className="w-7 h-7 text-white" />
                     </div>
                   )}
                 </Link>
 
-                {/* Enhanced Search Bar */}
-                <EnhancedSearch 
-                  className="flex-1 max-w-2xl"
+                <EnhancedSearch
+                  className="w-full"
                   placeholder={shop === "A" ? "Search beauty products..." : "Search for style accessories..."}
                 />
-              </div>
 
-              {/* Right side buttons */}
-              <div className="flex items-center gap-4">
-                {/* Currency Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3 flex items-center gap-2">
-                      <Globe className="w-5 h-5" />
-                      <span className="font-semibold">{selectedCurrency}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 p-2 border-0 shadow-xl">
-                    <div className="bg-white rounded-lg">
-                      <DropdownMenuItem
-                        onClick={() => setSelectedCurrency('AED')}
-                        className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                          }`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                              <span className="text-blue-600 font-bold text-sm">AED</span>
-                            </div>
-                            <div>
-                              <span className="font-medium">UAE Dirham</span>
-                              <p className="text-xs text-gray-500">AED</p>
-                            </div>
-                          </div>
-                          {selectedCurrency === 'AED' && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={() => setSelectedCurrency('INR')}
-                        className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
-                          }`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                              <span className="text-green-600 font-bold text-sm">₹</span>
-                            </div>
-                            <div>
-                              <span className="font-medium">Indian Rupee</span>
-                              <p className="text-xs text-gray-500">INR</p>
-                            </div>
-                          </div>
-                          {selectedCurrency === 'INR' && (
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <Link href="/orders">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                    <ShoppingBag className="w-6 h-6" />
-                  </Button>
-                </Link>
-
-                <Link href="/wishlist" className="relative group">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                    <Heart className={`w-6 h-6 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
-                    {wishlistCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
-                        {wishlistCount}
-                      </span>
-                    )}
-                  </Button>
-                </Link>
-
-                <Link href="/order" className="relative group">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                    <ShoppingCart className="w-6 h-6" />
-                    {cartCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
-                        {cartCount}
-                      </span>
-                    )}
-                  </Button>
-                </Link>
-
-                {isAuthenticated ? (
+                <div className="flex items-center gap-1.5">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                        {user?.isClerkUser ? (
-                          clerkUser?.imageUrl ? (
-                            <Image
-                              src={clerkUser.imageUrl}
-                              alt="Profile"
-                              width={24}
-                              height={24}
-                              className="rounded-full"
-                            />
-                          ) : (
-                            <User className="w-6 h-6" />
-                          )
-                        ) : (
-                          <User className="w-6 h-6" />
-                        )}
+                      <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl h-10 px-3 flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        <span className="font-semibold text-sm">{selectedCurrency}</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-80 p-0 border-0 shadow-2xl">
-                      <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                            {user?.isClerkUser && clerkUser?.imageUrl ? (
+                    <DropdownMenuContent align="end" className="w-48 p-2 border-0 shadow-xl">
+                      <div className="bg-white rounded-lg">
+                        <DropdownMenuItem
+                          onClick={() => setSelectedCurrency('AED')}
+                          className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                            }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span className="text-blue-600 font-bold text-sm">AED</span>
+                              </div>
+                              <div>
+                                <span className="font-medium">UAE Dirham</span>
+                                <p className="text-xs text-gray-500">AED</p>
+                              </div>
+                            </div>
+                            {selectedCurrency === 'AED' && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => setSelectedCurrency('INR')}
+                          className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                            }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                <span className="text-green-600 font-bold text-sm">₹</span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Indian Rupee</span>
+                                <p className="text-xs text-gray-500">INR</p>
+                              </div>
+                            </div>
+                            {selectedCurrency === 'INR' && (
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Link href="/orders">
+                    <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl h-10 w-10 p-0">
+                      <ShoppingBag className="w-5 h-5" />
+                    </Button>
+                  </Link>
+
+                  <Link href="/wishlist" className="relative group">
+                    <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl h-10 w-10 p-0">
+                      <Heart className={`w-5 h-5 ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                      {wishlistCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                          {wishlistCount}
+                        </span>
+                      )}
+                    </Button>
+                  </Link>
+
+                  <Link href="/order" className="relative group">
+                    <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl h-10 w-10 p-0">
+                      <ShoppingCart className="w-5 h-5" />
+                      {cartCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                          {cartCount}
+                        </span>
+                      )}
+                    </Button>
+                  </Link>
+
+                  {isAuthenticated ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl h-10 w-10 p-0">
+                          {user?.isClerkUser ? (
+                            clerkUser?.imageUrl ? (
                               <Image
                                 src={clerkUser.imageUrl}
                                 alt="Profile"
-                                width={48}
-                                height={48}
+                                width={24}
+                                height={24}
                                 className="rounded-full"
                               />
                             ) : (
-                              <User className="w-6 h-6 text-white" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-white font-semibold text-lg">{user?.name || "User"}</h3>
-                            <p className="text-white/80 text-sm">{user?.email}</p>
-                            {user?.isClerkUser && (
-                              <p className="text-white/60 text-xs">Google Account</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-white rounded-b-lg">
-                        <div className="p-2">
-                          <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                            <Link href="/dashboard" className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <User className="w-4 h-4 text-orange-600" />
-                              </div>
-                              <span className="font-medium text-gray-700">My Profile</span>
-                            </Link>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                            <Link href="/orders" className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <ShoppingBag className="w-4 h-4 text-orange-600" />
-                              </div>
-                              <span className="font-medium text-gray-700">My Orders</span>
-                            </Link>
-                          </DropdownMenuItem>
-
-                        </div>
-
-                        <div className="border-t border-gray-100 p-2">
-                          <DropdownMenuItem
-                            onClick={handleLogout}
-                            className="cursor-pointer rounded-lg p-3 hover:bg-red-50 transition-colors text-red-600 hover:text-red-700"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                                <LogOut className="w-4 h-4 text-red-600" />
-                              </div>
-                              <span className="font-medium">Logout</span>
-                            </div>
-                          </DropdownMenuItem>
-                        </div>
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-3">
-                        <User className="w-6 h-6" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64 p-0 border-0 shadow-2xl">
-                      <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-6">
-                        <div className="text-center">
-                          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mx-auto mb-3">
-                            <User className="w-6 h-6 text-white" />
-                          </div>
-                          <h3 className="text-white font-semibold text-lg">Welcome!</h3>
-                          <p className="text-white/80 text-sm">Sign in to access your account</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-white rounded-b-lg p-4">
-                        <Button
-                          onClick={handleLoginClick}
-                          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-lg transition-colors"
-                        >
-                          Sign In / Login
+                              <User className="w-5 h-5" />
+                            )
+                          ) : (
+                            <User className="w-5 h-5" />
+                          )}
                         </Button>
-                        <p className="text-center text-xs text-gray-500 mt-3">
-                          New customer? Create an account to get started
-                        </p>
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-80 p-0 border-0 shadow-2xl">
+                        <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                              {user?.isClerkUser && clerkUser?.imageUrl ? (
+                                <Image
+                                  src={clerkUser.imageUrl}
+                                  alt="Profile"
+                                  width={48}
+                                  height={48}
+                                  className="rounded-full"
+                                />
+                              ) : (
+                                <User className="w-6 h-6 text-white" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-semibold text-lg">{user?.name || "User"}</h3>
+                              <p className="text-white/80 text-sm">{user?.email}</p>
+                              {user?.isClerkUser && (
+                                <p className="text-white/60 text-xs">Google Account</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-b-lg">
+                          <div className="p-2">
+                            <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                              <Link href="/dashboard" className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                                  <User className="w-4 h-4 text-orange-600" />
+                                </div>
+                                <span className="font-medium text-gray-700">My Profile</span>
+                              </Link>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                              <Link href="/orders" className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                                  <ShoppingBag className="w-4 h-4 text-orange-600" />
+                                </div>
+                                <span className="font-medium text-gray-700">My Orders</span>
+                              </Link>
+                            </DropdownMenuItem>
+
+                          </div>
+
+                          <div className="border-t border-gray-100 p-2">
+                            <DropdownMenuItem
+                              onClick={handleLogout}
+                              className="cursor-pointer rounded-lg p-3 hover:bg-red-50 transition-colors text-red-600 hover:text-red-700"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                                  <LogOut className="w-4 h-4 text-red-600" />
+                                </div>
+                                <span className="font-medium">Logout</span>
+                              </div>
+                            </DropdownMenuItem>
+                          </div>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl h-10 w-10 p-0">
+                          <User className="w-5 h-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64 p-0 border-0 shadow-2xl">
+                        <div className="bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 rounded-t-lg p-6">
+                          <div className="text-center">
+                            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mx-auto mb-3">
+                              <User className="w-6 h-6 text-white" />
+                            </div>
+                            <h3 className="text-white font-semibold text-lg">Welcome!</h3>
+                            <p className="text-white/80 text-sm">Sign in to access your account</p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-b-lg p-4">
+                          <Button
+                            onClick={handleLoginClick}
+                            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-lg transition-colors"
+                          >
+                            Sign In / Login
+                          </Button>
+                          <p className="text-center text-xs text-gray-500 mt-3">
+                            New customer? Create an account to get started
+                          </p>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -842,13 +842,17 @@ function Nav() {
             <div className="flex items-center justify-between mb-3">
               <Link href="/" className="flex items-center group shrink-0" aria-label={settings.restaurant_name}>
                 {settings.restaurant_logo ? (
-                  <div className="relative w-36 h-12 transition-transform duration-300 group-hover:scale-110">
+                  <div
+                    className={`relative w-40 h-14 transition-transform duration-300 group-hover:scale-110 ${
+                      shop === "A" ? "bg-black/90 rounded-xl" : ""
+                    }`}
+                  >
                     <Image
                       src={settings.restaurant_logo || "/placeholder.svg"}
                       alt=""
                       fill
-                      className="object-contain object-left"
-                      sizes="144px"
+                      className={`object-contain object-center ${shop === "A" ? "p-1" : ""}`}
+                      sizes="160px"
                     />
                   </div>
                 ) : (
@@ -1115,13 +1119,17 @@ function Nav() {
               <div className="flex justify-center min-w-0">
                 <Link href="/" className="flex items-center justify-center group" aria-label={settings.restaurant_name}>
                   {settings.restaurant_logo ? (
-                    <div className="relative w-28 h-11 transition-transform duration-300 group-hover:scale-110">
+                    <div
+                      className={`relative w-32 h-12 transition-transform duration-300 group-hover:scale-110 ${
+                        shop === "A" ? "bg-black/90 rounded-xl" : ""
+                      }`}
+                    >
                       <Image
                         src={settings.restaurant_logo || "/placeholder.svg"}
                         alt=""
                         fill
-                        className="object-contain object-center"
-                        sizes="112px"
+                        className={`object-contain object-center ${shop === "A" ? "p-1" : ""}`}
+                        sizes="128px"
                       />
                     </div>
                   ) : (

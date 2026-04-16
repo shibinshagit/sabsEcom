@@ -553,165 +553,138 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
 
         {/* Lightning Deals Section - Only show when not searching */}
     {lightningDeals.length > 0 && !isSearchActive && (
-  <div className="px-4 lg:px-6 mt-6">
-    <div className="max-w-7xl mx-auto">
-    
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Zap className="w-5 h-5 text-orange-500" />
-          <h3 className="text-xl font-bold text-gray-900">Lightning deals</h3>
-          <span className="text-gray-500">({lightningDeals.length} items)</span>
-        </div>
-        <ChevronDown className="w-5 h-5 text-gray-400" />
-      </div>
-      
-      {/* Horizontally Scrollable Container */}
-      <div className="relative">
-        <div className="flex gap-3 lg:gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {lightningDeals.map((item, index) => {
-            // Get the best available variant
-            const availableVariant = item.variants?.find((v: any) => 
-              v.available_aed || v.available_inr
-            ) || item.variants?.[0];
-            
-            // Calculate discount percentage based on selected currency
-            let discountPercent = 0;
-            if (availableVariant) {
-              console.log('Lightning Deals - Currency:', selectedCurrency, 'Variant:', availableVariant);
-              if (selectedCurrency === 'AED' && availableVariant.price_aed && availableVariant.discount_aed && availableVariant.price_aed > availableVariant.discount_aed) {
-                discountPercent = Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100);
-                console.log('AED Discount:', discountPercent, 'Price:', availableVariant.price_aed, 'Discount:', availableVariant.discount_aed);
-              } else if (selectedCurrency === 'INR' && availableVariant.price_inr && availableVariant.discount_inr && availableVariant.price_inr > availableVariant.discount_inr) {
-                discountPercent = Math.round(((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100);
-                console.log('INR Discount:', discountPercent, 'Price:', availableVariant.price_inr, 'Discount:', availableVariant.discount_inr);
-              }
-            }
+      <div className="px-4 lg:px-6 mt-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Lightning deals</h3>
+              <span className="text-gray-500">({lightningDeals.length} items)</span>
+            </div>
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          </div>
 
-            return (
-              <Card
-                key={item.id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border hover:border-orange-200 flex-shrink-0 w-44 lg:w-52"
-              >
-                <div className="relative">
-                  <Image
+          <div className="relative">
+            <div className="flex gap-3 lg:gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {lightningDeals.map((item, index) => {
+                const availableVariant =
+                  item.variants?.find((v: any) => v.available_aed || v.available_inr) || item.variants?.[0]
+
+                let discountPercent = 0
+                if (availableVariant) {
+                  if (
+                    selectedCurrency === "AED" &&
+                    availableVariant.price_aed &&
+                    availableVariant.discount_aed &&
+                    availableVariant.price_aed > availableVariant.discount_aed
+                  ) {
+                    discountPercent = Math.round(
+                      ((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100,
+                    )
+                  } else if (
+                    selectedCurrency === "INR" &&
+                    availableVariant.price_inr &&
+                    availableVariant.discount_inr &&
+                    availableVariant.price_inr > availableVariant.discount_inr
+                  ) {
+                    discountPercent = Math.round(
+                      ((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100,
+                    )
+                  }
+                }
+
+                const currencyUnavailable =
+                  (selectedCurrency === "AED" && !availableVariant?.available_aed) ||
+                  (selectedCurrency === "INR" && !availableVariant?.available_inr)
+
+                return (
+                  <Card
                     key={item.id}
-                    onClick={() => router.push(`/product/${item.id}`)}
-                    src={
-                      item.image_urls?.[0] ||
-                      `/placeholder.svg?height=200&width=200&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
-                    }
-                    alt={item.name || "Product"}
-                    width={200}
-                    height={200}
-                    className="w-full h-32 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer"
-                  />
-                  
-                  {/* Ranking Badge */}
-                  <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs lg:text-sm font-bold shadow-lg">
-                    #{index + 1}
-                  </div>
+                    className="group w-[188px] lg:w-[224px] h-[368px] flex-shrink-0 overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <div className="relative h-40 lg:h-44">
+                      <Image
+                        onClick={() => router.push(`/product/${item.id}`)}
+                        src={
+                          item.image_urls?.[0] ||
+                          `/placeholder.svg?height=220&width=220&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
+                        }
+                        alt={item.name || "Product"}
+                        width={220}
+                        height={220}
+                        className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105"
+                      />
 
-                  {/* TOP SELLING Badge - only show if featured */}
-                  {item.is_featured && (
-                    <Badge className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2 py-1 rounded-full shadow-lg animate-pulse font-semibold">
-                      ⭐ TOP SELLING
-                    </Badge>
-                  )}
+                      <div className="absolute top-2 left-2 rounded-full bg-black/70 px-2 py-1 text-[11px] font-semibold text-white">
+                        #{index + 1}
+                      </div>
 
-                  {/* Feature Badge */}
-                  <Badge className="absolute bottom-2 left-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-2 py-1 rounded-full shadow-lg">
-                    {item.features?.[0]
-                      ? item.features[0].length > 7
-                        ? item.features[0].slice(0, 7) + "..."
-                        : item.features[0]
-                      : "Assured"}
-                  </Badge>
+                      {item.is_featured && (
+                        <Badge className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-full">
+                          TOP SELLER
+                        </Badge>
+                      )}
 
-                  {/* Discount Percentage Badge */}
-                  {discountPercent > 0 && (
-                    <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
-                      -{discountPercent}% 
-                    </Badge>
-                  )}
-                </div>
+                      {discountPercent > 0 && (
+                        <Badge className="absolute bottom-2 right-2 bg-orange-600 text-white text-[10px] px-2 py-1 rounded-full">
+                          -{discountPercent}%
+                        </Badge>
+                      )}
+                    </div>
 
-                <CardContent className="p-3 lg:p-4">
-                  <div className="mb-1">{renderRating(item, "xs")}</div>
-                  {/* Enhanced Price Section */}
-                  <div className="mb-2">
-                    {availableVariant && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {(
-                          // Check currency availability
-                          (selectedCurrency === "AED" && !availableVariant.available_aed) ||
-                          (selectedCurrency === "INR" && !availableVariant.available_inr)
-                        ) ? (
-                          // Show "Not Available" in red if unavailable
-                          <span className="text-red-600 font-bold text-sm lg:text-base">
-                            Not Available
-                          </span>
+                    <CardContent className="p-3 flex flex-1 flex-col">
+                      <div className="h-4 mb-1">{renderRating(item, "xs") || null}</div>
+
+                      <p className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px]">{item.name}</p>
+
+                      <div className="mt-2 min-h-[38px]">
+                        {currencyUnavailable ? (
+                          <span className="text-red-600 font-semibold text-sm">Not available in {selectedCurrency}</span>
                         ) : (
-                          <>
-                            {/* Discounted Price with smaller decimal */}
-                            <span className="text-red-500 font-bold text-sm lg:text-base">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-red-500 font-bold text-sm">
                               {formatPriceWithSmallDecimals(
-                                availableVariant.discount_aed,
-                                availableVariant.discount_inr,
-                                "AED",
-                                true,             // show symbol
-                                "#ef4444"    // color applied
+                                availableVariant?.discount_aed,
+                                availableVariant?.discount_inr,
+                                selectedCurrency,
+                                true,
+                                "#ef4444",
                               )}
                             </span>
-
-                            {/* Original Price if discount is available */}
                             {discountPercent > 0 && (
                               <span className="text-gray-500 text-xs line-through">
-                               {formatPriceWithSmallDecimals(
-                                availableVariant.price_aed,
-                                availableVariant.price_inr,
-                                "AED",
-                                true,           
-                                "#6B7280"  
-                              )}
+                                {formatPriceWithSmallDecimals(
+                                  availableVariant?.price_aed,
+                                  availableVariant?.price_inr,
+                                  selectedCurrency,
+                                  true,
+                                  "#6B7280",
+                                )}
                               </span>
                             )}
-                          </>
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
 
-                  <p className="text-xs lg:text-sm text-gray-600 mt-1 line-clamp-2">{item.name}</p>
-
-                  <Button
-                    onClick={() => router.push(`/product/${item.id}`)}
-                    className="w-full mt-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-md"
-                  >
-                    Buy Now
-                  </Button>
-                  
-                  <Button
-                    onClick={() => handleToggleWishlist(item)}
-                    className={`w-full mt-2 rounded-full py-2 text-xs lg:text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
-                      isInWishlist(item.id)
-                        ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-md'
-                        : 'bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      <Heart className={`w-3 h-3 ${isInWishlist(item.id) ? 'fill-current' : ''}`} />
-                      {isInWishlist(item.id) ? 'Saved' : 'Save'}
-                    </div>
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                      <div className="mt-auto pt-3">
+                        <Button
+                          onClick={() => router.push(`/product/${item.id}`)}
+                          className="w-full h-9 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-medium hover:from-orange-600 hover:to-red-600"
+                        >
+                          Buy Now
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-)}
+    )}
 
         {/* Main Products Grid */}
         <div className="px-4 lg:px-6 mt-6 pb-8">
@@ -767,214 +740,175 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                   }`}
               >
              {filteredItems.map((item) => {
-  // Get the best available variant
-  const availableVariant =
-    item.variants?.find(
-      (v: any) => v.available_aed || v.available_inr
-    ) || item.variants?.[0];
+              const availableVariant =
+                item.variants?.find((v: any) => v.available_aed || v.available_inr) || item.variants?.[0]
 
-  // Calculate discount percentage based on selected currency
-  let discountPercent = 0;
-  if (availableVariant) {
-    console.log('Main Grid - Currency:', selectedCurrency, 'Variant:', availableVariant);
-    if (selectedCurrency === 'AED' && availableVariant.price_aed && availableVariant.discount_aed && availableVariant.price_aed > availableVariant.discount_aed) {
-      discountPercent = Math.round(((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100);
-      console.log('AED Main Discount:', discountPercent, 'Price:', availableVariant.price_aed, 'Discount:', availableVariant.discount_aed);
-    } else if (selectedCurrency === 'INR' && availableVariant.price_inr && availableVariant.discount_inr && availableVariant.price_inr > availableVariant.discount_inr) {
-      discountPercent = Math.round(((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100);
-      console.log('INR Main Discount:', discountPercent, 'Price:', availableVariant.price_inr, 'Discount:', availableVariant.discount_inr);
-    }
-  }
+              let discountPercent = 0
+              if (availableVariant) {
+                if (
+                  selectedCurrency === "AED" &&
+                  availableVariant.price_aed &&
+                  availableVariant.discount_aed &&
+                  availableVariant.price_aed > availableVariant.discount_aed
+                ) {
+                  discountPercent = Math.round(
+                    ((availableVariant.price_aed - availableVariant.discount_aed) / availableVariant.price_aed) * 100,
+                  )
+                } else if (
+                  selectedCurrency === "INR" &&
+                  availableVariant.price_inr &&
+                  availableVariant.discount_inr &&
+                  availableVariant.price_inr > availableVariant.discount_inr
+                ) {
+                  discountPercent = Math.round(
+                    ((availableVariant.price_inr - availableVariant.discount_inr) / availableVariant.price_inr) * 100,
+                  )
+                }
+              }
 
-// Condition label mapping
-const conditionLabels = {
-  master: "Master",
-  "first-copy": "1st Copy",
-  "second-copy": "2nd Copy",
-  hot: "Hot",
-  sale: "Sale"
-};
+              const conditionLabels = {
+                master: "Master",
+                "first-copy": "1st Copy",
+                "second-copy": "2nd Copy",
+                hot: "Hot",
+                sale: "Sale",
+              }
 
-// Badge background color mapping
-const conditionColors = {
-  master: "bg-green-600",
-  "first-copy": "bg-yellow-600",
-  "second-copy": "bg-purple-600",
-  hot: "bg-red-600",
-  sale: "bg-blue-600"
-};
+              const conditionColors = {
+                master: "bg-green-600",
+                "first-copy": "bg-yellow-600",
+                "second-copy": "bg-purple-600",
+                hot: "bg-red-600",
+                sale: "bg-blue-600",
+              }
 
-const conditionLabel = conditionLabels[item.condition_type as keyof typeof conditionLabels] || "";
-const badgeColor = conditionColors[item.condition_type as keyof typeof conditionColors] || "bg-gray-500";
+              const conditionLabel = conditionLabels[item.condition_type as keyof typeof conditionLabels] || ""
+              const badgeColor = conditionColors[item.condition_type as keyof typeof conditionColors] || "bg-gray-500"
+              const currencyUnavailable =
+                (selectedCurrency === "AED" && !availableVariant?.available_aed) ||
+                (selectedCurrency === "INR" && !availableVariant?.available_inr)
 
-  return (
-    <div key={item.id} className="cursor-pointer">
-      <Card
-        className={`bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group ${
-          viewMode === "list" ? "flex items-center" : ""
-        }`}
-      >
-        <div
-          className={`relative ${
-            viewMode === "list" ? "w-32 h-32 flex-shrink-0" : ""
-          }`}
-        >
-          <Image
-            onClick={() => router.push(`/product/${item.id}`)}
-            src={
-              item.image_urls?.[0] ||
-              `/placeholder.svg?height=200&width=200&query=${
-                encodeURIComponent(item.name) || "/placeholder.svg"
-              }`
-            }
-            alt={item.name}
-            width={200}
-            height={200}
-            className={`object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer ${
-              viewMode === "list" ? "w-32 h-32 rounded-lg" : "w-full h-40 lg:h-48"
-            }`}
-          />
+              return (
+                <div key={item.id} className={viewMode === "list" ? "cursor-pointer" : "h-full cursor-pointer"}>
+                  <Card
+                    className={`group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+                      viewMode === "list" ? "flex items-center" : "h-full flex flex-col"
+                    }`}
+                  >
+                    <div className={`relative ${viewMode === "list" ? "w-32 h-32 flex-shrink-0" : "h-44 lg:h-48"}`}>
+                      <Image
+                        onClick={() => router.push(`/product/${item.id}`)}
+                        src={
+                          item.image_urls?.[0] ||
+                          `/placeholder.svg?height=200&width=200&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
+                        }
+                        alt={item.name}
+                        width={200}
+                        height={200}
+                        className={`object-cover transition-transform duration-300 cursor-pointer group-hover:scale-105 ${
+                          viewMode === "list" ? "w-32 h-32 rounded-lg" : "w-full h-full"
+                        }`}
+                      />
 
-          {item.is_new && (
-            <Badge className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-              NEW
-            </Badge>
-          )}
+                      {item.is_new && (
+                        <Badge className="absolute top-2 left-2 bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-full">
+                          NEW
+                        </Badge>
+                      )}
 
-          {item.condition_type && item.condition_type !== "none" && (
-  <Badge
-    className={`absolute top-2 right-2 ${badgeColor} text-white text-xs px-2 py-1 rounded capitalize`}
-  >
-    {conditionLabel}
-  </Badge>
-)}
-  {discountPercent > 0 && (
-                    <Badge className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-bold animate-pulse">
-                      {discountPercent}% off
-                    </Badge>
-                  )}
+                      {item.condition_type && item.condition_type !== "none" && (
+                        <Badge className={`absolute top-2 right-2 ${badgeColor} text-white text-[10px] px-2 py-1 rounded-full capitalize`}>
+                          {conditionLabel}
+                        </Badge>
+                      )}
 
-        </div>
+                      {discountPercent > 0 && (
+                        <Badge className="absolute bottom-2 right-2 bg-orange-600 text-white text-[10px] px-2 py-1 rounded-full">
+                          {discountPercent}% OFF
+                        </Badge>
+                      )}
+                    </div>
 
-        <CardContent
-          className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : ""}`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            {/* Price */}
-            <p className="text-red-500 font-bold text-sm lg:text-lg">
-             {availableVariant && (
-    <div className="flex items-center gap-2 flex-wrap">
-      {(
-        // Check currency availability
-        (selectedCurrency === "AED" && !availableVariant.available_aed) ||
-        (selectedCurrency === "INR" && !availableVariant.available_inr)
-      ) ? (
-        // Show "Not Available" in red if unavailable
-        <span className="text-red-600 font-bold text-sm lg:text-base">
-          Not Available
-        </span>
-      ) : (
-        <>
-          {/* Discounted Price with smaller decimal */}
-          <span className="text-red-500 font-bold text-sm lg:text-base">
-            {formatPriceWithSmallDecimals(
-              availableVariant.discount_aed,
-              availableVariant.discount_inr,
-              "AED",
-              true,             // show symbol
-              "#ef4444"    // ✅ color applied
-            )}
-          </span>
+                    <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : "flex flex-1 flex-col"}`}>
+                      <div className="min-h-[42px]">
+                        <h3
+                          className={`font-semibold text-gray-900 ${
+                            viewMode === "list" ? "text-base lg:text-lg line-clamp-2" : "text-sm lg:text-base line-clamp-2"
+                          }`}
+                        >
+                          {viewMode === "list" ? item.name : item.name.length > 15 ? `${item.name.slice(0, 17)}...` : item.name}
+                        </h3>
+                      </div>
 
-          {/* Original Price if discount is available */}
-          {/* {discountPercent > 0 && (
-            <span className="text-gray-500 text-xs line-through">
-              {formatPriceWithSmallDecimals(
-                availableVariant.price_aed,
-                availableVariant.price_inr,
-                "AED",
-                false,          
-                "#6B7280"
-              )}
-            </span>
-          )} */}
-        </>
-      )}
-    </div>
-  )}
-            </p>
+                      <div className="h-5 mt-1 mb-1">{renderRating(item, "sm") || null}</div>
 
-            {/* Discount Percentage */}
-             {discountPercent > 0 && (
-                              <span className="text-gray-500 text-xs line-through">
-                               {formatPriceWithSmallDecimals(
-                                availableVariant.price_aed,
-                                availableVariant.price_inr,
-                                "AED",
-                                true,           
-                                "#6B7280"  
+                      <div className="min-h-[38px] mb-3">
+                        {currencyUnavailable ? (
+                          <span className="text-red-600 font-semibold text-sm">Not available in {selectedCurrency}</span>
+                        ) : (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-red-500 font-bold text-sm lg:text-base">
+                              {formatPriceWithSmallDecimals(
+                                availableVariant?.discount_aed,
+                                availableVariant?.discount_inr,
+                                selectedCurrency,
+                                true,
+                                "#ef4444",
                               )}
+                            </span>
+                            {discountPercent > 0 && (
+                              <span className="text-gray-500 text-xs line-through">
+                                {formatPriceWithSmallDecimals(
+                                  availableVariant?.price_aed,
+                                  availableVariant?.price_inr,
+                                  selectedCurrency,
+                                  true,
+                                  "#6B7280",
+                                )}
                               </span>
                             )}
-          </div>
+                          </div>
+                        )}
+                      </div>
 
-          {/* Product Name */}
-          <h3 className={`font-medium text-gray-900 mb-2 ${
-            viewMode === "list" 
-              ? "text-base lg:text-lg line-clamp-2" 
-              : "text-sm lg:text-base line-clamp-2"
-          }`}>
-            {viewMode === "list" ? item.name : (item.name.length > 15 ? item.name.slice(0, 17) + "..." : item.name)}
-          </h3>
+                      {viewMode === "list" && (
+                        <p className="text-sm text-gray-600 line-clamp-3 mb-3">
+                          {item.description}
+                        </p>
+                      )}
 
-          <div className="mb-2">{renderRating(item, "sm")}</div>
+                      <div className={`flex gap-2 ${viewMode === "list" ? "" : "mt-auto"}`}>
+                        <Button
+                          onClick={() => router.push(`/product/${item.id}`)}
+                          className="flex-1 h-10 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl text-sm font-medium hover:from-orange-600 hover:to-red-600"
+                          disabled={!item.is_available}
+                        >
+                          {item.is_available ? (
+                            <>
+                              <ShoppingCart className="w-4 h-4 mr-1" />
+                              Buy
+                            </>
+                          ) : (
+                            "Unavailable"
+                          )}
+                        </Button>
 
-          {viewMode === "list" && (
-            <p className="text-sm text-gray-600 line-clamp-3 mb-3">
-              {item.description}
-            </p>
-          )}
-
-
-<div className="flex gap-2">
-  <Button
-    onClick={() => router.push(`/product/${item.id}`)}
-    className={`flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full py-2 lg:py-3 text-sm lg:text-base font-medium shadow-lg transform transition-all duration-200 flex items-center justify-center gap-2 ${
-      viewMode === "list" 
-        ? "hover:from-orange-600 hover:to-red-600 hover:scale-102" 
-        : "hover:from-orange-600 hover:to-red-600 hover:scale-105"
-    } active:scale-95`}
-    disabled={!item.is_available}
-  >
-    {item.is_available ? (
-      <>
-        <ShoppingCart className="w-4 h-4" />
-        Buy
-      </>
-    ) : (
-      "Unavailable"
-    )}
-  </Button>
-
-  <Button
-    onClick={() => handleToggleWishlist(item)}
-    className={`px-3 lg:px-4 rounded-full py-2 text-sm font-medium transform transition-all duration-200 hover:scale-105 active:scale-95 ${
-      isInWishlist(item.id)
-        ? "bg-red-500 hover:bg-red-600 text-white"
-        : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-    }`}
-  >
-    <Heart
-      className={`w-4 h-4 ${isInWishlist(item.id) ? "fill-current" : ""}`}
-    />
-  </Button>
-</div>
-
-        </CardContent>
-      </Card>
-    </div>
-  );
-})}
+                        <Button
+                          onClick={() => handleToggleWishlist(item)}
+                          className={`h-10 px-3 rounded-xl ${
+                            isInWishlist(item.id)
+                              ? "bg-red-500 hover:bg-red-600 text-white"
+                              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 ${isInWishlist(item.id) ? "fill-current" : ""}`} />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )
+            })}
 
               </div>
             )}
