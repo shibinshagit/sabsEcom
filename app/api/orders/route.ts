@@ -34,11 +34,24 @@ async function sendOrderConfirmationEmail(orderData: any, orderId: number, order
     const currencySymbol = currency === 'AED' ? 'AED' : '₹'
 
     const subtotal = orderData.originalAmount - (currency === 'AED' ? 20 : 70) || 0
-    const deliveryFee = orderData.orderType === 'delivery' ?
+
+    // Check if any item has free_delivery for this currency
+    const emailVariantIds = (orderData.items || []).map((item: any) => item.variantId).filter(Boolean)
+    let hasFreeDelivery = false
+    if (emailVariantIds.length > 0) {
+      try {
+        const fdCheck = currency === 'AED'
+          ? await sql`SELECT COUNT(*) as count FROM product_variants WHERE id = ANY(${emailVariantIds}) AND free_delivery_aed = true`
+          : await sql`SELECT COUNT(*) as count FROM product_variants WHERE id = ANY(${emailVariantIds}) AND free_delivery_inr = true`
+        hasFreeDelivery = parseInt(fdCheck[0]?.count || '0') > 0
+      } catch { /* ignore */ }
+    }
+
+    const deliveryFee = hasFreeDelivery ? 0 : (orderData.orderType === 'delivery' ?
       (currency === 'AED' ?
         (subtotal >= 200 ? 0 : (subtotal >= 50 ? 10 : 20)) :
         (subtotal >= 3000 ? 0 : 70)
-      ) : 0
+      ) : 0)
     const finalTotal = orderData.totalAmount || (subtotal + deliveryFee - (orderData.discountAmount || 0))
 
     // Create order items HTML
@@ -171,11 +184,23 @@ async function sendAdminNotificationEmail(orderData: any, orderId: number, order
     })
 
     // Calculate delivery fee based on subtotal and currency
-    const deliveryFee = orderData.orderType === 'delivery' ?
+    // Check if any item has free_delivery for this currency
+    const adminVariantIds = (orderData.items || []).map((item: any) => item.variantId).filter(Boolean)
+    let hasFreeDelivery = false
+    if (adminVariantIds.length > 0) {
+      try {
+        const fdCheck = currency === 'AED'
+          ? await sql`SELECT COUNT(*) as count FROM product_variants WHERE id = ANY(${adminVariantIds}) AND free_delivery_aed = true`
+          : await sql`SELECT COUNT(*) as count FROM product_variants WHERE id = ANY(${adminVariantIds}) AND free_delivery_inr = true`
+        hasFreeDelivery = parseInt(fdCheck[0]?.count || '0') > 0
+      } catch { /* ignore */ }
+    }
+
+    const deliveryFee = hasFreeDelivery ? 0 : (orderData.orderType === 'delivery' ?
       (currency === 'AED' ?
         (subtotal >= 200 ? 0 : (subtotal >= 50 ? 10 : 20)) :
         (subtotal >= 3000 ? 0 : 70)
-      ) : 0
+      ) : 0)
 
     // Calculate final total with proper discount handling
     const discountAmount = orderData.discountAmount || 0
@@ -669,18 +694,32 @@ export async function POST(request: Request) {
     // Calculate delivery fee based on currency, order type, and subtotal
     let deliveryFee = 0
     if (orderData.orderType === "delivery") {
-      if (orderData.currency === "AED") {
-        // AED: free delivery above 200, 10 AED for 50-199, 20 AED for under 50
-        if (subtotal >= 200) {
-          deliveryFee = 0
-        } else if (subtotal >= 50) {
-          deliveryFee = 10
+      // Check if any item's variant has free_delivery for the order currency
+      const variantIds = orderData.items
+        .map((item: any) => item.variantId)
+        .filter(Boolean)
+
+      let hasFreeDeliveryVariant = false
+      if (variantIds.length > 0) {
+        const currency = orderData.currency || 'AED'
+        const freeDeliveryCheck = currency === 'AED'
+          ? await sql`SELECT COUNT(*) as count FROM product_variants WHERE id = ANY(${variantIds}) AND free_delivery_aed = true`
+          : await sql`SELECT COUNT(*) as count FROM product_variants WHERE id = ANY(${variantIds}) AND free_delivery_inr = true`
+        hasFreeDeliveryVariant = parseInt(freeDeliveryCheck[0]?.count || '0') > 0
+      }
+
+      if (!hasFreeDeliveryVariant) {
+        if (orderData.currency === "AED") {
+          if (subtotal >= 200) {
+            deliveryFee = 0
+          } else if (subtotal >= 50) {
+            deliveryFee = 10
+          } else {
+            deliveryFee = 20
+          }
         } else {
-          deliveryFee = 20
+          deliveryFee = subtotal >= 3000 ? 0 : 70
         }
-      } else {
-        // INR: free delivery above 3000, otherwise 70 INR
-        deliveryFee = subtotal >= 3000 ? 0 : 70
       }
     }
 

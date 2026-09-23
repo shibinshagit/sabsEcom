@@ -28,6 +28,8 @@ interface ProductVariant {
   available_aed: boolean
   available_inr: boolean
   stock_quantity: number
+  free_delivery_aed: boolean
+  free_delivery_inr: boolean
 }
 interface Product {
   id: number
@@ -116,6 +118,8 @@ const [formData, setFormData] = useState({
       available_aed: true,
       available_inr: true,
       stock_quantity: 0,
+      free_delivery_aed: false,
+      free_delivery_inr: false,
     }
   ],
   condition_type: "none",
@@ -292,6 +296,8 @@ const resetForm = () => {
         available_aed: true,
         available_inr: true,
         stock_quantity: 0,
+        free_delivery_aed: false,
+        free_delivery_inr: false,
       }
     ]
   })
@@ -328,6 +334,8 @@ const openEditDialog = (item: Product) => {
         ...variant,
         discount_aed: variant.discount_aed || 0,
         discount_inr: variant.discount_inr || 0,
+        free_delivery_aed: variant.free_delivery_aed ?? false,
+        free_delivery_inr: variant.free_delivery_inr ?? false,
       }))
     : [{
         id: Date.now(),
@@ -339,6 +347,8 @@ const openEditDialog = (item: Product) => {
         available_aed: true,
         available_inr: true,
         stock_quantity: 0,
+        free_delivery_aed: false,
+        free_delivery_inr: false,
       }]
   })
   setIsDialogOpen(true)
@@ -1103,7 +1113,7 @@ const formatPrice = (product: Product) => {
       </div>
 
       {/* Stock Section */}
-      <div className="grid grid-cols-1 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
           <Label>Stock Quantity</Label>
           <Input
@@ -1118,6 +1128,37 @@ const formatPrice = (product: Product) => {
             className="bg-gray-700 border-gray-600 text-white"
             placeholder="Enter stock quantity for this variant"
           />
+        </div>
+
+        {/* Free Delivery Toggles */}
+        <div className="flex items-center gap-3 pt-6">
+          <Label className="text-green-300">🚚 Free Delivery (AED)</Label>
+          <Switch
+            checked={variant.free_delivery_aed}
+            onCheckedChange={(checked) => {
+              const variants = [...formData.variants]
+              variants[idx].free_delivery_aed = checked
+              setFormData({ ...formData, variants })
+            }}
+          />
+          {variant.free_delivery_aed && (
+            <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded-full">🇦🇪 UAE</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 pt-6">
+          <Label className="text-orange-300">🚚 Free Delivery (INR)</Label>
+          <Switch
+            checked={variant.free_delivery_inr}
+            onCheckedChange={(checked) => {
+              const variants = [...formData.variants]
+              variants[idx].free_delivery_inr = checked
+              setFormData({ ...formData, variants })
+            }}
+          />
+          {variant.free_delivery_inr && (
+            <span className="text-xs text-orange-400 bg-orange-900/30 px-2 py-1 rounded-full">🇮🇳 India</span>
+          )}
         </div>
       </div>
     </div>
@@ -1141,6 +1182,8 @@ const formatPrice = (product: Product) => {
             available_aed: true,
             available_inr: true,
             stock_quantity: 0,
+            free_delivery_aed: false,
+            free_delivery_inr: false,
           },
         ],
       })
@@ -1435,6 +1478,16 @@ const formatPrice = (product: Product) => {
           {variant.stock_quantity > 0 ? "" : "Out of Stock"}
         </span>
       </div>
+      {(variant.free_delivery_aed || variant.free_delivery_inr) && (
+        <div className="mt-1 flex gap-1 flex-wrap">
+          {variant.free_delivery_aed && (
+            <Badge className="bg-green-500/20 text-green-300 px-2 py-0 text-xs">🚚 Free Delivery 🇦🇪</Badge>
+          )}
+          {variant.free_delivery_inr && (
+            <Badge className="bg-orange-500/20 text-orange-300 px-2 py-0 text-xs">🚚 Free Delivery 🇮🇳</Badge>
+          )}
+        </div>
+      )}
     </div>
   ))}
 </CollapsibleContent>

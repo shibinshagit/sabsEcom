@@ -1313,6 +1313,12 @@ export default function OrderPage() {
   const calculateDeliveryFee = () => {
     if (orderType !== "delivery") return 0
 
+    // Check if any item in cart has free delivery for the selected currency
+    const hasFreeDeliveryItem = cart.some(item => 
+      selectedCurrency === 'AED' ? item.selected_variant?.free_delivery_aed : item.selected_variant?.free_delivery_inr
+    )
+    if (hasFreeDeliveryItem) return 0
+
     const cartTotal = calculateCartTotal()
     if (selectedCurrency === 'AED') {
       if (cartTotal >= 200) {
@@ -1329,6 +1335,12 @@ export default function OrderPage() {
 
   const getDeliveryFeeMessage = () => {
     if (orderType !== "delivery") return null
+
+    // If free delivery is from a product variant, show a different message
+    const hasFreeDeliveryItem = cart.some(item => 
+      selectedCurrency === 'AED' ? item.selected_variant?.free_delivery_aed : item.selected_variant?.free_delivery_inr
+    )
+    if (hasFreeDeliveryItem) return null
 
     const cartTotal = calculateCartTotal()
     const currentDeliveryFee = calculateDeliveryFee()
@@ -1991,7 +2003,9 @@ export default function OrderPage() {
                           <div className="flex items-center gap-2">
                             <CheckCircle className="w-4 h-4 text-green-600" />
                             <p className="text-sm text-green-700">
-                              🎉 You qualify for free delivery!
+                              {cart.some(item => selectedCurrency === 'AED' ? item.selected_variant?.free_delivery_aed : item.selected_variant?.free_delivery_inr)
+                                ? '🚚 Free delivery included with your order!'
+                                : '🎉 You qualify for free delivery!'}
                             </p>
                           </div>
                         </div>

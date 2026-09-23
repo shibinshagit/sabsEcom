@@ -9,6 +9,8 @@ export interface Variant {
   available_aed: boolean
   available_inr: boolean
   stock_quantity: number
+  free_delivery_aed: boolean
+  free_delivery_inr: boolean
 }
 
 export interface MenuItem {

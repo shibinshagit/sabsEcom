@@ -50,7 +50,9 @@ export async function GET(request: Request) {
               'discount_inr', v.discount_inr,
               'available_aed', v.available_aed,
               'available_inr', v.available_inr,
-              'stock_quantity', v.stock_quantity
+              'stock_quantity', v.stock_quantity,
+              'free_delivery_aed', COALESCE(v.free_delivery_aed, false),
+              'free_delivery_inr', COALESCE(v.free_delivery_inr, false)
             ) ORDER BY v.id
           ) FILTER (WHERE v.id IS NOT NULL),
           '[]'::json

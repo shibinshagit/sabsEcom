@@ -35,6 +35,8 @@ interface Variant {
   available_aed: boolean
   available_inr: boolean
   stock_quantity: number
+  free_delivery_aed: boolean
+  free_delivery_inr: boolean
 }
 
 interface Product {
@@ -775,7 +777,11 @@ const conditionColors = {
                   <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                     <div className="flex items-center gap-2 text-sm">
                       <Truck className="w-4 h-4 text-green-500" />
-                      <span className="text-gray-600">Doorstep Delivery</span>
+                      {(selectedCurrency === 'AED' ? selectedVariant?.free_delivery_aed : selectedVariant?.free_delivery_inr) ? (
+                        <span className="text-green-600 font-semibold">Free Delivery 🎉</span>
+                      ) : (
+                        <span className="text-gray-600">Doorstep Delivery</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Verified className="w-4 h-4 text-blue-500" />
@@ -844,6 +850,11 @@ const conditionColors = {
                 isSelected ? "text-white/80" : isLowStock ? "text-orange-600" : "text-green-600"
               }`}>
                 {isLowStock ? `Only ${variant.stock_quantity} left` : `${variant.stock_quantity} in stock`}
+              </span>
+            )}
+            {(selectedCurrency === 'AED' ? variant.free_delivery_aed : variant.free_delivery_inr) && (
+              <span className={`text-xs font-semibold mt-1 ${isSelected ? "text-white" : "text-green-600"}`}>
+                🚚 Free Delivery
               </span>
             )}
           </Button>
