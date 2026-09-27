@@ -43,8 +43,8 @@ export async function GET(request: Request) {
     if (existingBanners[0].count === 0) {
       await sql`
         INSERT INTO banners (title, message, banner_type, background_color, text_color, button_text, button_link, background_image_url, auto_disappear_seconds, display_pages, is_active, priority) VALUES
-        ('Grand Opening Special!', 'Join us for our grand opening celebration. Get 20% off your first order this week only!', 'promotion', '#f59e0b', '#ffffff', 'Order Now', '/menu', '', 10, ARRAY['all'], true, 1),
-        ('New Menu Items', 'Discover our chef''s latest creations featuring seasonal ingredients and bold flavors.', 'announcement', '#3b82f6', '#ffffff', 'View Menu', '/menu', '', 0, ARRAY['home', 'menu'], true, 2);
+        ('Grand Opening Special!', 'Join us for our grand opening celebration. Get 20% off your first order this week only!', 'promotion', '#f59e0b', '#ffffff', 'Shop Now', '/products', '', 10, ARRAY['all'], true, 1),
+        ('New Arrivals', 'Discover our latest products featuring premium quality and exclusive deals.', 'announcement', '#3b82f6', '#ffffff', 'Browse Products', '/products', '', 0, ARRAY['home', 'products'], true, 2);
       `
     }
 
@@ -60,7 +60,22 @@ export async function GET(request: Request) {
       ORDER BY priority DESC, created_at DESC
     `
 
-    return NextResponse.json(banners)
+    // Normalize legacy background_image_url values accidentally saved as JSON arrays
+    const normalized = banners.map((banner: any) => {
+      let url = banner.background_image_url || ""
+      if (url && !url.startsWith("http")) {
+        try {
+          const parsed = JSON.parse(url)
+          if (Array.isArray(parsed) && parsed[0]) url = parsed[0]
+        } catch {
+          const match = String(url).match(/https?:\/\/[^"}\s]+/)
+          if (match) url = match[0]
+        }
+      }
+      return { ...banner, background_image_url: url }
+    })
+
+    return NextResponse.json(normalized)
   } catch (error) {
     console.error("Error fetching banners:", error)
     return NextResponse.json(

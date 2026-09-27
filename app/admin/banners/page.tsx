@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import ImageUpload from "@/components/ui/image-upload" // Import ImageUpload component
+import SingleImageUpload from "@/components/ui/single-image-upload"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -10,12 +10,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Edit, Trash2, AlertCircle, Eye, Calendar } from "lucide-react"
+import { Plus, Edit, Trash2, AlertCircle, Eye, Calendar, Loader2 } from "lucide-react"
+import toast from "react-hot-toast"
 
 interface Banner {
   id: number
@@ -38,21 +48,65 @@ interface Banner {
   created_at: string
 }
 
-const bannerTypes = [
-  { value: "promotion", label: "Promotion", color: "#f59e0b" },
-  { value: "announcement", label: "Announcement", color: "#3b82f6" },
-  { value: "warning", label: "Warning", color: "#ef4444" },
-  { value: "info", label: "Information", color: "#10b981" },
+const stylePresets = [
+  {
+    value: "promotion",
+    label: "Dark Elegant",
+    background_color: "#111827",
+    text_color: "#ffffff",
+    button_color: "#f5d76e",
+  },
+  {
+    value: "announcement",
+    label: "Warm Sale",
+    background_color: "#7c2d12",
+    text_color: "#fff7ed",
+    button_color: "#ffffff",
+  },
+  {
+    value: "info",
+    label: "Fresh Deal",
+    background_color: "#064e3b",
+    text_color: "#ecfdf5",
+    button_color: "#a7f3d0",
+  },
+  {
+    value: "warning",
+    label: "Soft Light",
+    background_color: "#f8fafc",
+    text_color: "#0f172a",
+    button_color: "#0f172a",
+  },
 ]
 
 const pageOptions = [
   { value: "all", label: "All Pages" },
   { value: "home", label: "Home" },
-  { value: "menu", label: "Menu" },
+  { value: "products", label: "Products" },
+  { value: "product", label: "Product Detail" },
+  { value: "order", label: "Checkout / Order" },
+  { value: "shop", label: "Shop" },
   { value: "about", label: "About" },
   { value: "contact", label: "Contact" },
-  { value: "reservations", label: "Reservations" },
 ]
+
+/** Normalize legacy/broken values saved as JSON arrays by the product multi-uploader */
+function normalizeImageUrl(raw: string | null | undefined): string {
+  if (!raw) return ""
+  const trimmed = raw.trim()
+  if (!trimmed) return ""
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (Array.isArray(parsed) && typeof parsed[0] === "string") return parsed[0]
+    if (typeof parsed === "string") return parsed
+  } catch {
+    // PostgreSQL array-ish text: {"https://..."}
+    const match = trimmed.match(/https?:\/\/[^"}\s]+/)
+    if (match) return match[0]
+  }
+  return ""
+}
 
 export default function BannerManagement() {
   const [banners, setBanners] = useState<Banner[]>([])
@@ -61,15 +115,19 @@ export default function BannerManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
   const [previewBanner, setPreviewBanner] = useState<Banner | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     message: "",
     banner_type: "promotion",
-    background_color: "#f59e0b",
+    background_color: "#111827",
     text_color: "#ffffff",
-    button_text: "",
-    button_link: "",
-    button_color: "#ffffff",
+    button_text: "Shop Now",
+    button_link: "/products",
+    button_color: "#f5d76e",
     background_image_url: "",
     auto_disappear_seconds: 0,
     display_pages: ["all"],
@@ -96,10 +154,16 @@ export default function BannerManagement() {
       }
 
       const data: Banner[] = await response.json()
-      setBanners(data)
+      setBanners(
+        data.map((b) => ({
+          ...b,
+          background_image_url: normalizeImageUrl(b.background_image_url),
+        })),
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred"
       setError(`Failed to fetch banners: ${message}`)
+      toast.error("Could not load banners. Please try again.", { position: "top-center" })
       console.error("Failed to fetch banners:", error)
     } finally {
       setLoading(false)
@@ -108,48 +172,91 @@ export default function BannerManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
 
+    if (!formData.title.trim()) {
+      setFormError("Please enter a banner title.")
+      toast.error("Please enter a banner title.", { position: "top-center" })
+      return
+    }
+    if (!formData.message.trim()) {
+      setFormError("Please enter a banner message.")
+      toast.error("Please enter a banner message.", { position: "top-center" })
+      return
+    }
+    if (!formData.display_pages.length) {
+      setFormError("Please select at least one page for this banner.")
+      toast.error("Please select at least one display page.", { position: "top-center" })
+      return
+    }
+    if (formData.start_date && formData.end_date && formData.start_date > formData.end_date) {
+      setFormError("End date must be on or after the start date.")
+      toast.error("End date must be on or after the start date.", { position: "top-center" })
+      return
+    }
+
+    setSaving(true)
     try {
       const url = editingBanner ? `/api/admin/banners/${editingBanner.id}` : "/api/admin/banners"
       const method = editingBanner ? "PUT" : "POST"
 
+      const payload = {
+        ...formData,
+        title: formData.title.trim(),
+        message: formData.message.trim(),
+        background_image_url: normalizeImageUrl(formData.background_image_url),
+        // Empty dates must be null (not "") for Postgres timestamps
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+      }
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Request failed")
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || errorData.details || "Request failed")
       }
 
       await fetchBanners()
       setIsDialogOpen(false)
       resetForm()
+      toast.success(editingBanner ? "Banner updated successfully!" : "Banner created successfully!", {
+        position: "top-center",
+      })
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred"
-      alert(`Failed to save banner: ${message}`)
+      setFormError(message)
+      toast.error(`Failed to save banner: ${message}`, { position: "top-center" })
       console.error("Failed to save banner:", error)
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this banner?")) return
-
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      const response = await fetch(`/api/admin/banners/${id}`, { method: "DELETE" })
+      const response = await fetch(`/api/admin/banners/${deleteTarget.id}`, { method: "DELETE" })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || "Delete failed")
       }
 
       await fetchBanners()
+      toast.success("Banner deleted successfully!", { position: "top-center" })
+      setDeleteTarget(null)
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred"
-      alert(`Failed to delete banner: ${message}`)
+      toast.error(`Failed to delete banner: ${message}`, { position: "top-center" })
       console.error("Failed to delete banner:", error)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -158,11 +265,11 @@ export default function BannerManagement() {
       title: "",
       message: "",
       banner_type: "promotion",
-      background_color: "#f59e0b",
+      background_color: "#111827",
       text_color: "#ffffff",
-      button_text: "",
-      button_link: "",
-      button_color: "#ffffff",
+      button_text: "Shop Now",
+      button_link: "/products",
+      button_color: "#f5d76e",
       background_image_url: "",
       auto_disappear_seconds: 0,
       display_pages: ["all"],
@@ -173,10 +280,12 @@ export default function BannerManagement() {
       is_dismissible: true,
     })
     setEditingBanner(null)
+    setFormError(null)
   }
 
   const openEditDialog = (banner: Banner) => {
     setEditingBanner(banner)
+    setFormError(null)
     setFormData({
       title: banner.title,
       message: banner.message,
@@ -186,7 +295,7 @@ export default function BannerManagement() {
       button_text: banner.button_text || "",
       button_link: banner.button_link || "",
       button_color: banner.button_color,
-      background_image_url: banner.background_image_url || "",
+      background_image_url: normalizeImageUrl(banner.background_image_url),
       auto_disappear_seconds: banner.auto_disappear_seconds || 0,
       display_pages: banner.display_pages,
       is_active: banner.is_active,
@@ -211,8 +320,20 @@ export default function BannerManagement() {
     }
   }
 
-  const getBannerTypeColor = (type: string) => {
-    return bannerTypes.find((t) => t.value === type)?.color || "#f59e0b"
+  const applyStylePreset = (value: string) => {
+    const preset = stylePresets.find((p) => p.value === value)
+    if (!preset) return
+    setFormData((prev) => ({
+      ...prev,
+      banner_type: preset.value,
+      background_color: preset.background_color,
+      text_color: preset.text_color,
+      button_color: preset.button_color,
+    }))
+  }
+
+  const getBannerTypeLabel = (type: string) => {
+    return stylePresets.find((t) => t.value === type)?.label || type
   }
 
   const formatDate = (dateString: string | null) => {
@@ -273,60 +394,77 @@ export default function BannerManagement() {
               Add Banner
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingBanner ? "Edit Banner" : "Add New Banner"}</DialogTitle>
+              <DialogTitle>{editingBanner ? "Edit Banner" : "Create Promo Banner"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Banner Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="bg-gray-700 border-gray-600 text-white"
-                  required
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {formError && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-900/20 px-3 py-2 text-sm text-red-300">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
 
-              <div>
-                <Label htmlFor="message">Message *</Label>
-                <Textarea
-                  id="message"
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="bg-gray-700 border-gray-600 text-white"
-                  rows={3}
-                  required
-                />
+              {/* Live preview */}
+              <div className="rounded-xl border border-gray-600 overflow-hidden">
+                <div className="px-3 py-1.5 bg-gray-900/80 text-xs text-gray-400 uppercase tracking-wider">
+                  Live preview (site popup)
+                </div>
+                <div className="bg-black/40 p-4 flex items-center justify-center min-h-[220px]">
+                  <div
+                    className="relative w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
+                    style={{
+                      backgroundColor: formData.background_color,
+                      color: formData.text_color,
+                    }}
+                  >
+                    {formData.background_image_url ? (
+                      <div
+                        className="w-full h-36 bg-cover bg-center"
+                        style={{ backgroundImage: `url(${formData.background_image_url})` }}
+                      />
+                    ) : (
+                      <div className="h-2 w-full bg-white/10" />
+                    )}
+                    <div className="p-4 space-y-2">
+                      {formData.title && (
+                        <span className="inline-flex rounded-full border border-white/20 bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                          {formData.title}
+                        </span>
+                      )}
+                      <p className="text-sm font-semibold leading-snug">
+                        {formData.message || "Your promo message appears here"}
+                      </p>
+                      {formData.button_text && (
+                        <span
+                          className="inline-flex rounded-full px-3 py-1.5 text-xs font-bold"
+                          style={{
+                            backgroundColor: formData.button_color,
+                            color: "#0f172a",
+                          }}
+                        >
+                          {formData.button_text}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="banner_type">Banner Type</Label>
-                  <Select
-                    value={formData.banner_type}
-                    onValueChange={(value) =>
-                      setFormData({
-                        ...formData,
-                        banner_type: value,
-                        background_color: getBannerTypeColor(value),
-                      })
-                    }
-                  >
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
-                      {bannerTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value} className="text-white">
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="title">Headline / Badge *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="e.g. Free Shipping"
+                    required
+                  />
+                  <p className="text-gray-400 text-xs mt-1">Shown as a small pill badge</p>
                 </div>
-
                 <div>
                   <Label htmlFor="priority">Priority</Label>
                   <Input
@@ -336,12 +474,51 @@ export default function BannerManagement() {
                     onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) })}
                     className="bg-gray-700 border-gray-600 text-white"
                   />
+                  <p className="text-gray-400 text-xs mt-1">Higher number wins if multiple are active</p>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="message">Promo Message *</Label>
+                <Textarea
+                  id="message"
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  className="bg-gray-700 border-gray-600 text-white"
+                  rows={2}
+                  placeholder="e.g. Orders over AED 200 ship free this week"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>Style Preset</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                  {stylePresets.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => applyStylePreset(preset.value)}
+                      className={`rounded-lg border p-2 text-left transition ${
+                        formData.banner_type === preset.value
+                          ? "border-cyan-400 ring-1 ring-cyan-400"
+                          : "border-gray-600 hover:border-gray-500"
+                      }`}
+                      style={{ backgroundColor: preset.background_color, color: preset.text_color }}
+                    >
+                      <div className="text-xs font-semibold">{preset.label}</div>
+                      <div
+                        className="mt-2 h-1.5 w-10 rounded-full"
+                        style={{ backgroundColor: preset.button_color }}
+                      />
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="background_color">Background Color</Label>
+                  <Label htmlFor="background_color">Background</Label>
                   <Input
                     id="background_color"
                     type="color"
@@ -351,7 +528,7 @@ export default function BannerManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="text_color">Text Color</Label>
+                  <Label htmlFor="text_color">Text</Label>
                   <Input
                     id="text_color"
                     type="color"
@@ -361,7 +538,7 @@ export default function BannerManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="button_color">Button Color</Label>
+                  <Label htmlFor="button_color">CTA Button</Label>
                   <Input
                     id="button_color"
                     type="color"
@@ -372,45 +549,32 @@ export default function BannerManagement() {
                 </div>
               </div>
 
-              <ImageUpload
+              <SingleImageUpload
                 value={formData.background_image_url}
                 onChange={(url) => setFormData({ ...formData, background_image_url: url })}
                 label="Background Image (Optional)"
+                filenamePrefix="banner"
               />
-
-              <div>
-                <Label htmlFor="auto_disappear_seconds">Auto Disappear (seconds)</Label>
-                <Input
-                  id="auto_disappear_seconds"
-                  type="number"
-                  min="0"
-                  value={formData.auto_disappear_seconds}
-                  onChange={(e) => setFormData({ ...formData, auto_disappear_seconds: Number(e.target.value) })}
-                  className="bg-gray-700 border-gray-600 text-white"
-                  placeholder="0 = Never auto-disappear"
-                />
-                <p className="text-gray-400 text-sm mt-1">Set to 0 to disable auto-disappear</p>
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="button_text">Button Text</Label>
+                  <Label htmlFor="button_text">CTA Text</Label>
                   <Input
                     id="button_text"
                     value={formData.button_text}
                     onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
                     className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="Learn More"
+                    placeholder="Shop Now"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="button_link">Button Link</Label>
+                  <Label htmlFor="button_link">CTA Link</Label>
                   <Input
                     id="button_link"
                     value={formData.button_link}
                     onChange={(e) => setFormData({ ...formData, button_link: e.target.value })}
                     className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="/menu"
+                    placeholder="/products"
                   />
                 </div>
               </div>
@@ -433,9 +597,9 @@ export default function BannerManagement() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="start_date">Start Date (Optional)</Label>
+                  <Label htmlFor="start_date">Start Date</Label>
                   <Input
                     id="start_date"
                     type="date"
@@ -445,13 +609,25 @@ export default function BannerManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end_date">End Date (Optional)</Label>
+                  <Label htmlFor="end_date">End Date</Label>
                   <Input
                     id="end_date"
                     type="date"
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                     className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="auto_disappear_seconds">Auto Hide (sec)</Label>
+                  <Input
+                    id="auto_disappear_seconds"
+                    type="number"
+                    min="0"
+                    value={formData.auto_disappear_seconds}
+                    onChange={(e) => setFormData({ ...formData, auto_disappear_seconds: Number(e.target.value) })}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="0 = never"
                   />
                 </div>
               </div>
@@ -476,20 +652,31 @@ export default function BannerManagement() {
                 </div>
               </div>
 
-              <div className="flex space-x-2 pt-4">
+              <div className="flex space-x-2 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
                   className="flex-1 border-gray-600"
+                  disabled={saving}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
+                  disabled={saving}
                   className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
                 >
-                  {editingBanner ? "Update" : "Create"}
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : editingBanner ? (
+                    "Update Banner"
+                  ) : (
+                    "Create Banner"
+                  )}
                 </Button>
               </div>
             </form>
@@ -531,7 +718,7 @@ export default function BannerManagement() {
                           color: banner.text_color,
                         }}
                       >
-                        {banner.banner_type}
+                        {getBannerTypeLabel(banner.banner_type)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -590,7 +777,7 @@ export default function BannerManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(banner.id)}
+                          onClick={() => setDeleteTarget(banner)}
                           className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -649,6 +836,44 @@ export default function BannerManagement() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="bg-gray-800 border-gray-700 text-white z-[10060]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete banner?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300">
+              This will permanently remove
+              {deleteTarget ? ` “${deleteTarget.title}”` : " this banner"}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={deleting}
+              className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault()
+                confirmDelete()
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

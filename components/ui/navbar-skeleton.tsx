@@ -15,7 +15,7 @@ export function NavbarSkeleton() {
   return (
     <nav
       className="sticky top-0 z-40 shadow-lg bg-gradient-to-r from-neutral-500 via-neutral-600 to-neutral-500 dark:from-neutral-700 dark:via-neutral-800 dark:to-neutral-700"
-      style={{ top: "var(--banner-height, 0px)" }}
+      style={{ top: 0 }}
       role="status"
       aria-label="Loading navigation"
     >

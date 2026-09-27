@@ -64,6 +64,7 @@ export default function CountrySelectionModal({
     // Save selection to localStorage
     localStorage.setItem('country-selected', 'true')
     localStorage.setItem('selected-country', JSON.stringify(country))
+    window.dispatchEvent(new Event('country-selected'))
     
     // Call parent callback
     onCountrySelect(country)

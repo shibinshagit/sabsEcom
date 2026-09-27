@@ -375,7 +375,7 @@ function Nav() {
           ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
           : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
           }`}
-        style={{ top: "var(--banner-height, 0px)" }}
+        style={{ top: 0 }}
       >
         {/* Desktop Header */}
         <div className="hidden lg:block">

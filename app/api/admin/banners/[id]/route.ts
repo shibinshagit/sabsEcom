@@ -28,8 +28,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         auto_disappear_seconds = ${data.auto_disappear_seconds || 0},
         display_pages = ${data.display_pages || ["all"]},
         is_active = ${data.is_active ?? true},
-        start_date = ${data.start_date || null},
-        end_date = ${data.end_date || null},
+        start_date = ${data.start_date === "" || data.start_date == null ? null : data.start_date},
+        end_date = ${data.end_date === "" || data.end_date == null ? null : data.end_date},
         priority = ${data.priority || 0},
         is_dismissible = ${data.is_dismissible ?? true},
         updated_at = CURRENT_TIMESTAMP

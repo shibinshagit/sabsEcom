@@ -29,18 +29,17 @@ export default function CountrySelectionWrapper() {
 
   const handleCountrySelect = (country: Country) => {
     setShowModal(false)
+    window.dispatchEvent(new Event('country-selected'))
     
     // Optional: Add analytics tracking
     console.log('Country selected:', country)
-    
-    // Optional: Show success toast
-    // toast.success(`Welcome! Shopping in ${country.name} (${country.currency})`)
   }
 
   const closeModal = () => {
     setShowModal(false)
     // Mark as selected even if closed without selection
     localStorage.setItem('country-selected', 'true')
+    window.dispatchEvent(new Event('country-selected'))
   }
 
   return (

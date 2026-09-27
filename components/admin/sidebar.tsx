@@ -12,7 +12,8 @@ import {
   Users,
   Shield,
   Clapperboard,
-  Star
+  Star,
+  MessageSquare,
 } from "lucide-react"
 
 const navigation = [
@@ -20,10 +21,7 @@ const navigation = [
   { name: "Products", href: "/admin/menu", icon: Menu },
   { name: "Categories", href: "/admin/categories", icon: Tags },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
-  // { name: "Testimonials", href: "/admin/testimonials", icon: Star },
-  // { name: "About Section", href: "/admin/about", icon: Info },
-  // { name: "Hero Slider", href: "/admin/slider", icon: ImageIcon },
-  // { name: "Banners", href: "/admin/banners", icon: MessageSquare },
+  { name: "Banners", href: "/admin/banners", icon: MessageSquare },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Admin Users", href: "/admin/users", icon: Shield },
   { name: "Video Results", href: "/admin/before-after-videos", icon: Clapperboard },

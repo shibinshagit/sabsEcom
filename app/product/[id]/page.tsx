@@ -804,7 +804,7 @@ const conditionColors = {
               {product.variants.length > 0 && (
   <Card className="p-6 bg-gradient-to-br from-gray-50 to-white border-0 shadow-lg rounded-2xl">
     <h3 className="font-bold text-lg text-gray-900 mb-4">Select Variant</h3>
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {product.variants.map((variant) => {
         const isDisabled = !hasSelectedCurrencyPrice(variant) || variant.stock_quantity === 0;
         const isSelected = selectedVariant?.id === variant.id;
@@ -814,19 +814,25 @@ const conditionColors = {
           <Button
             key={variant.id}
             variant={isSelected ? "default" : "outline"}
-            className={`p-3 text-sm h-auto text-left flex flex-col gap-1 ${
+            className={`p-3.5 text-sm h-auto w-full min-w-0 whitespace-normal text-left flex flex-col items-stretch gap-1.5 overflow-hidden ${
               isSelected
                 ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
                 : isDisabled
-                ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                ? "border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed"
                 : "border-gray-200 hover:bg-gray-50"
             }`}
             onClick={() => handleVariantChange(variant)}
             disabled={isDisabled}
             aria-label={`Select variant ${variant.name}${isDisabled ? ' (not available)' : ''}`}
           >
-            <span className={isDisabled ? "text-gray-400" : ""}>{variant.name}</span>
-            <span>
+            <span
+              className={`w-full break-words whitespace-normal leading-snug font-semibold text-[0.9rem] ${
+                isSelected ? "text-white" : isDisabled ? "text-gray-500" : "text-gray-900"
+              }`}
+            >
+              {variant.name}
+            </span>
+            <span className="w-full shrink-0">
               {formatPriceWithSmallDecimals(
                 variant.discount_aed,
                 variant.discount_inr,
@@ -836,24 +842,44 @@ const conditionColors = {
               )}
             </span>
             {variant.stock_quantity === 0 && (
-              <span className="text-xs text-red-500 font-medium mt-1">
+              <span
+                className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full w-fit ${
+                  isSelected
+                    ? "bg-white/20 text-white"
+                    : "bg-red-50 text-red-600"
+                }`}
+              >
                 Out of Stock
               </span>
             )}
             {!hasSelectedCurrencyPrice(variant) && variant.stock_quantity > 0 && (
-              <span className="text-xs text-red-500 font-medium mt-1">
+              <span
+                className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full w-fit ${
+                  isSelected ? "bg-white/20 text-white" : "bg-red-50 text-red-600"
+                }`}
+              >
                 Not available in {selectedCurrency === 'INR' ? 'India' : 'UAE'}
               </span>
             )}
             {variant.stock_quantity > 0 && hasSelectedCurrencyPrice(variant) && (
-              <span className={`text-xs font-medium mt-1 ${
-                isSelected ? "text-white/80" : isLowStock ? "text-orange-600" : "text-green-600"
-              }`}>
+              <span
+                className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full w-fit ${
+                  isSelected
+                    ? "bg-white/20 text-white"
+                    : isLowStock
+                    ? "bg-orange-50 text-orange-700"
+                    : "bg-green-50 text-green-700"
+                }`}
+              >
                 {isLowStock ? `Only ${variant.stock_quantity} left` : `${variant.stock_quantity} in stock`}
               </span>
             )}
             {(selectedCurrency === 'AED' ? variant.free_delivery_aed : variant.free_delivery_inr) && (
-              <span className={`text-xs font-semibold mt-1 ${isSelected ? "text-white" : "text-green-600"}`}>
+              <span
+                className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full w-fit ${
+                  isSelected ? "bg-white/20 text-white" : "bg-green-50 text-green-700"
+                }`}
+              >
                 🚚 Free Delivery
               </span>
             )}
@@ -982,17 +1008,27 @@ const conditionColors = {
                           className="min-h-[96px] bg-white"
                           maxLength={1000}
                         />
-                        <div className="flex items-center justify-between mt-3 gap-3">
-                          <p className="text-xs text-gray-500">
-                            {canReview
-                              ? "Only verified buyers can submit ratings."
-                              : "Buy this product first to submit a review."}
-                          </p>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 gap-3">
+                          {canReview ? (
+                            <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                              Verified buyer — you can submit a review.
+                            </p>
+                          ) : (
+                            <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-900 w-full sm:w-auto sm:flex-1">
+                              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
+                              <div>
+                                <p className="text-sm font-semibold leading-tight">Purchase required</p>
+                                <p className="text-xs mt-0.5 text-amber-800">
+                                  Buy this product first to submit a review.
+                                </p>
+                              </div>
+                            </div>
+                          )}
                           <Button
                             type="button"
                             onClick={handleSubmitReview}
                             disabled={!canReview || reviewSubmitting}
-                            className="bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                            className="bg-gradient-to-r from-orange-500 to-red-500 text-white shrink-0"
                           >
                             {reviewSubmitting ? "Saving..." : userReview ? "Update Review" : "Submit Review"}
                           </Button>
