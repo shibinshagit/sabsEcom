@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation"
 import { useCurrency } from "@/lib/contexts/currency-context"
 import { useShop } from "@/lib/contexts/shop-context"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Star, Heart, ShoppingCart, Eye, Sparkles } from "lucide-react"
 import Image from "next/image"
 
 interface Variant {
@@ -44,10 +42,88 @@ interface RecommendedProductsProps {
   shopCategory: string
 }
 
-export default function RecommendedProducts({ 
-  currentProductId, 
-  categoryId, 
-  shopCategory 
+function ProductCard({
+  product,
+  onClick,
+  currencySymbol,
+  price,
+  originalPrice,
+  hasDiscount,
+}: {
+  product: Product
+  onClick: () => void
+  currencySymbol: string
+  price: number
+  originalPrice: number
+  hasDiscount: boolean
+}) {
+  const discountPercent =
+    hasDiscount && originalPrice > 0
+      ? Math.round(((originalPrice - price) / originalPrice) * 100)
+      : 0
+
+  return (
+    <Card
+      className="group h-full cursor-pointer overflow-hidden rounded-2xl border-0 bg-[#faf7f3] ring-1 ring-[#8a7258]/15 shadow-[0_10px_30px_-18px_rgba(44,36,28,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-18px_rgba(44,36,28,0.45)] hover:ring-[#8a7258]/30"
+      onClick={onClick}
+    >
+      <CardContent className="p-0 flex flex-col h-full">
+        <div className="relative aspect-[4/5] overflow-hidden bg-[#ebe4db]">
+          <Image
+            src={product.image_urls?.[0] || "/placeholder.svg"}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            sizes="(max-width: 640px) 40vw, 20vw"
+          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/30 to-transparent" />
+
+          {product.is_new && (
+            <span className="absolute top-2.5 left-2.5 rounded-md bg-[#2c241c]/85 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white">
+              New
+            </span>
+          )}
+
+          {discountPercent > 0 && (
+            <span className="absolute bottom-2.5 right-2.5 rounded-md bg-[#8a7258] px-2 py-0.5 text-[10px] font-semibold text-white">
+              −{discountPercent}%
+            </span>
+          )}
+        </div>
+
+        <div className="p-3.5 flex flex-1 flex-col">
+          <h3 className="font-semibold text-sm text-[#2c241c] leading-snug line-clamp-2 min-h-[2.5rem]">
+            {product.name}
+          </h3>
+
+          <div className="mt-2 flex items-baseline gap-2 flex-wrap min-h-[28px]">
+            {price > 0 ? (
+              <>
+                <span className="text-sm font-bold text-[#2c241c]">
+                  {currencySymbol}
+                  {Number(price).toFixed(2)}
+                </span>
+                {hasDiscount && (
+                  <span className="text-xs text-[#8a7258]/70 line-through">
+                    {currencySymbol}
+                    {Number(originalPrice).toFixed(2)}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-[#8a7258]">Price not available</span>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function RecommendedProducts({
+  currentProductId,
+  categoryId,
+  shopCategory,
 }: RecommendedProductsProps) {
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,67 +135,62 @@ export default function RecommendedProducts({
     const fetchRecommendedProducts = async () => {
       try {
         setLoading(true)
-        
-        // Fetch products from the same category, excluding current product
-        const response = await fetch(`/api/products/recommended?categoryId=${categoryId}&excludeId=${currentProductId}&shop=${shopCategory}&limit=8`)
-        
+        const response = await fetch(
+          `/api/products/recommended?categoryId=${categoryId}&excludeId=${currentProductId}&shop=${shopCategory}&limit=8`,
+        )
         if (response.ok) {
           const data = await response.json()
           setRecommendedProducts(data.products || [])
         }
       } catch (error) {
-        console.error('Error fetching recommended products:', error)
+        console.error("Error fetching recommended products:", error)
       } finally {
         setLoading(false)
       }
     }
 
     fetchRecommendedProducts()
-  }, [currentProductId, categoryId, shopCategory])
+  }, [currentProductId, categoryId, shopCategory, shop])
 
   const getProductPrice = (product: Product) => {
     if (!product.variants || product.variants.length === 0) {
       return { price: 0, originalPrice: 0, hasDiscount: false }
     }
 
-    const variant = product.variants[0] // Use first variant for display
-    const isAED = selectedCurrency === 'AED'
+    const variant = product.variants[0]
+    const isAED = selectedCurrency === "AED"
     const isAvailable = isAED ? variant.available_aed : variant.available_inr
-    
+
     if (!isAvailable) {
       return { price: 0, originalPrice: 0, hasDiscount: false }
     }
 
     const price = isAED ? variant.price_aed : variant.price_inr
-    const discount = isAED ? (variant.discount_aed || 0) : (variant.discount_inr || 0)
+    const discount = isAED ? variant.discount_aed || 0 : variant.discount_inr || 0
     const finalPrice = discount > 0 ? discount : price
     const hasDiscount = discount > 0 && discount < price
 
     return {
       price: finalPrice,
       originalPrice: hasDiscount ? price : 0,
-      hasDiscount
+      hasDiscount,
     }
-  }
-
-  const handleProductClick = (productId: number) => {
-    router.push(`/product/${productId}`)
   }
 
   if (loading) {
     return (
-      <div className="bg-gray-50 py-16">
+      <div className="bg-[#f3ebe3] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Recommended Products</h2>
-            <p className="text-gray-600">Loading similar products...</p>
+          <div className="text-center mb-8 animate-pulse space-y-3">
+            <div className="mx-auto h-3 w-28 rounded bg-[#8a7258]/20" />
+            <div className="mx-auto h-8 w-64 max-w-full rounded bg-[#8a7258]/15" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {[...Array(5)].map((_, index) => (
               <div key={index} className="animate-pulse">
-                <div className="bg-gray-200 aspect-square rounded-lg mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="bg-[#ebe4db] aspect-[4/5] rounded-2xl mb-3" />
+                <div className="h-4 bg-[#ebe4db] rounded mb-2" />
+                <div className="h-4 bg-[#ebe4db] rounded w-2/3" />
               </div>
             ))}
           </div>
@@ -129,224 +200,76 @@ export default function RecommendedProducts({
   }
 
   if (recommendedProducts.length === 0) {
-    return null // Don't show section if no products
+    return null
   }
 
   return (
-    <div className="bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+    <section className="relative overflow-hidden bg-[#f3ebe3] py-12 lg:py-14">
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 70% 50% at 50% -10%, rgba(138,114,88,0.18), transparent 60%)",
+        }}
+      />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header className="text-center mb-8 lg:mb-10">
+          <p className="text-[11px] sm:text-xs font-semibold tracking-[0.28em] uppercase text-[#8a7258] mb-3">
+            You may also like
+          </p>
+          <h2 className="font-playfair text-3xl sm:text-4xl text-[#2c241c] tracking-tight">
             Recommended for You
           </h2>
-          <p className="text-gray-600 text-sm max-w-xl mx-auto">
-            Discover similar products that other customers loved.
-          </p>
-        </div>
+          <div className="mx-auto mt-4 h-px w-16 bg-[#8a7258]/45" />
+        </header>
 
-        {/* Desktop Grid */}
-        <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
           {recommendedProducts.slice(0, 5).map((product) => {
             const { price, originalPrice, hasDiscount } = getProductPrice(product)
-            const currencySymbol = getCurrencySymbol(selectedCurrency)
-
             return (
-              <Card 
-                key={product.id} 
-                className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-white border-0 shadow-md overflow-hidden"
-                onClick={() => handleProductClick(product.id)}
-              >
-                <CardContent className="p-0">
-                  {/* Product Image */}
-                  <div className="relative aspect-square overflow-hidden bg-gray-100">
-                    <Image
-                      src={product.image_urls?.[0] || "/placeholder.svg"}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    
-                    {/* Badges */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      {product.is_new && (
-                        <Badge className="bg-green-500 text-white text-xs px-2 py-1">
-                          New
-                        </Badge>
-                      )}
-                      {product.is_featured && (
-                        <Badge className="bg-orange-500 text-white text-xs px-2 py-1">
-                          Featured
-                        </Badge>
-                      )}
-                      {hasDiscount && (
-                        <Badge className="bg-red-500 text-white text-xs px-2 py-1">
-                          {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white/90 backdrop-blur-sm hover:bg-white"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleProductClick(product.id)
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="p-3">
-                    <div className="mb-2">
-                      <h3 className="font-medium text-sm text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors">
-                        {product.name}
-                      </h3>
-                      {product.brand && (
-                        <p className="text-xs text-gray-500">{product.brand}</p>
-                      )}
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center gap-2 mb-2">
-                      {price > 0 ? (
-                        <>
-                          <span className="text-sm font-bold text-orange-600">
-                            {currencySymbol}{price}
-                          </span>
-                          {hasDiscount && (
-                            <span className="text-xs text-gray-500 line-through">
-                              {currencySymbol}{originalPrice}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-xs text-gray-500">Price not available</span>
-                      )}
-                    </div>
-
-                    {/* Category */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                        {product.category_name}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xs text-gray-600">4.5</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={() => router.push(`/product/${product.id}`)}
+                currencySymbol={getCurrencySymbol(selectedCurrency)}
+                price={price}
+                originalPrice={originalPrice}
+                hasDiscount={hasDiscount}
+              />
             )
           })}
         </div>
 
-        {/* Mobile Horizontal Scroll */}
-        <div className="sm:hidden">
-          <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-            {recommendedProducts.slice(0, 6).map((product) => {
-              const { price, originalPrice, hasDiscount } = getProductPrice(product)
-              const currencySymbol = getCurrencySymbol(selectedCurrency)
-
-              return (
-                <div 
-                  key={product.id}
-                  className="flex-none w-[calc(40%-6px)] cursor-pointer"
-                  onClick={() => handleProductClick(product.id)}
-                >
-                  <Card className="group hover:shadow-lg transition-all duration-300 bg-white border-0 shadow-md overflow-hidden h-full">
-                    <CardContent className="p-0">
-                      {/* Product Image */}
-                      <div className="relative aspect-square overflow-hidden bg-gray-100">
-                        <Image
-                          src={product.image_urls?.[0] || "/placeholder.svg"}
-                          alt={product.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        
-                        {/* Badges */}
-                        <div className="absolute top-2 left-2 flex flex-col gap-1">
-                          {product.is_new && (
-                            <Badge className="bg-green-500 text-white text-xs px-1.5 py-0.5">
-                              New
-                            </Badge>
-                          )}
-                          {product.is_featured && (
-                            <Badge className="bg-orange-500 text-white text-xs px-1.5 py-0.5">
-                              Featured
-                            </Badge>
-                          )}
-                          {hasDiscount && (
-                            <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5">
-                              {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="p-2">
-                        <div className="mb-1">
-                          <h3 className="font-medium text-xs text-gray-900 line-clamp-2 group-hover:text-orange-600 transition-colors">
-                            {product.name}
-                          </h3>
-                        </div>
-
-                        {/* Price */}
-                        <div className="flex items-center gap-1 mb-1">
-                          {price > 0 ? (
-                            <>
-                              <span className="text-xs font-bold text-orange-600">
-                                {currencySymbol}{price}
-                              </span>
-                              {hasDiscount && (
-                                <span className="text-xs text-gray-500 line-through">
-                                  {currencySymbol}{originalPrice}
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-xs text-gray-500">Price not available</span>
-                          )}
-                        </div>
-
-                        {/* Category */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full truncate">
-                            {product.category_name}
-                          </span>
-                          <div className="flex items-center gap-0.5">
-                            <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-                            <span className="text-xs text-gray-600">4.5</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )
-            })}
-          </div>
+        <div className="sm:hidden flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          {recommendedProducts.slice(0, 6).map((product) => {
+            const { price, originalPrice, hasDiscount } = getProductPrice(product)
+            return (
+              <div key={product.id} className="flex-none w-[42%]">
+                <ProductCard
+                  product={product}
+                  onClick={() => router.push(`/product/${product.id}`)}
+                  currencySymbol={getCurrencySymbol(selectedCurrency)}
+                  price={price}
+                  originalPrice={originalPrice}
+                  hasDiscount={hasDiscount}
+                />
+              </div>
+            )
+          })}
         </div>
 
-        {/* View More Button */}
         <div className="text-center mt-8">
           <Button
             onClick={() => router.push(`/products?category=${categoryId}`)}
             variant="outline"
-            className="px-6 py-2 text-sm text-orange-600 border-orange-600 hover:bg-orange-50 hover:border-orange-700"
+            className="rounded-xl px-6 py-2.5 text-sm text-[#6b5a48] border-[#8a7258]/35 hover:bg-[#8a7258]/10 hover:text-[#2c241c] hover:border-[#8a7258]/50"
           >
-            View More Similar Products
+            View more similar products
           </Button>
         </div>
       </div>
-    </div>
+    </section>
   )
 }

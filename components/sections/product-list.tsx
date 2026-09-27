@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ChevronRight, TrendingUp, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart, Loader2 } from "lucide-react"
+import { Star, ChevronRight, TrendingUp, Grid3X3, List, SlidersHorizontal, Tag, Heart, ShoppingCart, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -605,9 +605,9 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                 return (
                   <Card
                     key={item.id}
-                    className="group w-[188px] lg:w-[224px] h-[368px] flex-shrink-0 overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                    className="group w-[188px] lg:w-[224px] h-[368px] flex-shrink-0 overflow-hidden rounded-2xl border-0 bg-[#faf7f3] ring-1 ring-[#8a7258]/15 shadow-[0_10px_30px_-18px_rgba(44,36,28,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-18px_rgba(44,36,28,0.45)] hover:ring-[#8a7258]/30"
                   >
-                    <div className="relative h-40 lg:h-44">
+                    <div className="relative h-40 lg:h-44 overflow-hidden bg-[#ebe4db]">
                       <Image
                         onClick={() => router.push(`/product/${item.id}`)}
                         src={
@@ -619,51 +619,48 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                         height={220}
                         className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105"
                       />
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/25 to-transparent" />
 
-                      <div className="absolute top-2 left-2 rounded-full bg-black/70 px-2 py-1 text-[11px] font-semibold text-white">
+                      <div className="absolute top-2.5 left-2.5 rounded-md bg-[#2c241c]/85 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white">
                         #{index + 1}
                       </div>
 
-                      {item.is_featured && (
-                        <Badge className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-full">
-                          TOP SELLER
-                        </Badge>
-                      )}
-
                       {discountPercent > 0 && (
-                        <Badge className="absolute bottom-2 right-2 bg-orange-600 text-white text-[10px] px-2 py-1 rounded-full">
-                          -{discountPercent}%
-                        </Badge>
+                        <span className="absolute bottom-2.5 right-2.5 rounded-md bg-[#8a7258] px-2 py-0.5 text-[10px] font-semibold text-white">
+                          −{discountPercent}%
+                        </span>
                       )}
                     </div>
 
-                    <CardContent className="p-3 flex flex-1 flex-col">
-                      <div className="h-4 mb-1">{renderRating(item, "xs") || null}</div>
+                    <CardContent className="p-3.5 flex flex-1 flex-col">
+                      <p className="text-sm font-semibold text-[#2c241c] leading-snug line-clamp-2 min-h-[40px]">
+                        {item.name}
+                      </p>
 
-                      <p className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px]">{item.name}</p>
-
-                      <div className="mt-2 min-h-[38px]">
+                      <div className="mt-2 min-h-[36px]">
                         {currencyUnavailable ? (
-                          <span className="text-red-600 font-semibold text-sm">Not available in {selectedCurrency}</span>
+                          <span className="text-[#8a7258] font-medium text-xs">
+                            Not available in {selectedCurrency}
+                          </span>
                         ) : (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-red-500 font-bold text-sm">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="font-bold text-sm text-[#2c241c]">
                               {formatPriceWithSmallDecimals(
                                 availableVariant?.discount_aed,
                                 availableVariant?.discount_inr,
                                 selectedCurrency,
                                 true,
-                                "#ef4444",
+                                "#2c241c",
                               )}
                             </span>
                             {discountPercent > 0 && (
-                              <span className="text-gray-500 text-xs line-through">
+                              <span className="text-[#8a7258]/70 text-xs line-through">
                                 {formatPriceWithSmallDecimals(
                                   availableVariant?.price_aed,
                                   availableVariant?.price_inr,
                                   selectedCurrency,
                                   true,
-                                  "#6B7280",
+                                  "#8a7258",
                                 )}
                               </span>
                             )}
@@ -674,9 +671,9 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                       <div className="mt-auto pt-3">
                         <Button
                           onClick={() => router.push(`/product/${item.id}`)}
-                          className="w-full h-9 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-medium hover:from-orange-600 hover:to-red-600"
+                          className="w-full h-9 rounded-xl bg-[#8a7258] hover:bg-[#756148] text-white text-sm font-medium shadow-none"
                         >
-                          Buy Now
+                          View
                         </Button>
                       </div>
                     </CardContent>
@@ -703,11 +700,12 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
             {/* Show section header only when not searching */}
             {!isSearchActive && (
               <div className="flex items-center justify-between mb-4 lg:mb-6">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-green-500" />
-                  <span className="font-bold text-lg lg:text-xl">Fast Selling Products</span>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-[#8a7258] flex items-center justify-center">
+                    <Tag className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="font-semibold text-lg lg:text-xl text-[#2c241c]">Fast Selling Products</span>
                 </div>
-                <ChevronDown className="w-5 h-5 text-gray-400" />
               </div>
             )}
             
@@ -802,11 +800,15 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
               return (
                 <div key={item.id} className={viewMode === "list" ? "cursor-pointer" : "h-full cursor-pointer"}>
                   <Card
-                    className={`group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+                    className={`group overflow-hidden rounded-2xl border-0 bg-[#faf7f3] ring-1 ring-[#8a7258]/15 shadow-[0_10px_30px_-18px_rgba(44,36,28,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-18px_rgba(44,36,28,0.45)] hover:ring-[#8a7258]/30 ${
                       viewMode === "list" ? "flex items-center" : "h-full flex flex-col"
                     }`}
                   >
-                    <div className={`relative ${viewMode === "list" ? "w-32 h-32 flex-shrink-0" : "h-44 lg:h-48"}`}>
+                    <div
+                      className={`relative overflow-hidden bg-[#ebe4db] ${
+                        viewMode === "list" ? "w-32 h-32 flex-shrink-0 m-3 rounded-xl" : "aspect-[4/5] w-full"
+                      }`}
+                    >
                       <Image
                         onClick={() => router.push(`/product/${item.id}`)}
                         src={
@@ -814,67 +816,76 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                           `/placeholder.svg?height=200&width=200&query=${encodeURIComponent(item.name) || "/placeholder.svg"}`
                         }
                         alt={item.name}
-                        width={200}
-                        height={200}
-                        className={`object-cover transition-transform duration-300 cursor-pointer group-hover:scale-105 ${
-                          viewMode === "list" ? "w-32 h-32 rounded-lg" : "w-full h-full"
+                        width={280}
+                        height={350}
+                        className={`object-cover transition-transform duration-500 cursor-pointer group-hover:scale-[1.04] ${
+                          viewMode === "list" ? "w-full h-full rounded-xl" : "w-full h-full"
                         }`}
                       />
+                      {viewMode !== "list" && (
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/30 to-transparent" />
+                      )}
 
                       {item.is_new && (
-                        <Badge className="absolute top-2 left-2 bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-full">
-                          NEW
-                        </Badge>
+                        <span className="absolute top-2.5 left-2.5 rounded-md bg-[#2c241c]/85 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white">
+                          New
+                        </span>
                       )}
 
                       {item.condition_type && item.condition_type !== "none" && (
-                        <Badge className={`absolute top-2 right-2 ${badgeColor} text-white text-[10px] px-2 py-1 rounded-full capitalize`}>
+                        <Badge
+                          className={`absolute top-2.5 right-2.5 ${badgeColor} text-white text-[10px] px-2 py-0.5 rounded-md capitalize border-0`}
+                        >
                           {conditionLabel}
                         </Badge>
                       )}
 
                       {discountPercent > 0 && (
-                        <Badge className="absolute bottom-2 right-2 bg-orange-600 text-white text-[10px] px-2 py-1 rounded-full">
-                          {discountPercent}% OFF
-                        </Badge>
+                        <span className="absolute bottom-2.5 right-2.5 rounded-md bg-[#8a7258] px-2 py-0.5 text-[10px] font-semibold text-white">
+                          −{discountPercent}%
+                        </span>
                       )}
                     </div>
 
-                    <CardContent className={`p-3 lg:p-4 ${viewMode === "list" ? "flex-1" : "flex flex-1 flex-col"}`}>
-                      <div className="min-h-[42px]">
-                        <h3
-                          className={`font-semibold text-gray-900 ${
-                            viewMode === "list" ? "text-base lg:text-lg line-clamp-2" : "text-sm lg:text-base line-clamp-2"
-                          }`}
-                        >
-                          {viewMode === "list" ? item.name : item.name.length > 15 ? `${item.name.slice(0, 17)}...` : item.name}
-                        </h3>
-                      </div>
+                    <CardContent
+                      className={`p-3.5 lg:p-4 ${viewMode === "list" ? "flex-1" : "flex flex-1 flex-col"}`}
+                    >
+                      <h3
+                        className={`font-semibold text-[#2c241c] leading-snug ${
+                          viewMode === "list"
+                            ? "text-base lg:text-lg line-clamp-2"
+                            : "text-sm lg:text-[15px] line-clamp-2 min-h-[2.5rem]"
+                        }`}
+                      >
+                        {item.name}
+                      </h3>
 
-                      <div className="h-5 mt-1 mb-1">{renderRating(item, "sm") || null}</div>
+                      <div className="h-5 mt-1.5 mb-1">{renderRating(item, "sm") || null}</div>
 
-                      <div className="min-h-[38px] mb-3">
+                      <div className="min-h-[36px] mb-3">
                         {currencyUnavailable ? (
-                          <span className="text-red-600 font-semibold text-sm">Not available in {selectedCurrency}</span>
+                          <span className="text-[#8a7258] font-medium text-xs sm:text-sm">
+                            Not available in {selectedCurrency}
+                          </span>
                         ) : (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-red-500 font-bold text-sm lg:text-base">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="font-bold text-sm lg:text-base text-[#2c241c]">
                               {formatPriceWithSmallDecimals(
                                 availableVariant?.discount_aed,
                                 availableVariant?.discount_inr,
                                 selectedCurrency,
                                 true,
-                                "#ef4444",
+                                "#2c241c",
                               )}
                             </span>
                             {discountPercent > 0 && (
-                              <span className="text-gray-500 text-xs line-through">
+                              <span className="text-[#8a7258]/70 text-xs line-through">
                                 {formatPriceWithSmallDecimals(
                                   availableVariant?.price_aed,
                                   availableVariant?.price_inr,
                                   selectedCurrency,
                                   true,
-                                  "#6B7280",
+                                  "#8a7258",
                                 )}
                               </span>
                             )}
@@ -883,20 +894,18 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                       </div>
 
                       {viewMode === "list" && (
-                        <p className="text-sm text-gray-600 line-clamp-3 mb-3">
-                          {item.description}
-                        </p>
+                        <p className="text-sm text-[#5c4f42] line-clamp-3 mb-3">{item.description}</p>
                       )}
 
                       <div className={`flex gap-2 ${viewMode === "list" ? "" : "mt-auto"}`}>
                         <Button
                           onClick={() => router.push(`/product/${item.id}`)}
-                          className="flex-1 h-10 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl text-sm font-medium hover:from-orange-600 hover:to-red-600"
+                          className="flex-1 h-10 bg-[#8a7258] hover:bg-[#756148] text-white rounded-xl text-sm font-medium shadow-none"
                           disabled={!item.is_available}
                         >
                           {item.is_available ? (
                             <>
-                              <ShoppingCart className="w-4 h-4 mr-1" />
+                              <ShoppingCart className="w-4 h-4 mr-1.5" />
                               Buy
                             </>
                           ) : (
@@ -906,11 +915,13 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
 
                         <Button
                           onClick={() => handleToggleWishlist(item)}
-                          className={`h-10 px-3 rounded-xl ${
+                          variant="outline"
+                          className={`h-10 w-10 p-0 rounded-xl border-[#8a7258]/25 ${
                             isInWishlist(item.id)
-                              ? "bg-red-500 hover:bg-red-600 text-white"
-                              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                              ? "bg-[#8a7258] border-[#8a7258] text-white hover:bg-[#756148] hover:text-white"
+                              : "bg-transparent text-[#6b5a48] hover:bg-[#8a7258]/10 hover:text-[#2c241c]"
                           }`}
+                          aria-label={isInWishlist(item.id) ? "Remove from wishlist" : "Add to wishlist"}
                         >
                           <Heart className={`w-4 h-4 ${isInWishlist(item.id) ? "fill-current" : ""}`} />
                         </Button>

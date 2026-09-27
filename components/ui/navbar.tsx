@@ -5,7 +5,7 @@ import { Suspense } from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams, useRouter } from "next/navigation"
-import { Search, ShoppingCart, Heart, Menu, X, User, LogOut, Settings, Package, Users, BarChart3, Calendar, MessageSquare, Star, ChevronDown, Globe, Zap, Crown, Gift, ShoppingBag, Sparkles, Watch, Bell } from "lucide-react"
+import { Search, ShoppingCart, Heart, Menu, X, User, LogOut, Settings, Package, Users, BarChart3, Calendar, MessageSquare, Star, ChevronDown, Globe, Zap, Crown, Gift, ShoppingBag, Sparkles, Watch, Bell, Check } from "lucide-react"
 import SearchPopup from "@/components/ui/search-popup"
 import { Button } from "@/components/ui/button"
 import { useSelector } from "react-redux"
@@ -32,6 +32,61 @@ interface Category {
   slug?: string
   shop?: "A" | "B" | "Both"
   is_special?: boolean
+}
+
+function CurrencyMenu({
+  selectedCurrency,
+  setSelectedCurrency,
+}: {
+  selectedCurrency: string
+  setSelectedCurrency: (c: "AED" | "INR") => void
+}) {
+  const options = [
+    { code: "AED" as const, label: "UAE Dirham", symbol: "AED" },
+    { code: "INR" as const, label: "Indian Rupee", symbol: "₹" },
+  ]
+
+  return (
+    <DropdownMenuContent
+      align="end"
+      className="w-56 p-2 rounded-2xl border-0 bg-[#faf7f3] shadow-[0_16px_40px_-18px_rgba(44,36,28,0.45)] ring-1 ring-[#8a7258]/20"
+    >
+      <p className="px-2.5 pt-1.5 pb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8a7258]">
+        Currency
+      </p>
+      {options.map((opt) => {
+        const active = selectedCurrency === opt.code
+        return (
+          <DropdownMenuItem
+            key={opt.code}
+            onClick={() => setSelectedCurrency(opt.code)}
+            className={`cursor-pointer rounded-xl px-2.5 py-2.5 focus:bg-[#8a7258]/10 ${
+              active ? "bg-[#8a7258]/12" : ""
+            }`}
+          >
+            <div className="flex w-full items-center gap-3">
+              <div
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                  active
+                    ? "bg-[#8a7258] text-white"
+                    : "bg-[#ebe4db] text-[#6b5a48]"
+                }`}
+              >
+                {opt.symbol}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-semibold leading-tight ${active ? "text-[#2c241c]" : "text-[#5c4f42]"}`}>
+                  {opt.label}
+                </p>
+                <p className="text-[11px] text-[#8a7258]/80">{opt.code}</p>
+              </div>
+              {active && <Check className="h-4 w-4 shrink-0 text-[#8a7258]" strokeWidth={2.5} />}
+            </div>
+          </DropdownMenuItem>
+        )
+      })}
+    </DropdownMenuContent>
+  )
 }
 
 function Nav() {
@@ -429,51 +484,10 @@ function Nav() {
                         <span className="font-semibold text-sm">{selectedCurrency}</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 p-2 border-0 shadow-xl">
-                      <div className="bg-white rounded-lg">
-                        <DropdownMenuItem
-                          onClick={() => setSelectedCurrency('AED')}
-                          className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                            }`}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <span className="text-blue-600 font-bold text-sm">AED</span>
-                              </div>
-                              <div>
-                                <span className="font-medium">UAE Dirham</span>
-                                <p className="text-xs text-gray-500">AED</p>
-                              </div>
-                            </div>
-                            {selectedCurrency === 'AED' && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            )}
-                          </div>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem
-                          onClick={() => setSelectedCurrency('INR')}
-                          className={`cursor-pointer rounded-lg p-3 hover:bg-gray-50 transition-colors ${selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
-                            }`}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                                <span className="text-green-600 font-bold text-sm">₹</span>
-                              </div>
-                              <div>
-                                <span className="font-medium">Indian Rupee</span>
-                                <p className="text-xs text-gray-500">INR</p>
-                              </div>
-                            </div>
-                            {selectedCurrency === 'INR' && (
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            )}
-                          </div>
-                        </DropdownMenuItem>
-                      </div>
-                    </DropdownMenuContent>
+                    <CurrencyMenu
+                      selectedCurrency={selectedCurrency}
+                      setSelectedCurrency={setSelectedCurrency}
+                    />
                   </DropdownMenu>
 
                   <Link href="/orders">
@@ -878,31 +892,10 @@ function Nav() {
                       <span className="text-sm font-semibold">{selectedCurrency}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44 p-1 border-0 shadow-xl">
-                    <div className="bg-white rounded-lg">
-                      <DropdownMenuItem
-                        onClick={() => setSelectedCurrency('AED')}
-                        className={`cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors ${selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-blue-600 font-bold text-sm">AED</span>
-                          <span className="text-sm">UAE Dirham</span>
-                        </div>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={() => setSelectedCurrency('INR')}
-                        className={`cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors ${selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-green-600 font-bold text-sm">₹</span>
-                          <span className="text-sm">Indian Rupee</span>
-                        </div>
-                      </DropdownMenuItem>
-                    </div>
-                  </DropdownMenuContent>
+                  <CurrencyMenu
+                    selectedCurrency={selectedCurrency}
+                    setSelectedCurrency={setSelectedCurrency}
+                  />
                 </DropdownMenu>
 
                 <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full p-2">
@@ -1084,22 +1077,10 @@ function Nav() {
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40 p-1 border-0 shadow-xl">
-                    <DropdownMenuItem
-                      onClick={() => setSelectedCurrency('AED')}
-                      className={`cursor-pointer rounded p-2 text-sm ${selectedCurrency === 'AED' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                        }`}
-                    >
-                      AED
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setSelectedCurrency('INR')}
-                      className={`cursor-pointer rounded p-2 text-sm ${selectedCurrency === 'INR' ? 'bg-green-50 text-green-700' : 'text-gray-700'
-                        }`}
-                    >
-                      INR ₹
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
+                  <CurrencyMenu
+                    selectedCurrency={selectedCurrency}
+                    setSelectedCurrency={setSelectedCurrency}
+                  />
                 </DropdownMenu>
 
                 <Link href="/wishlist" className="relative">

@@ -90,22 +90,24 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-14 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
           <div className="lg:col-span-5 space-y-5">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 sm:gap-5">
               {settings.restaurant_logo ? (
-                <div className="relative w-11 h-11 shrink-0">
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-2xl bg-black/90 p-2 ring-1 ring-white/20 shadow-lg">
                   <Image
                     src={settings.restaurant_logo || "/placeholder.svg"}
                     alt="SABS ONLINE"
                     fill
-                    className="object-contain"
+                    className="object-contain p-1.5"
+                    sizes="128px"
+                    priority
                   />
                 </div>
               ) : null}
               <div>
-                <h3 className="text-xl font-semibold tracking-tight text-white drop-shadow-sm">
+                <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white drop-shadow-sm">
                   {settings.restaurant_name || "Sabs Online Store"}
                 </h3>
-                <p className="text-sm text-white/70 mt-0.5">{category}</p>
+                <p className="text-sm sm:text-base text-white/70 mt-1">{category}</p>
               </div>
             </div>
             <p className="text-sm leading-relaxed text-white/80 max-w-md">

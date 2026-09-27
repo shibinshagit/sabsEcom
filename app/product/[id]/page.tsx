@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ArrowLeft, ShoppingCart, Heart, Share2, Globe, AlertCircle, Plus, Minus, Truck, Shield, Award, Zap, ChevronRight, Eye, Sparkles, Verified, MessageSquare } from "lucide-react"
+import { Star, ArrowLeft, ShoppingCart, Heart, Share2, AlertCircle, Plus, Minus, Truck, Shield, Zap, ChevronRight, Verified, MessageSquare } from "lucide-react"
 import Image from "next/image"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
@@ -401,7 +401,7 @@ export default function ProductPage() {
           <p className="text-gray-600 mb-8 text-lg">The product you're looking for doesn't exist or has been removed.</p>
           <Button
             onClick={() => router.back()}
-            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-8 py-3 text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200"
+            className="bg-[#8a7258] hover:bg-[#756148] text-white px-8 py-3 text-lg rounded-xl shadow-none"
             aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -442,7 +442,7 @@ const conditionColors = {
     : 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 relative">
+    <div className="min-h-screen bg-[#f7f3ee] relative">
       <Navbar />
 
       {/* Blur Overlay with Animation */}
@@ -601,17 +601,11 @@ const conditionColors = {
               >
                 {product.category_name}
               </span>
-              {/* <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900 font-medium truncate max-w-48 sm:max-w-64">{product.name}</span> */}
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
-                <Eye className="w-3 h-3 mr-1" />
-                {Math.floor(Math.random() * 1000) + 100} views
-              </Badge>
+            <div className="hidden lg:flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-xl" aria-label="Share product">
+                  <Button variant="outline" size="sm" className="rounded-xl border-[#8a7258]/25 text-[#6b5a48]" aria-label="Share product">
                     <Share2 className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -619,7 +613,6 @@ const conditionColors = {
                   <DropdownMenuItem onClick={() => navigator.clipboard.writeText(window.location.href).then(() => toast.success('Product link copied to clipboard')).catch(() => toast.error('Failed to copy link'))}>
                     Copy Link
                   </DropdownMenuItem>
-                  {/* <DropdownMenuItem>Share on Social</DropdownMenuItem> */}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -640,7 +633,7 @@ const conditionColors = {
             {/* Product Images - sticky on desktop so details don't leave a blank column */}
             <div className="lg:sticky lg:top-24 space-y-4 self-start w-full">
               <div className="relative group">
-                <div className="overflow-hidden rounded-2xl shadow-xl bg-white p-3 sm:p-4 border border-gray-100">
+                <div className="relative overflow-hidden rounded-2xl bg-[#faf7f3] p-3 sm:p-4 ring-1 ring-[#8a7258]/15 shadow-[0_16px_40px_-24px_rgba(44,36,28,0.45)]">
                   <Image
                     src={product.image_urls[selectedImageIndex] || `/placeholder.svg?height=600&width=600&query=${encodeURIComponent(product.name)}`}
                     alt={product.name || 'Product image'}
@@ -649,24 +642,46 @@ const conditionColors = {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 560px"
                     className="w-full h-[320px] sm:h-[400px] lg:h-[460px] object-cover rounded-xl group-hover:scale-[1.02] transition-transform duration-500"
                   />
-                  <div className="absolute top-5 left-5 flex flex-col gap-2">
+                  <div className="absolute top-5 left-5 flex flex-col gap-2 z-10">
                     {product.is_new && (
-                      <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        New Release
+                      <Badge className="bg-[#8a7258] text-white shadow-none rounded-md">
+                        New
                       </Badge>
                     )}
                     {product.condition_type && product.condition_type !== 'none' && (
                       <Badge
-                        className={`bg-gradient-to-r ${conditionColors[product.condition_type]} text-white font-medium text-sm px-3 py-1 rounded-full shadow-md capitalize`}
+                        className={`bg-gradient-to-r ${conditionColors[product.condition_type]} text-white font-medium text-sm px-3 py-1 rounded-md shadow-none capitalize`}
                       >
                         {conditionLabels[product.condition_type]}
                       </Badge>
                     )}
                   </div>
+                  <div className="absolute top-5 right-5 z-10 lg:hidden">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="h-9 w-9 p-0 rounded-xl bg-white/95 text-[#6b5a48] hover:bg-white shadow-md border border-[#8a7258]/20"
+                          aria-label="Share product"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(window.location.href).then(() => toast.success('Product link copied to clipboard')).catch(() => toast.error('Failed to copy link'))}>
+                          Copy Link
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                   <Badge
-                    variant={(selectedVariant?.stock_quantity ?? 0) > 5 ? "default" : "destructive"}
-                    className={`absolute bottom-5 right-5 shadow-lg ${(selectedVariant?.stock_quantity ?? 0) <= 5 ? "bg-red-500 text-white" : ""}`}
+                    className={`absolute bottom-5 right-5 z-10 shadow-none rounded-md ${
+                      (selectedVariant?.stock_quantity ?? 0) > 5
+                        ? "bg-[#2c241c]/85 text-white"
+                        : (selectedVariant?.stock_quantity ?? 0) > 0
+                        ? "bg-[#8a7258] text-white"
+                        : "bg-red-600 text-white"
+                    }`}
                   >
                     {(selectedVariant?.stock_quantity ?? 0) > 5
                       ? "In Stock"
@@ -683,7 +698,7 @@ const conditionColors = {
                       key={index}
                       onClick={() => setSelectedImageIndex(index)}
                       className={`relative overflow-hidden rounded-xl transition-all duration-300 ${
-                        selectedImageIndex === index ? "ring-2 ring-orange-500 shadow-md" : "hover:shadow-sm opacity-90 hover:opacity-100"
+                        selectedImageIndex === index ? "ring-2 ring-[#8a7258] shadow-md" : "hover:shadow-sm opacity-90 hover:opacity-100"
                       }`}
                       aria-label={`Select image ${index + 1}`}
                     >
@@ -704,7 +719,7 @@ const conditionColors = {
             {/* Buy box */}
             <div className="space-y-5">
               <div className="space-y-3">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight tracking-tight">
+                <h1 className="font-playfair text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#2c241c] leading-tight tracking-tight">
                   {product.name}
                 </h1>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -715,12 +730,12 @@ const conditionColors = {
                         setDetailTab("reviews")
                         document.getElementById("product-details")?.scrollIntoView({ behavior: "smooth", block: "start" })
                       }}
-                      className="flex items-center gap-1 text-sm text-gray-600 hover:text-orange-600 transition-colors"
+                      className="flex items-center gap-1 text-sm text-[#5c4f42] hover:text-[#8a7258] transition-colors"
                     >
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className={`w-4 h-4 ${i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                          className={`w-4 h-4 ${i < Math.round(averageRating) ? "fill-[#8a7258] text-[#8a7258]" : "text-[#d4c4b0]"}`}
                         />
                       ))}
                       <span className="ml-1">
@@ -734,68 +749,67 @@ const conditionColors = {
                         setDetailTab("reviews")
                         document.getElementById("product-details")?.scrollIntoView({ behavior: "smooth", block: "start" })
                       }}
-                      className="text-sm text-gray-500 hover:text-orange-600"
+                      className="text-sm text-[#8a7258] hover:text-[#2c241c]"
                     >
                       Be the first to review
                     </button>
                   )}
-                  {product.is_new && (
-                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                      <Award className="w-3 h-3 mr-1" />
-                      Bestseller
+                  {product.is_featured && (
+                    <Badge variant="outline" className="text-[#6b5a48] border-[#8a7258]/30 bg-[#8a7258]/10">
+                      Trending
                     </Badge>
                   )}
                 </div>
               </div>
 
-              <Card className="p-5 bg-white border border-gray-100 shadow-sm rounded-2xl">
+              <Card className="p-5 bg-[#faf7f3] border-0 ring-1 ring-[#8a7258]/15 shadow-[0_10px_30px_-18px_rgba(44,36,28,0.25)] rounded-2xl">
                 <div className="space-y-4">
                   <div className="flex items-end gap-3 flex-wrap">
-                    <span className="text-3xl sm:text-4xl font-bold text-red-500">
+                    <span className="text-3xl sm:text-4xl font-bold text-[#2c241c]">
                       {currencyAvailable && selectedVariant
                         ? formatPriceWithSmallDecimals(
                             selectedVariant.discount_aed,
                             selectedVariant.discount_inr,
                             selectedCurrency,
                             true,
-                            "#ef4444"
+                            "#2c241c"
                           )
                         : `Not available in ${selectedCurrency}`}
                     </span>
-                    {currencyAvailable && (
-                      <span className="text-base text-gray-400 line-through pb-1">
+                    {currencyAvailable && discountPercent > 0 && (
+                      <span className="text-base text-[#8a7258]/70 line-through pb-1">
                         {formatPriceWithSmallDecimals(
                           selectedVariant?.price_aed,
                           selectedVariant?.price_inr,
                           selectedCurrency,
                           true,
-                          "#6B7280"
+                          "#8a7258"
                         )}
                       </span>
                     )}
                     {discountPercent > 0 && (
-                      <Badge className="bg-red-100 text-red-700 text-xs mb-1">Save {discountPercent}%</Badge>
+                      <Badge className="bg-[#8a7258]/15 text-[#6b5a48] text-xs mb-1 border-0">Save {discountPercent}%</Badge>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3 border-t border-gray-100">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Truck className="w-4 h-4 text-green-500 shrink-0" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3 border-t border-[#8a7258]/15">
+                    <div className="flex items-center gap-2 text-sm text-[#5c4f42]">
+                      <Truck className="w-4 h-4 text-[#8a7258] shrink-0" />
                       {(selectedCurrency === 'AED' ? selectedVariant?.free_delivery_aed : selectedVariant?.free_delivery_inr) ? (
-                        <span className="text-green-600 font-semibold">Free Delivery</span>
+                        <span className="text-[#2c241c] font-semibold">Free Delivery</span>
                       ) : (
                         <span>Doorstep Delivery</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Verified className="w-4 h-4 text-blue-500 shrink-0" />
+                    <div className="flex items-center gap-2 text-sm text-[#5c4f42]">
+                      <Verified className="w-4 h-4 text-[#8a7258] shrink-0" />
                       <span>Sabs Verified</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Shield className="w-4 h-4 text-purple-500 shrink-0" />
+                    <div className="flex items-center gap-2 text-sm text-[#5c4f42]">
+                      <Shield className="w-4 h-4 text-[#8a7258] shrink-0" />
                       {product.warranty_months && product.warranty_months !== "0" ? (
                         <span>{product.warranty_months} Months Warranty</span>
                       ) : (
-                        <span className="text-green-600 font-medium">Quality Assured</span>
+                        <span className="text-[#2c241c] font-medium">Quality Assured</span>
                       )}
                     </div>
                   </div>
@@ -803,8 +817,8 @@ const conditionColors = {
               </Card>
 
               {product.variants.length > 0 && (
-                <Card className="p-5 bg-white border border-gray-100 shadow-sm rounded-2xl">
-                  <h3 className="font-semibold text-base text-gray-900 mb-3">Select Variant</h3>
+                <Card className="p-5 bg-[#faf7f3] border-0 ring-1 ring-[#8a7258]/15 shadow-[0_10px_30px_-18px_rgba(44,36,28,0.25)] rounded-2xl">
+                  <h3 className="font-semibold text-base text-[#2c241c] mb-3">Select Variant</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {product.variants.map((variant) => {
                       const isDisabled = !hasSelectedCurrencyPrice(variant) || variant.stock_quantity === 0;
@@ -815,12 +829,12 @@ const conditionColors = {
                         <Button
                           key={variant.id}
                           variant={isSelected ? "default" : "outline"}
-                          className={`p-3 text-sm h-auto w-full min-w-0 whitespace-normal text-left flex flex-col items-stretch gap-1 overflow-hidden ${
+                          className={`p-3 text-sm h-auto w-full min-w-0 whitespace-normal text-left flex flex-col items-stretch gap-1 overflow-hidden shadow-none ${
                             isSelected
-                              ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                              ? "bg-[#8a7258] hover:bg-[#756148] text-white"
                               : isDisabled
-                              ? "border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed"
-                              : "border-gray-200 hover:bg-gray-50"
+                              ? "border-[#8a7258]/15 bg-[#ebe4db]/50 opacity-70 cursor-not-allowed"
+                              : "border-[#8a7258]/25 hover:bg-[#8a7258]/10"
                           }`}
                           onClick={() => handleVariantChange(variant)}
                           disabled={isDisabled}
@@ -828,7 +842,7 @@ const conditionColors = {
                         >
                           <span
                             className={`w-full break-words whitespace-normal leading-snug font-semibold ${
-                              isSelected ? "text-white" : isDisabled ? "text-gray-500" : "text-gray-900"
+                              isSelected ? "text-white" : isDisabled ? "text-gray-500" : "text-[#2c241c]"
                             }`}
                           >
                             {variant.name}
@@ -839,28 +853,28 @@ const conditionColors = {
                               variant.discount_inr,
                               selectedCurrency,
                               true,
-                              isSelected ? "#fff" : isDisabled ? "#9ca3af" : "#ef4444"
+                              isSelected ? "#fff" : isDisabled ? "#9ca3af" : "#2c241c"
                             )}
                           </span>
                           {variant.stock_quantity === 0 && (
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${isSelected ? "bg-white/20 text-white" : "bg-red-50 text-red-600"}`}>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-md w-fit ${isSelected ? "bg-white/20 text-white" : "bg-red-50 text-red-600"}`}>
                               Out of Stock
                             </span>
                           )}
                           {!hasSelectedCurrencyPrice(variant) && variant.stock_quantity > 0 && (
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${isSelected ? "bg-white/20 text-white" : "bg-red-50 text-red-600"}`}>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-md w-fit ${isSelected ? "bg-white/20 text-white" : "bg-red-50 text-red-600"}`}>
                               Not available in {selectedCurrency === 'INR' ? 'India' : 'UAE'}
                             </span>
                           )}
                           {variant.stock_quantity > 0 && hasSelectedCurrencyPrice(variant) && (
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
-                              isSelected ? "bg-white/20 text-white" : isLowStock ? "bg-orange-50 text-orange-700" : "bg-green-50 text-green-700"
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-md w-fit ${
+                              isSelected ? "bg-white/20 text-white" : isLowStock ? "bg-[#8a7258]/15 text-[#6b5a48]" : "bg-[#ebe4db] text-[#5c4f42]"
                             }`}>
                               {isLowStock ? `Only ${variant.stock_quantity} left` : `${variant.stock_quantity} in stock`}
                             </span>
                           )}
                           {(selectedCurrency === 'AED' ? variant.free_delivery_aed : variant.free_delivery_inr) && (
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${isSelected ? "bg-white/20 text-white" : "bg-green-50 text-green-700"}`}>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-md w-fit ${isSelected ? "bg-white/20 text-white" : "bg-[#ebe4db] text-[#5c4f42]"}`}>
                               Free Delivery
                             </span>
                           )}
@@ -871,10 +885,10 @@ const conditionColors = {
                 </Card>
               )}
 
-              <Card className="p-4 bg-white border border-gray-100 shadow-sm rounded-2xl">
+              <Card className="p-4 bg-[#faf7f3] border-0 ring-1 ring-[#8a7258]/15 shadow-[0_10px_30px_-18px_rgba(44,36,28,0.25)] rounded-2xl">
                 <div className="flex items-center justify-between gap-4">
-                  <span className="font-semibold text-gray-900">Quantity</span>
-                  <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                  <span className="font-semibold text-[#2c241c]">Quantity</span>
+                  <div className="flex items-center bg-[#ebe4db] rounded-xl p-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -885,7 +899,7 @@ const conditionColors = {
                     >
                       <Minus className="w-4 h-4" />
                     </Button>
-                    <span className="px-5 py-1.5 font-bold min-w-14 text-center">{quantity}</span>
+                    <span className="px-5 py-1.5 font-bold min-w-14 text-center text-[#2c241c]">{quantity}</span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -903,22 +917,21 @@ const conditionColors = {
               <div className="space-y-3">
                 <Button
                   onClick={handleBuyNow}
-                  className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white py-4 text-base font-bold rounded-2xl shadow-lg disabled:opacity-50"
+                  className="w-full bg-[#8a7258] hover:bg-[#756148] text-white py-4 text-base font-semibold rounded-2xl shadow-none disabled:opacity-50"
                   disabled={!product.is_available || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0 || !currencyAvailable}
                   aria-label="Buy now"
                 >
-                  <Zap className="w-5 h-5 mr-2" />
                   {!selectedVariant || !isVariantAvailable(selectedVariant)
                     ? (!hasSelectedCurrencyPrice(selectedVariant)
                       ? `Not available in ${selectedCurrency === 'INR' ? 'India' : 'UAE'}`
                       : 'Out of Stock')
-                    : "Buy Now - Quick Checkout"}
+                    : "Buy Now"}
                 </Button>
                 <div className="grid grid-cols-2 gap-3">
                   <Button
                     onClick={handleAddToCart}
                     variant="outline"
-                    className="py-3 rounded-xl border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50"
+                    className="py-3 rounded-xl border-[#8a7258]/30 text-[#2c241c] hover:bg-[#8a7258]/10 hover:border-[#8a7258]/50"
                     disabled={!product.is_available || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0 || !currencyAvailable}
                     aria-label="Add to cart"
                   >
@@ -930,12 +943,12 @@ const conditionColors = {
                     variant="outline"
                     className={`py-3 rounded-xl ${
                       isInWishlist(product.id)
-                        ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 border-2'
-                        : 'border-2 border-gray-200 hover:border-red-200 hover:bg-red-50'
+                        ? 'bg-[#8a7258] text-white border-[#8a7258] hover:bg-[#756148]'
+                        : 'border-[#8a7258]/30 text-[#6b5a48] hover:bg-[#8a7258]/10'
                     }`}
                     aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
                   >
-                    <Heart className={`w-4 h-4 mr-2 ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                    <Heart className={`w-4 h-4 mr-2 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
                     {isInWishlist(product.id) ? 'Saved' : 'Save'}
                   </Button>
                 </div>
@@ -961,8 +974,8 @@ const conditionColors = {
                     onClick={() => setDetailTab(tab.id)}
                     className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
                       detailTab === tab.id
-                        ? "border-orange-500 text-orange-600"
-                        : "border-transparent text-gray-500 hover:text-gray-800"
+                        ? "border-[#8a7258] text-[#8a7258]"
+                        : "border-transparent text-[#8a7258]/70 hover:text-[#2c241c]"
                     }`}
                   >
                     {tab.label}
@@ -971,28 +984,26 @@ const conditionColors = {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-8">
+            <div className="bg-[#faf7f3] rounded-2xl ring-1 ring-[#8a7258]/15 shadow-[0_10px_30px_-18px_rgba(44,36,28,0.25)] p-5 sm:p-8">
               {detailTab === "about" && product.description && (
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-orange-500" />
+                  <h3 className="font-semibold text-lg text-[#2c241c] mb-3">
                     About Product
                   </h3>
-                  <p className="text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
+                  <p className="text-[#5c4f42] leading-relaxed whitespace-pre-line">{product.description}</p>
                 </div>
               )}
 
               {detailTab === "features" && product.features?.length > 0 && (
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-                    <Award className="w-5 h-5 text-green-500" />
+                  <h3 className="font-semibold text-lg text-[#2c241c] mb-4">
                     Key Features
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {product.features.map((feature, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-2 h-2 mt-1.5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shrink-0" />
-                        <span className="text-sm text-gray-700">{feature}</span>
+                      <div key={index} className="flex items-start gap-3 p-3 bg-[#ebe4db]/60 rounded-xl">
+                        <div className="w-2 h-2 mt-1.5 bg-[#8a7258] rounded-full shrink-0" />
+                        <span className="text-sm text-[#5c4f42]">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -1001,8 +1012,7 @@ const conditionColors = {
 
               {detailTab === "specs" && (
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-blue-500" />
+                  <h3 className="font-semibold text-lg text-[#2c241c] mb-4">
                     Specifications
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1042,8 +1052,8 @@ const conditionColors = {
 
               {detailTab === "reviews" && (
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-yellow-500" />
+                  <h3 className="font-semibold text-lg text-[#2c241c] mb-4 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-[#8a7258]" />
                     Reviews & Ratings
                   </h3>
 
@@ -1113,7 +1123,7 @@ const conditionColors = {
                             type="button"
                             onClick={handleSubmitReview}
                             disabled={!canReview || reviewSubmitting}
-                            className="bg-gradient-to-r from-orange-500 to-red-500 text-white shrink-0"
+                            className="bg-[#8a7258] hover:bg-[#756148] text-white shrink-0 shadow-none"
                           >
                             {reviewSubmitting ? "Saving..." : userReview ? "Update Review" : "Submit Review"}
                           </Button>
