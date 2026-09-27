@@ -103,6 +103,7 @@ export default function ProductPage() {
   const [reviewText, setReviewText] = useState("")
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(true)
+  const [detailTab, setDetailTab] = useState<"about" | "features" | "specs" | "reviews">("about")
 
   // Animation states
   const [showBlur, setShowBlur] = useState(false)
@@ -209,6 +210,10 @@ export default function ProductPage() {
           selectedCurrency === 'AED' ? v.available_aed : v.available_inr
         ) || data.variants?.[0]
         setSelectedVariant(defaultVariant || null)
+        // Prefer About, then Features, else Specs
+        setDetailTab(
+          data.description ? "about" : data.features?.length ? "features" : "specs"
+        )
       } else {
         console.error("Product not found")
         // Redirect to 404 page if product doesn't exist
@@ -630,65 +635,55 @@ const conditionColors = {
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-            {/* Product Images */}
-            <div className="space-y-6">
+          {/* Purchase layout: sticky gallery + buy box */}
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-8 lg:gap-12 lg:items-start">
+            {/* Product Images - sticky on desktop so details don't leave a blank column */}
+            <div className="lg:sticky lg:top-24 space-y-4 self-start w-full">
               <div className="relative group">
-                <div className="overflow-hidden rounded-2xl shadow-2xl bg-white p-4">
+                <div className="overflow-hidden rounded-2xl shadow-xl bg-white p-3 sm:p-4 border border-gray-100">
                   <Image
                     src={product.image_urls[selectedImageIndex] || `/placeholder.svg?height=600&width=600&query=${encodeURIComponent(product.name)}`}
                     alt={product.name || 'Product image'}
                     width={600}
                     height={600}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
-                    className="w-full h-80 sm:h-96 lg:h-[500px] object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 560px"
+                    className="w-full h-[320px] sm:h-[400px] lg:h-[460px] object-cover rounded-xl group-hover:scale-[1.02] transition-transform duration-500"
                   />
-                  <div className="absolute top-6 left-6 flex flex-col gap-2">
+                  <div className="absolute top-5 left-5 flex flex-col gap-2">
                     {product.is_new && (
                       <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg">
                         <Sparkles className="w-3 h-3 mr-1" />
-                       New Release
+                        New Release
                       </Badge>
                     )}
-                  {product.condition_type && product.condition_type !== 'none' && (
-  <Badge
-    className={`
-      bg-gradient-to-r ${conditionColors[product.condition_type]}
-      text-white font-medium text-sm
-      px-3 py-1 rounded-full
-      shadow-md hover:shadow-lg
-      transition-all duration-200 ease-in-out
-      capitalize
-    `}
-  >
-    {conditionLabels[product.condition_type]}
-  </Badge>
-)}
+                    {product.condition_type && product.condition_type !== 'none' && (
+                      <Badge
+                        className={`bg-gradient-to-r ${conditionColors[product.condition_type]} text-white font-medium text-sm px-3 py-1 rounded-full shadow-md capitalize`}
+                      >
+                        {conditionLabels[product.condition_type]}
+                      </Badge>
+                    )}
                   </div>
-                  {/* <Badge className="absolute bottom-6 left-6 bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg">
-                    Shop {product.shop_category}
-                  </Badge> */}
                   <Badge
-  variant={(selectedVariant?.stock_quantity ?? 0) > 5 ? "default" : "destructive"}
-  className={`absolute bottom-6 right-6 shadow-lg ${(selectedVariant?.stock_quantity ?? 0) <= 5 ? "bg-red-500 text-white" : ""}`}
->
-  {(selectedVariant?.stock_quantity ?? 0) > 5
-    ? "In Stock"
-    : (selectedVariant?.stock_quantity ?? 0) > 0
-    ? `Only ${selectedVariant?.stock_quantity ?? 0} left`
-    : "Out of Stock"}
-</Badge>
+                    variant={(selectedVariant?.stock_quantity ?? 0) > 5 ? "default" : "destructive"}
+                    className={`absolute bottom-5 right-5 shadow-lg ${(selectedVariant?.stock_quantity ?? 0) <= 5 ? "bg-red-500 text-white" : ""}`}
+                  >
+                    {(selectedVariant?.stock_quantity ?? 0) > 5
+                      ? "In Stock"
+                      : (selectedVariant?.stock_quantity ?? 0) > 0
+                      ? `Only ${selectedVariant?.stock_quantity ?? 0} left`
+                      : "Out of Stock"}
+                  </Badge>
                 </div>
               </div>
-              {/* Thumbnail Gallery */}
               {product.image_urls.length > 0 && (
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 gap-2.5">
                   {product.image_urls.slice(0, 4).map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImageIndex(index)}
-                      className={`relative overflow-hidden rounded-xl transition-all duration-300 transform hover:scale-105 ${
-                        selectedImageIndex === index ? "ring-2 ring-orange-500 shadow-lg" : "hover:shadow-md"
+                      className={`relative overflow-hidden rounded-xl transition-all duration-300 ${
+                        selectedImageIndex === index ? "ring-2 ring-orange-500 shadow-md" : "hover:shadow-sm opacity-90 hover:opacity-100"
                       }`}
                       aria-label={`Select image ${index + 1}`}
                     >
@@ -698,7 +693,7 @@ const conditionColors = {
                         width={100}
                         height={100}
                         sizes="(max-width: 768px) 25vw, 100px"
-                        className="w-full h-20 object-cover"
+                        className="w-full h-16 sm:h-20 object-cover"
                       />
                     </button>
                   ))}
@@ -706,44 +701,57 @@ const conditionColors = {
               )}
             </div>
 
-            {/* Product Details */}
-            <div className="space-y-8">
-              {/* Title and Rating */}
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
-                      {product.name}
-                    </h1>
-                    <div className="flex items-center gap-4 flex-wrap">
-                      {reviewCount > 0 && (
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                            />
-                          ))}
-                          <span className="text-sm text-gray-600 ml-1">
-                            {averageRating.toFixed(1)} ({reviewCount} review{reviewCount > 1 ? "s" : ""})
-                          </span>
-                        </div>
-                      )}
-                      {product.is_new && (
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                        <Award className="w-3 h-3 mr-1" />
-                        Bestseller
-                      </Badge>
-                    )}
-                    </div>
-                  </div>
+            {/* Buy box */}
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight tracking-tight">
+                  {product.name}
+                </h1>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {reviewCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailTab("reviews")
+                        document.getElementById("product-details")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }}
+                      className="flex items-center gap-1 text-sm text-gray-600 hover:text-orange-600 transition-colors"
+                    >
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                        />
+                      ))}
+                      <span className="ml-1">
+                        {averageRating.toFixed(1)} ({reviewCount})
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailTab("reviews")
+                        document.getElementById("product-details")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }}
+                      className="text-sm text-gray-500 hover:text-orange-600"
+                    >
+                      Be the first to review
+                    </button>
+                  )}
+                  {product.is_new && (
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Award className="w-3 h-3 mr-1" />
+                      Bestseller
+                    </Badge>
+                  )}
                 </div>
               </div>
-                {/* Price Section */}
-              <Card className="p-6 bg-gradient-to-br from-gray-50 to-white border-0 shadow-lg rounded-2xl">
+
+              <Card className="p-5 bg-white border border-gray-100 shadow-sm rounded-2xl">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <span className="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+                  <div className="flex items-end gap-3 flex-wrap">
+                    <span className="text-3xl sm:text-4xl font-bold text-red-500">
                       {currencyAvailable && selectedVariant
                         ? formatPriceWithSmallDecimals(
                             selectedVariant.discount_aed,
@@ -755,179 +763,249 @@ const conditionColors = {
                         : `Not available in ${selectedCurrency}`}
                     </span>
                     {currencyAvailable && (
-                      <div className="flex flex-col">
-                        <span className="text-lg text-gray-400 line-through">
-                          {formatPriceWithSmallDecimals(
-                            selectedVariant?.price_aed,
-                            selectedVariant?.price_inr,
-                            selectedCurrency,
-                            true,
-                            "#6B7280"
-                          )}
-                        </span>
-                        
-                      </div>
+                      <span className="text-base text-gray-400 line-through pb-1">
+                        {formatPriceWithSmallDecimals(
+                          selectedVariant?.price_aed,
+                          selectedVariant?.price_inr,
+                          selectedCurrency,
+                          true,
+                          "#6B7280"
+                        )}
+                      </span>
                     )}
                     {discountPercent > 0 && (
-                      <div className="flex flex-col">
-                       <Badge className="bg-red-100 text-red-700 text-xs">Save {discountPercent}%</Badge>
-                      </div>
+                      <Badge className="bg-red-100 text-red-700 text-xs mb-1">Save {discountPercent}%</Badge>
                     )}
                   </div>
-                  <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Truck className="w-4 h-4 text-green-500" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Truck className="w-4 h-4 text-green-500 shrink-0" />
                       {(selectedCurrency === 'AED' ? selectedVariant?.free_delivery_aed : selectedVariant?.free_delivery_inr) ? (
-                        <span className="text-green-600 font-semibold">Free Delivery 🎉</span>
+                        <span className="text-green-600 font-semibold">Free Delivery</span>
                       ) : (
-                        <span className="text-gray-600">Doorstep Delivery</span>
+                        <span>Doorstep Delivery</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Verified className="w-4 h-4 text-blue-500" />
-                      <span className="text-gray-600">Sabs Verified</span>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Verified className="w-4 h-4 text-blue-500 shrink-0" />
+                      <span>Sabs Verified</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-  <Shield className="w-4 h-4 text-purple-500" />
-  {product.warranty_months && product.warranty_months !== "0" ? (
-    <span className="text-gray-600">{product.warranty_months} Months Warranty</span>
-  ) : (
-    <span className="text-green-600 font-medium">Quality Assured</span>
-  )}
-</div>
-
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Shield className="w-4 h-4 text-purple-500 shrink-0" />
+                      {product.warranty_months && product.warranty_months !== "0" ? (
+                        <span>{product.warranty_months} Months Warranty</span>
+                      ) : (
+                        <span className="text-green-600 font-medium">Quality Assured</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Card>
 
-              {/* Variant Selector */}
               {product.variants.length > 0 && (
-  <Card className="p-6 bg-gradient-to-br from-gray-50 to-white border-0 shadow-lg rounded-2xl">
-    <h3 className="font-bold text-lg text-gray-900 mb-4">Select Variant</h3>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {product.variants.map((variant) => {
-        const isDisabled = !hasSelectedCurrencyPrice(variant) || variant.stock_quantity === 0;
-        const isSelected = selectedVariant?.id === variant.id;
-        const isLowStock = variant.stock_quantity > 0 && variant.stock_quantity <= 5;
-        
-        return (
-          <Button
-            key={variant.id}
-            variant={isSelected ? "default" : "outline"}
-            className={`p-3.5 text-sm h-auto w-full min-w-0 whitespace-normal text-left flex flex-col items-stretch gap-1.5 overflow-hidden ${
-              isSelected
-                ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
-                : isDisabled
-                ? "border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed"
-                : "border-gray-200 hover:bg-gray-50"
-            }`}
-            onClick={() => handleVariantChange(variant)}
-            disabled={isDisabled}
-            aria-label={`Select variant ${variant.name}${isDisabled ? ' (not available)' : ''}`}
-          >
-            <span
-              className={`w-full break-words whitespace-normal leading-snug font-semibold text-[0.9rem] ${
-                isSelected ? "text-white" : isDisabled ? "text-gray-500" : "text-gray-900"
-              }`}
-            >
-              {variant.name}
-            </span>
-            <span className="w-full shrink-0">
-              {formatPriceWithSmallDecimals(
-                variant.discount_aed,
-                variant.discount_inr,
-                selectedCurrency,
-                true,
-                isSelected ? "#fff" : isDisabled ? "#9ca3af" : "#ef4444"
+                <Card className="p-5 bg-white border border-gray-100 shadow-sm rounded-2xl">
+                  <h3 className="font-semibold text-base text-gray-900 mb-3">Select Variant</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {product.variants.map((variant) => {
+                      const isDisabled = !hasSelectedCurrencyPrice(variant) || variant.stock_quantity === 0;
+                      const isSelected = selectedVariant?.id === variant.id;
+                      const isLowStock = variant.stock_quantity > 0 && variant.stock_quantity <= 5;
+
+                      return (
+                        <Button
+                          key={variant.id}
+                          variant={isSelected ? "default" : "outline"}
+                          className={`p-3 text-sm h-auto w-full min-w-0 whitespace-normal text-left flex flex-col items-stretch gap-1 overflow-hidden ${
+                            isSelected
+                              ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                              : isDisabled
+                              ? "border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed"
+                              : "border-gray-200 hover:bg-gray-50"
+                          }`}
+                          onClick={() => handleVariantChange(variant)}
+                          disabled={isDisabled}
+                          aria-label={`Select variant ${variant.name}${isDisabled ? ' (not available)' : ''}`}
+                        >
+                          <span
+                            className={`w-full break-words whitespace-normal leading-snug font-semibold ${
+                              isSelected ? "text-white" : isDisabled ? "text-gray-500" : "text-gray-900"
+                            }`}
+                          >
+                            {variant.name}
+                          </span>
+                          <span className="w-full shrink-0">
+                            {formatPriceWithSmallDecimals(
+                              variant.discount_aed,
+                              variant.discount_inr,
+                              selectedCurrency,
+                              true,
+                              isSelected ? "#fff" : isDisabled ? "#9ca3af" : "#ef4444"
+                            )}
+                          </span>
+                          {variant.stock_quantity === 0 && (
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${isSelected ? "bg-white/20 text-white" : "bg-red-50 text-red-600"}`}>
+                              Out of Stock
+                            </span>
+                          )}
+                          {!hasSelectedCurrencyPrice(variant) && variant.stock_quantity > 0 && (
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${isSelected ? "bg-white/20 text-white" : "bg-red-50 text-red-600"}`}>
+                              Not available in {selectedCurrency === 'INR' ? 'India' : 'UAE'}
+                            </span>
+                          )}
+                          {variant.stock_quantity > 0 && hasSelectedCurrencyPrice(variant) && (
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
+                              isSelected ? "bg-white/20 text-white" : isLowStock ? "bg-orange-50 text-orange-700" : "bg-green-50 text-green-700"
+                            }`}>
+                              {isLowStock ? `Only ${variant.stock_quantity} left` : `${variant.stock_quantity} in stock`}
+                            </span>
+                          )}
+                          {(selectedCurrency === 'AED' ? variant.free_delivery_aed : variant.free_delivery_inr) && (
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${isSelected ? "bg-white/20 text-white" : "bg-green-50 text-green-700"}`}>
+                              Free Delivery
+                            </span>
+                          )}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </Card>
               )}
-            </span>
-            {variant.stock_quantity === 0 && (
-              <span
-                className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full w-fit ${
-                  isSelected
-                    ? "bg-white/20 text-white"
-                    : "bg-red-50 text-red-600"
-                }`}
-              >
-                Out of Stock
-              </span>
-            )}
-            {!hasSelectedCurrencyPrice(variant) && variant.stock_quantity > 0 && (
-              <span
-                className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full w-fit ${
-                  isSelected ? "bg-white/20 text-white" : "bg-red-50 text-red-600"
-                }`}
-              >
-                Not available in {selectedCurrency === 'INR' ? 'India' : 'UAE'}
-              </span>
-            )}
-            {variant.stock_quantity > 0 && hasSelectedCurrencyPrice(variant) && (
-              <span
-                className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full w-fit ${
-                  isSelected
-                    ? "bg-white/20 text-white"
-                    : isLowStock
-                    ? "bg-orange-50 text-orange-700"
-                    : "bg-green-50 text-green-700"
-                }`}
-              >
-                {isLowStock ? `Only ${variant.stock_quantity} left` : `${variant.stock_quantity} in stock`}
-              </span>
-            )}
-            {(selectedCurrency === 'AED' ? variant.free_delivery_aed : variant.free_delivery_inr) && (
-              <span
-                className={`text-xs font-semibold mt-0.5 px-2 py-0.5 rounded-full w-fit ${
-                  isSelected ? "bg-white/20 text-white" : "bg-green-50 text-green-700"
-                }`}
-              >
-                🚚 Free Delivery
-              </span>
-            )}
-          </Button>
-        );
-      })}
-    </div>
-  </Card>
-)}
 
+              <Card className="p-4 bg-white border border-gray-100 shadow-sm rounded-2xl">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="font-semibold text-gray-900">Quantity</span>
+                  <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="rounded-lg hover:bg-white"
+                      disabled={!currencyAvailable || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0}
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <span className="px-5 py-1.5 font-bold min-w-14 text-center">{quantity}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setQuantity(Math.min(selectedVariant?.stock_quantity ?? 0, quantity + 1))}
+                      className="rounded-lg hover:bg-white"
+                      disabled={!currencyAvailable || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0}
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
 
-              {/* Product Info */}
-              <div className="space-y-6">
-                {product.description && (
-                  <Card className="p-6 border-0 shadow-lg rounded-2xl">
-                    <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-orange-500" />
-                      About Product
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">{product.description}</p>
-                  </Card>
-                )}
+              <div className="space-y-3">
+                <Button
+                  onClick={handleBuyNow}
+                  className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white py-4 text-base font-bold rounded-2xl shadow-lg disabled:opacity-50"
+                  disabled={!product.is_available || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0 || !currencyAvailable}
+                  aria-label="Buy now"
+                >
+                  <Zap className="w-5 h-5 mr-2" />
+                  {!selectedVariant || !isVariantAvailable(selectedVariant)
+                    ? (!hasSelectedCurrencyPrice(selectedVariant)
+                      ? `Not available in ${selectedCurrency === 'INR' ? 'India' : 'UAE'}`
+                      : 'Out of Stock')
+                    : "Buy Now - Quick Checkout"}
+                </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={handleAddToCart}
+                    variant="outline"
+                    className="py-3 rounded-xl border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50"
+                    disabled={!product.is_available || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0 || !currencyAvailable}
+                    aria-label="Add to cart"
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Add to Cart
+                  </Button>
+                  <Button
+                    onClick={() => handleToggleWishlist(product)}
+                    variant="outline"
+                    className={`py-3 rounded-xl ${
+                      isInWishlist(product.id)
+                        ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 border-2'
+                        : 'border-2 border-gray-200 hover:border-red-200 hover:bg-red-50'
+                    }`}
+                    aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                  >
+                    <Heart className={`w-4 h-4 mr-2 ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                    {isInWishlist(product.id) ? 'Saved' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                {/* Key Features */}
-                {product.features?.length > 0 && (
-                  <Card className="p-6 border-0 shadow-lg rounded-2xl">
-                    <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-                      <Award className="w-5 h-5 text-green-500" />
-                      Key Features
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {product.features.map((feature, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full"></div>
-                          <span className="text-sm text-gray-700">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                )}
+          {/* Full-width product details (tabs keep purchase area compact) */}
+          <section id="product-details" className="mt-12 lg:mt-16 scroll-mt-28">
+            <div className="border-b border-gray-200 mb-6 overflow-x-auto">
+              <div className="flex gap-1 min-w-max" role="tablist" aria-label="Product details">
+                {[
+                  { id: "about" as const, label: "About", show: Boolean(product.description) },
+                  { id: "features" as const, label: "Features", show: Boolean(product.features?.length) },
+                  { id: "specs" as const, label: "Specifications", show: true },
+                  { id: "reviews" as const, label: `Reviews${reviewCount ? ` (${reviewCount})` : ""}`, show: true },
+                ].filter((t) => t.show).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={detailTab === tab.id}
+                    onClick={() => setDetailTab(tab.id)}
+                    className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                      detailTab === tab.id
+                        ? "border-orange-500 text-orange-600"
+                        : "border-transparent text-gray-500 hover:text-gray-800"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                {/* Specifications */}
-                <Card className="p-6 border-0 shadow-lg rounded-2xl">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-8">
+              {detailTab === "about" && product.description && (
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-orange-500" />
+                    About Product
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
+                </div>
+              )}
+
+              {detailTab === "features" && product.features?.length > 0 && (
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-green-500" />
+                    Key Features
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {product.features.map((feature, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div className="w-2 h-2 mt-1.5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shrink-0" />
+                        <span className="text-sm text-gray-700">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {detailTab === "specs" && (
+                <div>
                   <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
                     <Globe className="w-5 h-5 text-blue-500" />
                     Specifications
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {[
                       ...(product.brand ? [{ label: "Brand", value: product.brand }] : []),
                       ...(product.model ? [{ label: "Model", value: product.model }] : []),
@@ -938,25 +1016,32 @@ const conditionColors = {
                       {
                         label: "Available in",
                         value: selectedVariant
-                            ? selectedVariant.available_aed ? 'UAE' : '' + (selectedVariant.available_inr ? 'India' : '') : 'N/A'
+                          ? [selectedVariant.available_aed ? 'UAE' : null, selectedVariant.available_inr ? 'India' : null].filter(Boolean).join(' / ') || 'N/A'
+                          : 'N/A'
                       },
                       ...(product.warranty_months && product.warranty_months !== "0"
                         ? [{ label: "Warranty", value: `${product.warranty_months} months` }]
                         : []),
                       { label: "Stock", value: `${selectedVariant?.stock_quantity ?? 0} available` },
-                      // ...(product.sku ? [{ label: "SKU", value: product.sku }] : [])
                     ].map((spec, index) => (
-                      <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-500 font-medium">{spec.label}:</span>
-                        <span className={`text-sm font-semibold ${spec.label === 'Stock' ? 'text-green-600' : 'text-gray-900'}`}>
+                      <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl gap-3">
+                        <span className="text-sm text-gray-500 font-medium">{spec.label}</span>
+                        <span className={`text-sm font-semibold text-right ${spec.label === 'Stock' ? 'text-green-600' : 'text-gray-900'}`}>
                           {spec.value}
                         </span>
                       </div>
                     ))}
                   </div>
-                </Card>
+                  {product.specifications_text && (
+                    <p className="mt-5 text-sm text-gray-600 leading-relaxed whitespace-pre-line border-t border-gray-100 pt-5">
+                      {product.specifications_text}
+                    </p>
+                  )}
+                </div>
+              )}
 
-                <Card className="p-6 border-0 shadow-lg rounded-2xl">
+              {detailTab === "reviews" && (
+                <div>
                   <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
                     <MessageSquare className="w-5 h-5 text-yellow-500" />
                     Reviews & Ratings
@@ -966,7 +1051,7 @@ const conditionColors = {
                     <p className="text-sm text-gray-500">Loading reviews...</p>
                   ) : (
                     <>
-                      <div className="flex items-center gap-3 mb-4">
+                      <div className="flex items-center gap-3 mb-5">
                         <div className="flex items-center gap-1">
                           {[...Array(5)].map((_, i) => (
                             <Star
@@ -982,7 +1067,7 @@ const conditionColors = {
                         </p>
                       </div>
 
-                      <div className="border rounded-xl p-4 bg-gray-50 mb-4">
+                      <div className="border rounded-xl p-4 bg-gray-50 mb-5">
                         <p className="text-sm font-semibold text-gray-800 mb-2">
                           {userReview ? "Update your review" : "Write a review"}
                         </p>
@@ -1040,9 +1125,9 @@ const conditionColors = {
                         )}
                       </div>
 
-                      <div className="space-y-3">
-                        {reviews.slice(0, 5).map((review) => (
-                          <div key={review.id} className="border rounded-xl p-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {reviews.slice(0, 6).map((review) => (
+                          <div key={review.id} className="border rounded-xl p-3 bg-gray-50/50">
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <p className="font-medium text-sm text-gray-900">
                                 {review.customer_name || review.user_email || "Customer"}
@@ -1067,87 +1152,15 @@ const conditionColors = {
                           </div>
                         ))}
                         {reviews.length === 0 && (
-                          <p className="text-sm text-gray-500">Be the first to review this product.</p>
+                          <p className="text-sm text-gray-500 md:col-span-2">Be the first to review this product.</p>
                         )}
                       </div>
                     </>
                   )}
-                </Card>
-              </div>
-
-              {/* Quantity Selector */}
-              <Card className="p-6 border-0 shadow-lg rounded-2xl">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-lg">Quantity:</span>
-                  <div className="flex items-center bg-gray-100 rounded-xl p-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="rounded-lg hover:bg-white transition-colors"
-                      disabled={!currencyAvailable || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0}
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                    <span className="px-6 py-2 font-bold text-lg min-w-16 text-center">{quantity}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setQuantity(Math.min(selectedVariant?.stock_quantity ?? 0, quantity + 1))}
-                      className="rounded-lg hover:bg-white transition-colors"
-                      disabled={!currencyAvailable || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0}
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
                 </div>
-              </Card>
-
-              {/* Action Buttons */}
-              <div className="space-y-4 bottom-4 z-10">
-                <Button
-                  onClick={handleBuyNow}
-                  className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white py-4 text-lg font-bold rounded-2xl shadow-2xl transform transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:transform-none"
-                  disabled={!product.is_available || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0 || !currencyAvailable}
-                  aria-label="Buy now"
-                >
-                  <Zap className="w-5 h-5 mr-2" />
-                  {!selectedVariant || !isVariantAvailable(selectedVariant) ? 
-                    (!hasSelectedCurrencyPrice(selectedVariant) ? 
-                      `Not available in ${selectedCurrency === 'INR' ? 'India' : 'UAE'}` : 
-                      'Out of Stock') : 
-                    "Buy Now - Quick Checkout"}
-                </Button>
-                <div className="grid grid-cols-2 gap-4">
-                  <Button
-                    onClick={handleAddToCart}
-                    variant="outline"
-                    className="py-3 rounded-xl border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 transform hover:scale-105 active:scale-95"
-                    disabled={!product.is_available || !selectedVariant || (selectedVariant?.stock_quantity ?? 0) === 0 || !currencyAvailable}
-                    aria-label="Add to cart"
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart
-                  </Button>
-                  <Button
-                    onClick={() => handleToggleWishlist(product)}
-                    variant="outline"
-                    className={`py-3 rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                      isInWishlist(product.id)
-                        ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 border-2'
-                        : 'border-2 border-gray-200 hover:border-red-200 hover:bg-red-50'
-                    }`}
-                    aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                  >
-                    <Heart className={`w-4 h-4 mr-2 ${isInWishlist(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                    {isInWishlist(product.id) ? 'Saved' : 'Save'}
-                  </Button>
-                </div>
-              </div>
+              )}
             </div>
-          </div>
+          </section>
         </div>
       </div>
 
