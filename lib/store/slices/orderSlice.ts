@@ -1,6 +1,7 @@
 // @/lib/store/slices/orderSlice.ts
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import type { MenuItem, Variant, CartItem as CartItemType } from "@/lib/database"
+import { clearGuestCart, loadGuestCart, mergeCartItems } from "@/lib/utils/guest-cart"
 
 interface CartItem {
   menuItem: MenuItem
@@ -188,6 +189,58 @@ const calculateTotal = (cart: CartItem[], selectedCurrency: string) => {
     }, 0)
 }
 
+/** Merge guest/local cart with server cart on login, then persist to API. */
+export const syncCartAfterLogin = createAsyncThunk(
+  'cart/syncAfterLogin',
+  async (
+    { userId, selectedCurrency }: { userId: string; selectedCurrency: string },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const state = getState() as { order: OrderState }
+      const reduxCart = (state.order.cart || []) as CartItem[]
+      const storedGuest = loadGuestCart() as CartItem[]
+      // Prefer live Redux cart; fall back to localStorage (page refresh / OAuth return)
+      const localCart = (reduxCart.length > 0 ? reduxCart : storedGuest) as CartItem[]
+
+      const response = await fetch(`/api/cart?userId=${userId}&currency=${selectedCurrency}`, {
+        credentials: 'include',
+      })
+
+      let serverCart: CartItem[] = []
+      if (response.ok) {
+        const data = await response.json()
+        serverCart = Array.isArray(data.cart) ? data.cart : []
+      } else if (response.status !== 401) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const merged = mergeCartItems(localCart, serverCart) as CartItem[]
+      const total = calculateTotal(merged, selectedCurrency)
+
+      if (merged.length > 0) {
+        const saveRes = await fetch('/api/cart', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, cart: merged, selectedCurrency }),
+        })
+        if (!saveRes.ok) {
+          const errorData = await saveRes.json().catch(() => ({}))
+          console.error('Failed to save merged cart:', errorData)
+        }
+      }
+
+      clearGuestCart()
+      return { cart: merged, total }
+    } catch (error) {
+      console.error('Sync cart after login failed:', error)
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to sync cart')
+    }
+  }
+)
+
 export const submitOrder = createAsyncThunk(
   "order/submit", 
   async (orderData: any, { rejectWithValue }) => {
@@ -292,9 +345,19 @@ const orderSlice = createSlice({
       state.customerInfo = { ...state.customerInfo, ...info }
     },
     
-    clearCart: (state, action: PayloadAction<{ userId?: string | number }>) => {
+    clearCart: (state, action: PayloadAction<{ userId?: string | number } | undefined>) => {
       state.cart = []
       state.total = 0
+      state.error = null
+      clearGuestCart()
+    },
+
+    hydrateGuestCart: (state, action: PayloadAction<string | undefined>) => {
+      if (state.cart.length > 0) return
+      const guest = loadGuestCart() as CartItem[]
+      if (guest.length === 0) return
+      state.cart = guest
+      state.total = calculateTotal(guest, action.payload || 'AED')
       state.error = null
     },
     
@@ -320,6 +383,22 @@ const orderSlice = createSlice({
         state.error = null
       })
       .addCase(fetchCartFromAPI.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+
+    builder
+      .addCase(syncCartAfterLogin.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(syncCartAfterLogin.fulfilled, (state, action) => {
+        state.loading = false
+        state.cart = action.payload.cart || []
+        state.total = action.payload.total || 0
+        state.error = null
+      })
+      .addCase(syncCartAfterLogin.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
       })
@@ -387,6 +466,7 @@ export const {
   setOrderType, 
   setCustomerInfo, 
   clearCart,
+  hydrateGuestCart,
   removeInvalidCurrencyItems,
 } = orderSlice.actions
 

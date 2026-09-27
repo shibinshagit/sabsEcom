@@ -1,81 +1,98 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Twitter, Heart, Zap, Sparkles, Cpu } from "lucide-react"
+import { MapPin, Phone, Mail, Facebook, Instagram, Twitter } from "lucide-react"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useShop } from "@/lib/contexts/shop-context"
 import Image from "next/image"
+
+const FOOTER_BG_DESKTOP = [
+  "/images/footer/footer-1.png",
+  "/images/footer/footer-2.png",
+]
+
+const FOOTER_BG_MOBILE = [
+  "/images/footer/mobile-footer1.png",
+  "/images/footer/mobile-footer2.png",
+]
+
+const ROTATE_MS = 7000
 
 export default function Footer() {
   const { settings } = useSettings()
   const { shop } = useShop()
   const [currentYear] = useState(new Date().getFullYear())
+  const [bgIndex, setBgIndex] = useState(0)
 
-  const theme =
-    shop === "A"
-      ? {
-          // Beauty Theme - Warm colors
-          bg: "bg-gradient-to-br from-pink-400 via-orange-400 to-pink-500",
-          text: "text-white",
-          accent: "text-pink-100",
-          hover: "hover:text-pink-200",
-          logo: "bg-gradient-to-r from-pink-500 to-orange-600",
-          border: "border-pink-300/30",
-          icon: Heart,
-          socialHover: "hover:text-pink-200 hover:scale-110",
-          description:
-            "Sabs Online Store story began in 2015 in Dubai. we have created a niche for our customers with our high-quality products and our attention to detail in service.",
-          shopName: "SABS ONLINE",
-          category: "Beauty & Cosmetics",
-        }
-      : {
-          // Tech Theme - Cool colors
-          bg: "bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700",
-          text: "text-white",
-          accent: "text-blue-100",
-          hover: "hover:text-blue-200",
-          logo: "bg-gradient-to-r from-purple-500 to-blue-600",
-          border: "border-blue-300/30",
-          icon: Cpu,
-          socialHover: "hover:text-blue-200 hover:scale-110",
-          description:
-            "Sabs Online Store story began in 2015 in Dubai. we have created a niche for our customers with our high-quality products and our attention to detail in service.",
-          shopName: "SABS ONLINE",
-          category: "Fashion & Accessories",
-        }
+  useEffect(() => {
+    const len = Math.max(FOOTER_BG_DESKTOP.length, FOOTER_BG_MOBILE.length)
+    if (len < 2) return
+    const id = window.setInterval(() => {
+      setBgIndex((i) => (i + 1) % len)
+    }, ROTATE_MS)
+    return () => window.clearInterval(id)
+  }, [])
 
-  const IconComponent = theme.icon
+  const category = shop === "A" ? "Beauty & Cosmetics" : "Fashion & Accessories"
 
   return (
-    <footer id="contact" className={`${theme.bg} ${theme.text} relative overflow-hidden transition-all duration-500`}>
-      {/* Floating background elements */}
-      {/* <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className={`absolute w-2 h-2 rounded-full animate-float opacity-30 ${
-              shop === "A"
-                ? "bg-gradient-to-r from-pink-300/20 to-orange-300/20"
-                : "bg-gradient-to-r from-blue-300/20 to-purple-300/20"
-            }`}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${5 + Math.random() * 5}s`,
-            }}
-          />
-        ))}
-      </div> */}
+    <footer id="contact" className="relative overflow-hidden text-neutral-200">
+      {/* Full-bleed rotating background — portrait on small screens, landscape on md+ */}
+      <div className="absolute inset-0" aria-hidden="true">
+        {/* Mobile / small screens */}
+        <div className="absolute inset-0 md:hidden">
+          {FOOTER_BG_MOBILE.map((src, i) => (
+            <div
+              key={src}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                i === bgIndex % FOOTER_BG_MOBILE.length ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="100vw"
+                className="object-cover object-center"
+                priority={i === 0}
+              />
+            </div>
+          ))}
+        </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-20 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {/* Restaurant Info */}
-          <div className="space-y-6 lg:col-span-2">
-            <div className="flex items-center space-x-4 mb-6">
+        {/* Tablet / desktop */}
+        <div className="absolute inset-0 hidden md:block">
+          {FOOTER_BG_DESKTOP.map((src, i) => (
+            <div
+              key={src}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                i === bgIndex % FOOTER_BG_DESKTOP.length ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="100vw"
+                className="object-cover object-center"
+                priority={i === 0}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Readability overlay — stronger over text area */}
+        <div className="absolute inset-0 bg-black/50 md:bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/65 md:bg-gradient-to-r md:from-black/75 md:via-black/40 md:to-black/20" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-14 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
+          <div className="lg:col-span-5 space-y-5">
+            <div className="flex items-center gap-3">
               {settings.restaurant_logo ? (
-                <div className="relative w-12 h-12">
+                <div className="relative w-11 h-11 shrink-0">
                   <Image
                     src={settings.restaurant_logo || "/placeholder.svg"}
                     alt="SABS ONLINE"
@@ -83,141 +100,117 @@ export default function Footer() {
                     className="object-contain"
                   />
                 </div>
-              ) : (
-                <div
-                  className={`w-12 h-12 ${theme.logo} rounded-xl flex items-center justify-center shadow-lg transition-all duration-500`}
-                >
-                  <IconComponent className="w-6 h-6 text-white" />
-                </div>
-              )}
+              ) : null}
               <div>
-                <h3
-                  className={`${shop === "A" ? "font-serif" : "font-mono"} text-3xl font-bold ${theme.text} transition-all duration-500`}
-                >
-                  {settings.restaurant_name}
+                <h3 className="text-xl font-semibold tracking-tight text-white drop-shadow-sm">
+                  {settings.restaurant_name || "Sabs Online Store"}
                 </h3>
-                <p
-                  className={`${theme.accent} text-lg ${shop === "A" ? "font-script" : "font-mono"} transition-all duration-500`}
-                >
-                  {theme.category}
-                </p>
+                <p className="text-sm text-white/70 mt-0.5">{category}</p>
               </div>
             </div>
-
-            <p className={`${theme.text} leading-relaxed text-lg max-w-md transition-all duration-500`}>
-              {theme.description}
+            <p className="text-sm leading-relaxed text-white/80 max-w-md">
+              Sabs Online Store story began in 2015 in Dubai. We have created a niche for our
+              customers with our high-quality products and our attention to detail in service.
             </p>
-
-            <div className="flex space-x-6">
-              <a href="#" className={`${theme.text} ${theme.socialHover} transition-all duration-300`}>
-                <Facebook className="w-6 h-6" />
+            <div className="flex items-center gap-4 pt-1">
+              <a href="#" aria-label="Facebook" className="text-white/70 hover:text-white transition-colors">
+                <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" className={`${theme.text} ${theme.socialHover} transition-all duration-300`}>
-                <Instagram className="w-6 h-6" />
+              <a href="#" aria-label="Instagram" className="text-white/70 hover:text-white transition-colors">
+                <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" className={`${theme.text} ${theme.socialHover} transition-all duration-300`}>
-                <Twitter className="w-6 h-6" />
+              <a href="#" aria-label="Twitter" className="text-white/70 hover:text-white transition-colors">
+                <Twitter className="w-5 h-5" />
               </a>
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="space-y-6">
-            <h4 className={`font-bold text-xl ${theme.accent} flex items-center transition-all duration-500`}>
-              {/* {shop === "A" ? <Sparkles className="w-5 h-5 mr-2" /> : <Zap className="w-5 h-5 mr-2" />} */}
+          <div className="lg:col-span-2 space-y-4">
+            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
               Legal
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-2.5 text-sm">
               <li>
-                <Link href="/shipping-policy" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
+                <Link href="/shipping-policy" className="text-white/85 hover:text-white transition-colors">
                   Shipping Policy
                 </Link>
               </li>
               <li>
-                <Link href="/return-refund-policy" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
-                  Return & Refund Policy
+                <Link href="/return-refund-policy" className="text-white/85 hover:text-white transition-colors">
+                  Return & Refund
                 </Link>
               </li>
               <li>
-                <Link href="/cancellation-policy" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
-                  Cancellation Policy
+                <Link href="/cancellation-policy" className="text-white/85 hover:text-white transition-colors">
+                  Cancellation
                 </Link>
               </li>
               <li>
-                <Link href="/privacy-policy" className={`${theme.text} ${theme.hover} transition-colors text-lg`}>
+                <Link href="/privacy-policy" className="text-white/85 hover:text-white transition-colors">
                   Privacy Policy
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Contact Info */}
-          <div className="space-y-6">
-            <h4 className={`font-bold text-xl ${theme.accent} flex items-center transition-all duration-500`}>
-              <IconComponent className="w-5 h-5 mr-2" />
-              Contact Info
+          <div className="lg:col-span-3 space-y-4">
+            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
+              Contact
             </h4>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-4">
-                <MapPin className={`w-6 h-6 ${theme.accent} mt-1 flex-shrink-0`} />
-                <div>
-                  <p className={`${theme.text} text-lg`}>23/384/A62 Prince Tower</p>
-                  <p className={`${theme.text} text-lg`}>Near KNH Hospital</p>
-                  <p className={`${theme.text} text-lg`}>Railway Station Road Uppala</p>
-                  <p className={`${theme.text} text-lg`}>Kasaragod, India</p>
-                </div>
+            <div className="space-y-3 text-sm text-white/85">
+              <div className="flex gap-3">
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-white/55" />
+                <p className="leading-relaxed">
+                  23/384/A62 Prince Tower, Near KNH Hospital,
+                  <br />
+                  Railway Station Road Uppala, Kasaragod, India
+                </p>
               </div>
-              <div className="flex items-center space-x-4">
-                <Phone className={`w-6 h-6 ${theme.accent} flex-shrink-0`} />
-                <p className={`${theme.text} text-lg`}>+91 {settings.phone}</p>
+              <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 shrink-0 text-white/55" />
+                <a href={`tel:+91${settings.phone}`} className="hover:text-white transition-colors">
+                  +91 {settings.phone}
+                </a>
               </div>
-              <div className="flex items-center space-x-4">
-                <Mail className={`w-6 h-6 ${theme.accent} flex-shrink-0`} />
-                <p className={`${theme.text} text-lg`}>sabsonlinestore@gmail.com</p>
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 shrink-0 text-white/55" />
+                <a href="mailto:sabsonlinestore@gmail.com" className="hover:text-white transition-colors break-all">
+                  sabsonlinestore@gmail.com
+                </a>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Opening Hours - Full Width */}
-        <div className={`mt-16 pt-12 border-t ${theme.border} border-opacity-20`}>
-          <div className="text-center">
-            <h4
-              className={`font-bold text-2xl ${theme.accent} mb-8 flex items-center justify-center transition-all duration-500`}
-            >
-       Contact & Opening Hours
+          <div className="lg:col-span-2 space-y-4">
+            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
+              Hours
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-              <div className={`${theme.text} text-center`}>
-                <p className="font-semibold text-lg mb-2">Monday - Thursday</p>
-                <p className="text-lg">10:00 AM - 6:00 PM</p>
-              </div>
-              <div className={`${theme.text} text-center`}>
-                <p className="font-semibold text-lg mb-2">Friday - Saturday</p>
-                <p className="text-lg">10:00 AM - 1:00 PM</p>
-              </div>
-              <div className={`${theme.text} text-center`}>
-                <p className="font-semibold text-lg mb-2">Sunday</p>
-                <p className="text-lg">10:00 AM - 12:00 PM</p>
-              </div>
-            </div>
+            <ul className="space-y-2.5 text-sm text-white/85">
+              <li>
+                <p className="text-white/55 text-xs mb-0.5">Mon – Thu</p>
+                <p>10:00 AM – 6:00 PM</p>
+              </li>
+              <li>
+                <p className="text-white/55 text-xs mb-0.5">Fri – Sat</p>
+                <p>10:00 AM – 1:00 PM</p>
+              </li>
+              <li>
+                <p className="text-white/55 text-xs mb-0.5">Sunday</p>
+                <p>10:00 AM – 12:00 PM</p>
+              </li>
+            </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className={`border-t ${theme.border} border-opacity-20 mt-16 pt-12`}>
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className={`${theme.text} text-lg flex items-center transition-all duration-500`}>
-              <IconComponent className="w-5 h-5 mr-2" />© {currentYear} {theme.shopName}. All rights reserved.
-            </p>
-            <div className="flex space-x-8 mt-6 md:mt-0">
-              <Link href="/privacy-policy" className={`${theme.text} ${theme.hover} text-lg transition-colors`}>
-                Privacy Policy
-              </Link>
-              <Link href="/terms-of-service" className={`${theme.text} ${theme.hover} text-lg transition-colors`}>
-                Terms of Service
-              </Link>
-            </div>
+        <div className="mt-12 pt-6 border-t border-white/15 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs text-white/55">
+          <p>© {currentYear} SABS ONLINE. All rights reserved.</p>
+          <div className="flex gap-6">
+            <Link href="/privacy-policy" className="hover:text-white/80 transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/terms-of-service" className="hover:text-white/80 transition-colors">
+              Terms of Service
+            </Link>
           </div>
         </div>
       </div>

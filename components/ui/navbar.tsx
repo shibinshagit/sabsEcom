@@ -630,31 +630,27 @@ function Nav() {
                         key="all-products"
                         href="/products"
                         onClick={(e) => handleNavClick(baseNavigation[0], e)}
-                        className={`hidden lg:flex items-center rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+                        className={`hidden lg:flex items-center px-3 py-2 text-sm font-medium tracking-wide transition-colors whitespace-nowrap flex-shrink-0 border-b-2 ${
                           pathname === '/products' && !searchParams.get('category')
-                            ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
-                            : "text-white hover:bg-white/20"
+                            ? "text-white border-white"
+                            : "text-white/90 border-transparent hover:text-white hover:border-white/50"
                         }`}
                       >
                         All Products
-                        <span className="ml-1 text-xs opacity-70">▼</span>
+                        <span className="ml-1.5 text-[10px] opacity-70">▼</span>
                       </Link>
-                      <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 shadow-xl rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                        <div className="p-3">
-                          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+                      <div className="absolute top-full left-0 mt-1 w-60 bg-white border border-neutral-200 shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                        <div className="p-2">
+                          <div className="px-2.5 py-2 text-[11px] font-semibold text-neutral-400 uppercase tracking-[0.12em]">
                             {shop === "A" ? "Beauty Categories" : shop === "B" ? "Style Categories" : "Categories"}
                           </div>
                           {categories.length > 0 ? (
-                            <div className="space-y-1 max-h-80 overflow-y-auto">
+                            <div className="space-y-0.5 max-h-80 overflow-y-auto">
                               {categories.map((category) => (
                                 <Link
                                   key={category.id}
                                   href={`/products?category=${category.slug || category.id}`}
-                                  className={`block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors ${
-                                    category.is_special 
-                                      ? `border-l-2 ${shop === "A" ? "border-orange-500 hover:bg-orange-100" : "border-purple-400 hover:bg-purple-50"}` 
-                                      : ""
-                                  }`}
+                                  className="flex items-center justify-between px-2.5 py-2 text-sm text-neutral-700 hover:bg-neutral-50 rounded-md transition-colors"
                                   onClick={(e) => {
                                     const item = {
                                       name: category.name,
@@ -665,24 +661,24 @@ function Nav() {
                                     handleNavClick(item, e)
                                   }}
                                 >
-                                  <div className="flex items-center justify-between">
-                                    <span>{category.name}</span>
-                                    {category.is_special && (
-                                      <span className={`text-xs ${shop === "A" ? "text-orange-500" : "text-purple-600"}`}>✨</span>
-                                    )}
-                                  </div>
+                                  <span>{category.name}</span>
+                                  {category.is_special && (
+                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide">
+                                      Featured
+                                    </span>
+                                  )}
                                 </Link>
                               ))}
                             </div>
                           ) : (
-                            <div className="px-3 py-4 text-sm text-gray-400 text-center">
+                            <div className="px-3 py-4 text-sm text-neutral-400 text-center">
                               No categories available
                             </div>
                           )}
-                          <div className="border-t border-gray-100 mt-3 pt-3">
+                          <div className="border-t border-neutral-100 mt-2 pt-2">
                             <Link
                               href="/products"
-                              className="block px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                              className="block px-2.5 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-md transition-colors"
                               onClick={(e) => handleNavClick(baseNavigation[0], e)}
                             >
                               View All Products
@@ -731,25 +727,17 @@ function Nav() {
                             key={category.id}
                             href={item.href}
                             onClick={(e) => handleNavClick(item, e)}
-                            className={`rounded-full px-6 py-2 font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 relative ${
+                            className={`px-3 py-2 text-sm font-medium tracking-wide transition-colors whitespace-nowrap flex-shrink-0 border-b-2 ${
                               isActiveCategoryLink(item)
-                                ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"} shadow-lg`
-                                : "text-white hover:bg-white/20"
-                            } ${
-                              category.is_special 
-                                ? `border-2 ${shop === "A" ? "border-orange-500 shadow-orange-500/40" : "border-purple-400 shadow-purple-400/30"} shadow-lg` 
-                                : ""
+                                ? "text-white border-white"
+                                : "text-white/90 border-transparent hover:text-white hover:border-white/50"
                             }`}
                           >
-                            <span className="flex items-center gap-2">
+                            <span className="flex items-center gap-1.5">
                               {category.name}
                               {category.is_special && (
-                                <span className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full font-bold ${
-                                  shop === "A" 
-                                    ? "bg-orange-500 text-white" 
-                                    : "bg-purple-400 text-purple-900"
-                                }`}>
-                                  ✨
+                                <span className="text-[10px] font-semibold uppercase tracking-wide text-white/70">
+                                  New
                                 </span>
                               )}
                             </span>
@@ -1084,19 +1072,16 @@ function Nav() {
                       key={item.name}
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
-                        : "text-white hover:bg-white/20"
-                        }`}
+                      className={`px-2.5 py-1.5 text-xs font-medium tracking-wide whitespace-nowrap border-b-2 ${
+                        isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                          ? "text-white border-white"
+                          : "text-white/90 border-transparent"
+                      }`}
                     >
-                      <span className={`flex items-center gap-1 ${
-                        isSpecial 
-                          ? `animate-pulse font-bold ${shop === "A" ? "drop-shadow-[0_0_8px_rgba(251,146,60,0.8)]" : "drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"}` 
-                          : ""
-                      }`}>
+                      <span className="flex items-center gap-1">
                         {item.name}
                         {isSpecial && (
-                          <span className="text-yellow-300 animate-pulse drop-shadow-[0_0_4px_rgba(253,224,71,0.8)]">✨</span>
+                          <span className="text-[9px] font-semibold uppercase tracking-wide text-white/70">New</span>
                         )}
                       </span>
                     </Link>
@@ -1206,19 +1191,16 @@ function Nav() {
                       key={item.name}
                       href={item.href}
                       onClick={(e) => handleNavClick(item, e)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
-                        ? `bg-white ${shop === "A" ? "text-orange-600" : "text-purple-600"}`
-                        : "text-white hover:bg-white/20"
-                        }`}
+                      className={`px-2.5 py-1.5 text-xs font-medium tracking-wide whitespace-nowrap border-b-2 ${
+                        isActiveCategoryLink(item) || ((item as any).scroll && pathname === "/" && item.href.includes("#"))
+                          ? "text-white border-white"
+                          : "text-white/90 border-transparent"
+                      }`}
                     >
-                      <span className={`flex items-center gap-1 ${
-                        isSpecial 
-                          ? `animate-pulse font-bold ${shop === "A" ? "drop-shadow-[0_0_8px_rgba(251,146,60,0.8)]" : "drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"}` 
-                          : ""
-                      }`}>
+                      <span className="flex items-center gap-1">
                         {item.name}
                         {isSpecial && (
-                          <span className="text-yellow-300 animate-pulse drop-shadow-[0_0_4px_rgba(253,224,71,0.8)]">✨</span>
+                          <span className="text-[9px] font-semibold uppercase tracking-wide text-white/70">New</span>
                         )}
                       </span>
                     </Link>
@@ -1246,10 +1228,10 @@ function Nav() {
                           handleNavClick(baseNavigation[0], e)
                           setIsOpen(false)
                         }}
-                        className={`block px-4 py-3 text-base font-semibold transition-colors rounded-lg border-2 ${
+                        className={`block px-4 py-3 text-sm font-semibold transition-colors rounded-md ${
                           pathname === '/products' && !searchParams.get('category')
-                            ? `${shop === "A" ? "text-orange-600 bg-orange-50 border-orange-200" : "text-purple-600 bg-purple-50 border-purple-200"}`
-                            : `text-gray-700 hover:bg-gray-50 border-gray-200`
+                            ? "text-neutral-900 bg-neutral-100"
+                            : "text-neutral-700 hover:bg-neutral-50"
                         }`}
                       >
                         All Products
@@ -1258,10 +1240,10 @@ function Nav() {
                        {/* Categories Section */}
                        {categories.length > 0 && (
                          <>
-                           <div className="px-3 py-2 mt-6 text-xs font-medium text-gray-500 uppercase tracking-wider border-t border-gray-200 pt-4">
+                           <div className="px-3 py-2 mt-4 text-[11px] font-semibold text-neutral-400 uppercase tracking-[0.12em] border-t border-neutral-200 pt-4">
                              {shop === "A" ? "Beauty Categories" : shop === "B" ? "Style Categories" : "Categories"}
                            </div>
-                          <div className="space-y-1 pb-4">
+                          <div className="space-y-0.5 pb-4">
                             {categories.map((category) => {
                               const item = {
                                 name: category.name,
@@ -1277,41 +1259,17 @@ function Nav() {
                                     handleNavClick(item, e)
                                     setIsOpen(false)
                                   }}
-                                  className={`block px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg relative overflow-hidden ${
+                                  className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors rounded-md ${
                                     isActiveCategoryLink(item)
-                                      ? `${shop === "A" ? "text-orange-600 bg-orange-50" : "text-purple-600 bg-purple-50"}`
-                                      : `text-gray-600 hover:bg-gray-50`
-                                  } ${
-                                    category.is_special 
-                                      ? `border-l-4 ${shop === "A" ? "border-orange-500 bg-gradient-to-r from-orange-100/70 to-amber-50/50" : "border-purple-400 bg-gradient-to-r from-purple-50/50 to-pink-50/30"} shadow-md` 
-                                      : ""
+                                      ? "text-neutral-900 bg-neutral-100 font-medium"
+                                      : "text-neutral-600 hover:bg-neutral-50"
                                   }`}
                                 >
+                                  <span>{category.name}</span>
                                   {category.is_special && (
-                                    <div className={`absolute inset-0 bg-gradient-to-r ${
-                                      shop === "A" 
-                                        ? "from-orange-200/20 via-amber-200/30 to-yellow-200/20" 
-                                        : "from-purple-200/20 via-pink-200/30 to-indigo-200/20"
-                                    } animate-pulse`}></div>
-                                  )}
-                                  <div className="flex items-center justify-between relative z-10">
-                                    <span className={category.is_special ? "font-semibold" : ""}>{category.name}</span>
-                                    {category.is_special && (
-                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse ${
-                                        shop === "A" 
-                                          ? "bg-gradient-to-r from-orange-400 to-amber-500 text-white" 
-                                          : "bg-gradient-to-r from-purple-400 to-pink-500 text-white"
-                                      }`}>
-                                        ✨ Special
-                                      </span>
-                                    )}
-                                  </div>
-                                  {category.is_special && (
-                                    <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${
-                                      shop === "A" 
-                                        ? "from-transparent via-orange-400 to-transparent" 
-                                        : "from-transparent via-purple-400 to-transparent"
-                                    } animate-pulse`}></div>
+                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide">
+                                      Featured
+                                    </span>
                                   )}
                                 </Link>
                               )
