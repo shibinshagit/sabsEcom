@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, ChevronRight, Zap, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart, Loader2 } from "lucide-react"
+import { Star, ChevronRight, TrendingUp, Grid3X3, List, SlidersHorizontal, Tag, Heart, ChevronDown, ShoppingCart, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -474,7 +474,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     return `Shop ${shop} - ${category?.name || "Products"} (${selectedCurrency})`
   }
 
-  const lightningDeals = filteredItems.filter((item) => item.is_featured).slice(0, 4)
+  const trendingNow = filteredItems.filter((item) => item.is_featured).slice(0, 4)
   const clearanceDeals = filteredItems.filter((item) => {
     if (selectedCurrency === 'AED' && item.price_aed) {
       return item.price_aed < 50
@@ -541,7 +541,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
         <div className="hidden lg:block px-6 mt-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* <h3 className="text-xl font-bold text-gray-900">{`Lightning deals in ${getCurrentCategoryName() === 'shop A' ? 'Beauty' : 'Accessories'}`}</h3> */}
+              {/* <h3 className="text-xl font-bold text-gray-900">{`Trending now in ${getCurrentCategoryName() === 'shop A' ? 'Beauty' : 'Accessories'}`}</h3> */}
             
               {currencyFilteredItems.length !== shopFilteredItems.length && (
                 <Badge variant="outline" className="text-orange-600 border-orange-300">
@@ -552,24 +552,23 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
           </div>
         </div>
 
-        {/* Lightning Deals Section - Only show when not searching */}
-    {lightningDeals.length > 0 && !isSearchActive && (
+        {/* Trending now — featured products (only when not searching) */}
+    {trendingNow.length > 0 && !isSearchActive && (
       <div className="px-4 lg:px-6 mt-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-orange-600" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-neutral-900 flex items-center justify-center shadow-sm">
+                <TrendingUp className="w-4 h-4 text-white stroke-[2.25]" aria-hidden />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Lightning deals</h3>
-              <span className="text-gray-500">({lightningDeals.length} items)</span>
+              <h3 className="text-xl font-bold text-gray-900">Trending now</h3>
+              <span className="text-gray-500">({trendingNow.length} items)</span>
             </div>
-            <ChevronDown className="w-5 h-5 text-gray-400" />
           </div>
 
           <div className="relative">
             <div className="flex gap-3 lg:gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {lightningDeals.map((item, index) => {
+              {trendingNow.map((item, index) => {
                 const availableVariant =
                   item.variants?.find((v: any) => v.available_aed || v.available_inr) || item.variants?.[0]
 

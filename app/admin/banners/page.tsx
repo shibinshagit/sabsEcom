@@ -40,6 +40,7 @@ interface Banner {
   background_image_url: string
   auto_disappear_seconds: number
   redisplay_after_minutes: number
+  placement: "popup" | "home_hero"
   display_pages: string[]
   is_active: boolean
   start_date: string | null
@@ -132,6 +133,7 @@ export default function BannerManagement() {
     background_image_url: "",
     auto_disappear_seconds: 0,
     redisplay_after_minutes: 5,
+    placement: "popup" as "popup" | "home_hero",
     display_pages: ["all"],
     is_active: true,
     start_date: "",
@@ -275,6 +277,7 @@ export default function BannerManagement() {
       background_image_url: "",
       auto_disappear_seconds: 0,
       redisplay_after_minutes: 5,
+      placement: "popup",
       display_pages: ["all"],
       is_active: true,
       start_date: "",
@@ -289,6 +292,7 @@ export default function BannerManagement() {
   const openEditDialog = (banner: Banner) => {
     setEditingBanner(banner)
     setFormError(null)
+    const placement = banner.placement === "home_hero" ? "home_hero" : "popup"
     setFormData({
       title: banner.title,
       message: banner.message,
@@ -301,14 +305,25 @@ export default function BannerManagement() {
       background_image_url: normalizeImageUrl(banner.background_image_url),
       auto_disappear_seconds: banner.auto_disappear_seconds || 0,
       redisplay_after_minutes: Math.min(10, Math.max(1, banner.redisplay_after_minutes || 5)),
-      display_pages: banner.display_pages,
+      placement,
+      display_pages: placement === "home_hero" ? ["home"] : banner.display_pages,
       is_active: banner.is_active,
       start_date: banner.start_date ? banner.start_date.split("T")[0] : "",
       end_date: banner.end_date ? banner.end_date.split("T")[0] : "",
       priority: banner.priority,
-      is_dismissible: banner.is_dismissible,
+      is_dismissible: placement === "home_hero" ? false : banner.is_dismissible,
     })
     setIsDialogOpen(true)
+  }
+
+  const setPlacement = (placement: "popup" | "home_hero") => {
+    setFormData((prev) => ({
+      ...prev,
+      placement,
+      is_dismissible: placement === "home_hero" ? false : prev.is_dismissible,
+      auto_disappear_seconds: placement === "home_hero" ? 0 : prev.auto_disappear_seconds,
+      display_pages: placement === "home_hero" ? ["home"] : prev.display_pages.length ? prev.display_pages : ["all"],
+    }))
   }
 
   const openAddDialog = () => {
@@ -400,7 +415,7 @@ export default function BannerManagement() {
           </DialogTrigger>
           <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingBanner ? "Edit Banner" : "Create Promo Banner"}</DialogTitle>
+              <DialogTitle>{editingBanner ? "Edit Banner" : "Create Banner"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-5">
               {formError && (
@@ -410,64 +425,151 @@ export default function BannerManagement() {
                 </div>
               )}
 
+              {/* Placement */}
+              <div>
+                <Label className="mb-2 block">Banner placement *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPlacement("popup")}
+                    className={`rounded-lg border p-3 text-left transition ${
+                      formData.placement === "popup"
+                        ? "border-cyan-400 ring-1 ring-cyan-400 bg-cyan-500/10"
+                        : "border-gray-600 hover:border-gray-500"
+                    }`}
+                  >
+                    <p className="font-semibold text-sm text-white">Popup</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Modal overlay — can be dismissible and reappear by minutes
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlacement("home_hero")}
+                    className={`rounded-lg border p-3 text-left transition ${
+                      formData.placement === "home_hero"
+                        ? "border-cyan-400 ring-1 ring-cyan-400 bg-cyan-500/10"
+                        : "border-gray-600 hover:border-gray-500"
+                    }`}
+                  >
+                    <p className="font-semibold text-sm text-white">Home hero</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Always-on section at the top of the home page (not dismissible)
+                    </p>
+                  </button>
+                </div>
+              </div>
+
               {/* Live preview */}
               <div className="rounded-xl border border-gray-600 overflow-hidden">
                 <div className="px-3 py-1.5 bg-gray-900/80 text-xs text-gray-400 uppercase tracking-wider">
-                  Live preview (site popup)
+                  Live preview ({formData.placement === "home_hero" ? "home hero" : "popup"})
                 </div>
                 <div className="bg-black/40 p-4 flex items-center justify-center min-h-[220px]">
-                  <div
-                    className="relative w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
-                    style={{
-                      backgroundColor: formData.background_color,
-                      color: formData.text_color,
-                    }}
-                  >
-                    {formData.background_image_url ? (
-                      <div
-                        className="w-full h-36 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${formData.background_image_url})` }}
-                      />
-                    ) : (
-                      <div className="h-2 w-full bg-white/10" />
-                    )}
-                    <div className="p-4 space-y-2">
-                      {formData.title && (
-                        <span className="inline-flex rounded-full border border-white/20 bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                          {formData.title}
-                        </span>
+                  {formData.placement === "home_hero" ? (
+                    <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 aspect-[16/10]">
+                      {formData.background_image_url ? (
+                        <div
+                          className="absolute inset-0 bg-cover bg-center"
+                          style={{ backgroundImage: `url(${formData.background_image_url})` }}
+                        />
+                      ) : (
+                        <div
+                          className="absolute inset-0"
+                          style={{ backgroundColor: formData.background_color }}
+                        />
                       )}
-                      <p className="text-sm font-semibold leading-snug">
-                        {formData.message || "Your promo message appears here"}
-                      </p>
-                      {formData.button_text && (
-                        <span
-                          className="inline-flex rounded-full px-3 py-1.5 text-xs font-bold"
-                          style={{
-                            backgroundColor: formData.button_color,
-                            color: "#0f172a",
-                          }}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/10" />
+                      <div className="absolute inset-0 flex flex-col items-center justify-end p-5 text-center space-y-2">
+                        <p
+                          className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+                          style={{ color: formData.button_color || "#f5d76e" }}
                         >
-                          {formData.button_text}
-                        </span>
-                      )}
+                          {formData.title || "Eyebrow text"}
+                        </p>
+                        <p
+                          className="text-base font-semibold leading-snug"
+                          style={{ color: formData.text_color || "#ffffff" }}
+                        >
+                          {formData.message || "Your hero headline appears here"}
+                        </p>
+                        {formData.button_text && (
+                          <span
+                            className="inline-flex rounded-md px-3 py-1.5 text-xs font-bold uppercase"
+                            style={{
+                              backgroundColor: formData.button_color,
+                              color: "#ffffff",
+                            }}
+                          >
+                            {formData.button_text}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div
+                      className="relative w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
+                      style={{
+                        backgroundColor: formData.background_color,
+                        color: formData.text_color,
+                      }}
+                    >
+                      {formData.background_image_url ? (
+                        <div
+                          className="w-full h-36 bg-cover bg-center"
+                          style={{ backgroundImage: `url(${formData.background_image_url})` }}
+                        />
+                      ) : (
+                        <div className="h-2 w-full bg-white/10" />
+                      )}
+                      <div className="p-4 space-y-2">
+                        {formData.title && (
+                          <span className="inline-flex rounded-full border border-white/20 bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                            {formData.title}
+                          </span>
+                        )}
+                        <p className="text-sm font-semibold leading-snug">
+                          {formData.message || "Your promo message appears here"}
+                        </p>
+                        {formData.button_text && (
+                          <span
+                            className="inline-flex rounded-full px-3 py-1.5 text-xs font-bold"
+                            style={{
+                              backgroundColor: formData.button_color,
+                              color: "#0f172a",
+                            }}
+                          >
+                            {formData.button_text}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="title">Headline / Badge *</Label>
+                  <Label htmlFor="title">
+                    {formData.placement === "home_hero" ? "Eyebrow / Small label *" : "Headline / Badge *"}
+                  </Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="e.g. Free Shipping"
+                    placeholder={
+                      formData.placement === "home_hero"
+                        ? "e.g. The Sabs Lifestyle"
+                        : "e.g. Free Shipping"
+                    }
                     required
                   />
-                  <p className="text-gray-400 text-xs mt-1">Shown as a small pill badge</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {formData.placement === "home_hero"
+                      ? "Small uppercase line above the headline"
+                      : "Shown as a small pill badge"}
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="priority">Priority</Label>
@@ -478,19 +580,29 @@ export default function BannerManagement() {
                     onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) })}
                     className="bg-gray-700 border-gray-600 text-white"
                   />
-                  <p className="text-gray-400 text-xs mt-1">Higher number wins if multiple are active</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {formData.placement === "home_hero"
+                      ? "Higher number appears first in the home carousel"
+                      : "Higher number wins if multiple are active"}
+                  </p>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="message">Promo Message *</Label>
+                <Label htmlFor="message">
+                  {formData.placement === "home_hero" ? "Hero Headline *" : "Promo Message *"}
+                </Label>
                 <Textarea
                   id="message"
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   className="bg-gray-700 border-gray-600 text-white"
                   rows={2}
-                  placeholder="e.g. Orders over AED 200 ship free this week"
+                  placeholder={
+                    formData.placement === "home_hero"
+                      ? "e.g. Skincare That Travels With You"
+                      : "e.g. Orders over AED 200 ship free this week"
+                  }
                   required
                 />
               </div>
@@ -556,7 +668,11 @@ export default function BannerManagement() {
               <SingleImageUpload
                 value={formData.background_image_url}
                 onChange={(url) => setFormData({ ...formData, background_image_url: url })}
-                label="Background Image (Optional)"
+                label={
+                  formData.placement === "home_hero"
+                    ? "Hero Image (recommended)"
+                    : "Background Image (Optional)"
+                }
                 filenamePrefix="banner"
               />
 
@@ -583,25 +699,38 @@ export default function BannerManagement() {
                 </div>
               </div>
 
-              <div>
-                <Label>Display on Pages</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                  {pageOptions.map((page) => (
-                    <div key={page.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={page.value}
-                        checked={formData.display_pages.includes(page.value)}
-                        onCheckedChange={(checked) => handlePageToggle(page.value, checked as boolean)}
-                      />
-                      <Label htmlFor={page.value} className="text-sm">
-                        {page.label}
-                      </Label>
-                    </div>
-                  ))}
+              {formData.placement === "popup" && (
+                <div>
+                  <Label>Display on Pages</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                    {pageOptions.map((page) => (
+                      <div key={page.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={page.value}
+                          checked={formData.display_pages.includes(page.value)}
+                          onCheckedChange={(checked) => handlePageToggle(page.value, checked as boolean)}
+                        />
+                        <Label htmlFor={page.value} className="text-sm">
+                          {page.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {formData.placement === "home_hero" && (
+                <p className="text-xs text-gray-400 rounded-lg border border-gray-600 bg-gray-900/40 px-3 py-2">
+                  Home hero banners always stay on the home page. They are not dismissible.
+                  Add multiple active hero banners to create a carousel.
+                </p>
+              )}
+
+              <div
+                className={`grid grid-cols-1 gap-4 ${
+                  formData.placement === "popup" ? "md:grid-cols-3" : "md:grid-cols-2"
+                }`}
+              >
                 <div>
                   <Label htmlFor="start_date">Start Date</Label>
                   <Input
@@ -622,18 +751,22 @@ export default function BannerManagement() {
                     className="bg-gray-700 border-gray-600 text-white"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="auto_disappear_seconds">Auto Hide (sec)</Label>
-                  <Input
-                    id="auto_disappear_seconds"
-                    type="number"
-                    min="0"
-                    value={formData.auto_disappear_seconds}
-                    onChange={(e) => setFormData({ ...formData, auto_disappear_seconds: Number(e.target.value) })}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="0 = never"
-                  />
-                </div>
+                {formData.placement === "popup" && (
+                  <div>
+                    <Label htmlFor="auto_disappear_seconds">Auto Hide (sec)</Label>
+                    <Input
+                      id="auto_disappear_seconds"
+                      type="number"
+                      min="0"
+                      value={formData.auto_disappear_seconds}
+                      onChange={(e) =>
+                        setFormData({ ...formData, auto_disappear_seconds: Number(e.target.value) })
+                      }
+                      className="bg-gray-700 border-gray-600 text-white"
+                      placeholder="0 = never"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-end gap-4">
@@ -647,17 +780,19 @@ export default function BannerManagement() {
                     <Label htmlFor="is_active">Active</Label>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="is_dismissible"
-                      checked={formData.is_dismissible}
-                      onCheckedChange={(checked) => setFormData({ ...formData, is_dismissible: checked })}
-                    />
-                    <Label htmlFor="is_dismissible">Dismissible</Label>
-                  </div>
+                  {formData.placement === "popup" && (
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="is_dismissible"
+                        checked={formData.is_dismissible}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_dismissible: checked })}
+                      />
+                      <Label htmlFor="is_dismissible">Dismissible</Label>
+                    </div>
+                  )}
                 </div>
 
-                {formData.is_dismissible && (
+                {formData.placement === "popup" && formData.is_dismissible && (
                   <div className="w-full sm:w-56">
                     <Label htmlFor="redisplay_after_minutes">Show again after (minutes)</Label>
                     <select
@@ -781,7 +916,10 @@ export default function BannerManagement() {
                         <Badge variant={banner.is_active ? "default" : "secondary"}>
                           {banner.is_active ? "Active" : "Inactive"}
                         </Badge>
-                        {banner.is_dismissible && (
+                        <Badge variant="outline" className="text-xs">
+                          {banner.placement === "home_hero" ? "Home hero" : "Popup"}
+                        </Badge>
+                        {banner.placement !== "home_hero" && banner.is_dismissible && (
                           <Badge variant="outline" className="text-xs">
                             Again in {banner.redisplay_after_minutes || 5}m
                           </Badge>

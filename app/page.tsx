@@ -1,28 +1,23 @@
-"use client"
-import Navbar from "@/components/ui/navbar"
-import Footer from "@/components/ui/footer"
-import Services from "@/components/sections/services"
-import NewUserSpinnerSection from "@/components/sections/new-user-spinner-section"
-import ProductList from "@/components/sections/product-list"
-import { ProductListSkeleton } from "@/components/sections/product-list-skeleton"
-import BeforeAfterVideoSection from "@/components/sections/before-after-video-section"
-import { useAuth } from "@/lib/contexts/auth-context"
-import { Suspense } from "react"
+import type { Metadata } from "next"
+import HomeClient from "./home-client"
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, getSiteUrl } from "@/lib/seo"
+
+const siteUrl = getSiteUrl()
+
+export const metadata: Metadata = {
+  title: DEFAULT_TITLE,
+  description: DEFAULT_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    url: siteUrl,
+    type: "website",
+  },
+}
 
 export default function HomePage() {
-  const { isAuthenticated } = useAuth()
-  return (
-    <main className="min-h-screen">
-
-      <Navbar />
-      {!isAuthenticated && <NewUserSpinnerSection />}
-      <Suspense fallback={<ProductListSkeleton />}>
-        <ProductList />
-      
-      </Suspense>
-      <BeforeAfterVideoSection />
-      <Services />
-      <Footer />
-    </main>
-  )
+  return <HomeClient />
 }

@@ -1,29 +1,25 @@
 import { Metadata } from 'next'
-import { Award, Heart, Shield, Users, Star, Sparkles } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
 import AboutPageClient from './about-client'
+import { getSiteUrl, SITE_SHORT_NAME } from '@/lib/seo'
+
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
-  title: 'About Us - Sabs Online | Premium Beauty Products & Tech Accessories',
-  description: 'Discover Sabs Online\'s story, mission, and commitment to quality. Your trusted partner for authentic beauty products, skincare, cosmetics, and cutting-edge tech accessories since our founding.',
+  title: 'About Us',
+  description:
+    'Sabs Online Store began in Dubai in 2015. Discover our story and commitment to authentic beauty, skincare, and cosmetics with delivery across UAE and India.',
   keywords: [
     'about sabs online',
+    'Sabs Online Store',
     'beauty products company',
-    'tech accessories store',
-    'skincare brand',
-    'cosmetics retailer',
+    'skincare brand Dubai',
+    'cosmetics retailer India',
     'authentic beauty products',
-    'premium tech accessories',
-    'customer satisfaction',
-    'quality guarantee',
-    'beauty and technology',
-    'online beauty store',
-    'trusted retailer'
-  ].join(', '),
-  authors: [{ name: 'Sabs Online Team' }],
-  creator: 'Sabs Online',
-  publisher: 'Sabs Online',
+    'online beauty store UAE',
+  ],
+  authors: [{ name: `${SITE_SHORT_NAME} Team` }],
+  creator: SITE_SHORT_NAME,
+  publisher: SITE_SHORT_NAME,
   robots: {
     index: true,
     follow: true,
@@ -36,30 +32,32 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'About Us - Sabs Online | Premium Beauty Products & Tech Accessories',
-    description: 'Learn about our story, mission, and commitment to bringing you authentic beauty products and cutting-edge tech accessories. Discover why thousands trust Sabs Online.',
+    title: `About Us | ${SITE_SHORT_NAME}`,
+    description:
+      'Learn how Sabs Online grew from Dubai in 2015 into a trusted beauty and skincare store serving UAE and India.',
     type: 'website',
-    url: 'https://sabsonline.com/about',
-    siteName: 'Sabs Online',
+    url: `${siteUrl}/about`,
+    siteName: SITE_SHORT_NAME,
     images: [
       {
-        url: '/og-about.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'About Sabs Online - Premium Beauty & Tech Store',
+        url: '/logo.png',
+        width: 512,
+        height: 512,
+        alt: `${SITE_SHORT_NAME} — Beauty & Skincare`,
       },
     ],
-    locale: 'en_US',
+    locale: 'en_IN',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'About Us - Sabs Online | Premium Beauty Products & Tech Accessories',
-    description: 'Discover our story, mission, and commitment to quality beauty products and tech accessories.',
-    images: ['/og-about.jpg'],
+    title: `About Us | ${SITE_SHORT_NAME}`,
+    description:
+      'Our story, mission, and commitment to quality beauty and skincare products.',
+    images: ['/logo.png'],
     creator: '@sabsonline',
   },
   alternates: {
-    canonical: 'https://sabsonline.com/about',
+    canonical: '/about',
   },
   other: {
     'business:contact_data:street_address': '23/384/A62 Prince Tower, Near KNH Hospital',

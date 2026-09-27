@@ -49,14 +49,24 @@ export default function BottomTabs() {
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 z-50 md:block lg:hidden">
-        <div className={`relative rounded-t-2xl backdrop-blur-xl border-t shadow-lg transition-all duration-300 ${
-          shop === "A" 
-            ? "bg-gradient-to-r from-yellow-400/60 via-orange-400/60 to-yellow-500/60 border-yellow-300/30" 
-            : "bg-gradient-to-r from-purple-600/60 via-blue-600/60 to-indigo-700/60 border-purple-300/30"
-        }`}>
+        <div
+          className={`relative rounded-t-2xl backdrop-blur-xl border-t shadow-lg transition-all duration-300 ${
+            shop === "A"
+              ? "bg-[#8a7258]/95 bg-cover bg-center border-[#c4ab8d]/30"
+              : "bg-gradient-to-r from-purple-600/60 via-blue-600/60 to-indigo-700/60 border-purple-300/30"
+          }`}
+          style={
+            shop === "A"
+              ? {
+                  backgroundImage: "url('/images/header/nav-bg.png')",
+                  backgroundColor: "#8a7258",
+                }
+              : undefined
+          }
+        >
           <div className={`absolute inset-0 pointer-events-none transition-all duration-300 ${
             shop === "A"
-              ? "bg-gradient-to-r from-[#f6d365]/20 to-[#fda085]/20"
+              ? "bg-black/10"
               : "bg-gradient-to-r from-purple-500/20 to-indigo-500/20"
           }`} />
 
@@ -132,7 +142,7 @@ export default function BottomTabs() {
                       </div>
                     </div>
                     <span className={`mt-1 text-xs font-medium transition-colors duration-300 ${
-                      shop === "A" ? "text-orange-700" : "text-purple-200"
+                      shop === "A" ? "text-white/90" : "text-purple-200"
                     }`}>
                       {shopType === "cosmetics" ? "Beauty" : "Style"}
                     </span>
@@ -150,10 +160,10 @@ export default function BottomTabs() {
                           <button className={`relative transition-all duration-300 ${
                             pathname === "/profile"
                               ? shop === "A" 
-                                ? "text-orange-600" 
+                                ? "text-white" 
                                 : "text-purple-200"
                               : shop === "A"
-                              ? "text-gray-600 hover:text-gray-800"
+                              ? "text-white/70 hover:text-white"
                               : "text-gray-300 hover:text-white"
                           }`}>
                             <div className="relative mb-0.5">
@@ -240,7 +250,7 @@ export default function BottomTabs() {
                         onClick={handleLoginClick}
                         className={`relative transition-all duration-300 ${
                           shop === "A"
-                            ? "text-gray-600 hover:text-gray-800"
+                            ? "text-white/70 hover:text-white"
                             : "text-gray-300 hover:text-white"
                         }`}
                       >
@@ -264,10 +274,10 @@ export default function BottomTabs() {
                   className={`relative flex flex-col items-center transition-all duration-300 ${
                     item.isActive 
                       ? shop === "A" 
-                        ? "text-orange-600" 
+                        ? "text-white" 
                         : "text-purple-200"
                       : shop === "A"
-                      ? "text-gray-600 hover:text-gray-800"
+                      ? "text-white/70 hover:text-white"
                       : "text-gray-300 hover:text-white"
                   }`}
                 >

@@ -1,101 +1,151 @@
-import { Metadata } from 'next'
-import { ReactNode } from 'react'
+import { Metadata } from "next"
+import { ReactNode } from "react"
+import ProductJsonLd from "@/components/seo/product-json-ld"
+import { sql } from "@/lib/database"
+import { getSiteUrl, SITE_SHORT_NAME } from "@/lib/seo"
 
 interface ProductLayoutProps {
   children: ReactNode
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-// Generate metadata for social media sharing
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+async function fetchProduct(id: string) {
+  if (!id || isNaN(Number(id))) return null
+
+  const [product] = await sql`
+    SELECT
+      p.*,
+      c.name AS category_name,
+      rs.average_rating,
+      rs.review_count,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'id', v.id,
+            'name', v.name,
+            'price_aed', v.price_aed,
+            'price_inr', v.price_inr,
+            'discount_aed', v.discount_aed,
+            'discount_inr', v.discount_inr,
+            'available_aed', v.available_aed,
+            'available_inr', v.available_inr,
+            'stock_quantity', v.stock_quantity
+          ) ORDER BY v.id
+        ) FILTER (WHERE v.id IS NOT NULL),
+        '[]'::json
+      ) AS variants
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN product_variants v ON p.id = v.product_id
+    LEFT JOIN (
+      SELECT
+        product_id,
+        ROUND(AVG(rating)::numeric, 1) AS average_rating,
+        COUNT(*)::int AS review_count
+      FROM product_reviews
+      WHERE is_visible = TRUE AND is_approved = TRUE
+      GROUP BY product_id
+    ) rs ON rs.product_id = p.id
+    WHERE p.id = ${Number(id)}
+    GROUP BY p.id, c.name, rs.average_rating, rs.review_count
+  `
+
+  return product || null
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
   try {
-    // Await params as required by Next.js 15
     const { id } = await params
-    
-    // Fetch product data for metadata
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sabsonlinestore.com'
-    const response = await fetch(`${baseUrl}/api/admin/products/${id}`, {
-      cache: 'no-store' // Ensure fresh data for metadata
-    })
-    
-    if (!response.ok) {
+    const product = await fetchProduct(id)
+
+    if (!product) {
       return {
-        title: 'Product Not Found - Sabs Online',
-        description: 'The requested product could not be found.',
+        title: "Product Not Found",
+        description: "The requested product could not be found at Sabs Online Store.",
       }
     }
 
-    const product = await response.json()
-    
-    // Get the first image or fallback
-    const productImage = product.image_urls?.[0] || '/logo.png'
-    const productName = product.name || 'Product'
-    const productDescription = product.description || 'Quality products from Sabs Online store'
-    const shopName = product.shop_category === 'A' ? 'Beauty' : product.shop_category === 'B' ? 'Style' : 'Beauty & Style'
-    
-    // Format price for display
-    const formatPrice = (price: number, currency: string) => {
-      if (currency === 'AED') {
-        return `AED ${price.toFixed(2)}`
-      } else {
-        return `₹${price.toFixed(2)}`
-      }
-    }
-    
-    // Clean title without price for consistent social sharing
-    const title = `${productName} | Sabs Online ${shopName}`
-    const description = `${productDescription} | Available at Sabs Online ${shopName} store. Quality products with fast delivery.`
-    const productUrl = `${baseUrl}/product/${id}`
-    const imageUrl = productImage.startsWith('http') ? productImage : `${baseUrl}${productImage}`
-    
+    const productImage = product.image_urls?.[0] || "/logo.png"
+    const productName = product.name || "Product"
+    const productDescription =
+      product.description ||
+      `Shop ${productName} at ${SITE_SHORT_NAME}. Authentic beauty and skincare with delivery in UAE and India.`
+    const shopName =
+      product.shop_category === "A"
+        ? "Beauty"
+        : product.shop_category === "B"
+          ? "Style"
+          : "Beauty & Style"
+
+    const title = `${productName} | ${SITE_SHORT_NAME} ${shopName}`
+    const description = `${productDescription.slice(0, 155)}${productDescription.length > 155 ? "…" : ""}`
+    const productUrl = `${getSiteUrl()}/product/${id}`
+    const imageUrl = String(productImage).startsWith("http")
+      ? String(productImage)
+      : `${getSiteUrl()}${productImage}`
+
     return {
       title,
       description,
+      alternates: {
+        canonical: `/product/${id}`,
+      },
       openGraph: {
         title,
         description,
-        type: 'website',
+        type: "website",
         url: productUrl,
-        siteName: 'Sabs Online',
+        siteName: SITE_SHORT_NAME,
         images: [
           {
             url: imageUrl,
             width: 800,
             height: 600,
             alt: productName,
-          }
+          },
         ],
-        locale: 'en_US',
+        locale: "en_IN",
       },
       twitter: {
-        card: 'summary_large_image',
+        card: "summary_large_image",
         title,
         description,
         images: [imageUrl],
-        creator: '@sabsonline',
-        site: '@sabsonline',
+        creator: "@sabsonline",
+        site: "@sabsonline",
       },
       other: {
-        // WhatsApp and social media specific meta tags
-        'og:image:width': '800',
-        'og:image:height': '600',
-        'og:image:type': 'image/jpeg',
-        'product:price:amount': product.variants?.[0]?.price_aed || product.variants?.[0]?.price_inr || '',
-        'product:price:currency': product.variants?.[0]?.price_aed ? 'AED' : 'INR',
-        'product:availability': product.is_available ? 'in stock' : 'out of stock',
-        'product:brand': 'Sabs Online',
-        'product:category': product.category_name || 'Products',
-      }
+        "product:brand": product.brand || "SABS",
+        "product:category": product.category_name || "Beauty & Cosmetics",
+        "product:availability": product.is_available ? "in stock" : "out of stock",
+      },
     }
   } catch (error) {
-    console.error('Error generating metadata:', error)
+    console.error("Error generating metadata:", error)
     return {
-      title: 'Sabs Online - Quality Products',
-      description: 'Discover quality products at Sabs Online store with fast delivery.',
+      title: "Beauty Products",
+      description: `Discover authentic beauty and skincare at ${SITE_SHORT_NAME} with delivery in UAE and India.`,
     }
   }
 }
 
-export default function ProductLayout({ children }: ProductLayoutProps) {
-  return <>{children}</>
+export default async function ProductLayout({ children, params }: ProductLayoutProps) {
+  const { id } = await params
+  let product = null
+  try {
+    product = await fetchProduct(id)
+  } catch {
+    product = null
+  }
+
+  return (
+    <>
+      {product ? <ProductJsonLd product={product as any} /> : null}
+      {children}
+    </>
+  )
 }

@@ -21,6 +21,7 @@ const bannerSchema = z.object({
   background_image_url: z.string().optional().default(""),
   auto_disappear_seconds: z.coerce.number().int().nonnegative().default(0),
   redisplay_after_minutes: z.coerce.number().int().min(1).max(10).default(5),
+  placement: z.enum(["popup", "home_hero"]).default("popup"),
   display_pages: z.array(z.string()).default(["all"]),
   is_active: z.boolean().default(true),
   start_date: optionalDate,
@@ -82,15 +83,21 @@ export async function POST(request: Request) {
       )
     }
     const data = parse.data
-
-    // Ensure at least one display page
-    const displayPages = data.display_pages?.length ? data.display_pages : ["all"]
+    const isHomeHero = data.placement === "home_hero"
+    const displayPages = isHomeHero
+      ? ["home"]
+      : data.display_pages?.length
+        ? data.display_pages
+        : ["all"]
+    const isDismissible = isHomeHero ? false : data.is_dismissible
+    const autoDisappear = isHomeHero ? 0 : data.auto_disappear_seconds
 
     const [banner] = await sql`
       INSERT INTO banners (
         title, message, banner_type, background_color, text_color,
         button_text, button_link, button_color,
         background_image_url, auto_disappear_seconds, redisplay_after_minutes,
+        placement,
         display_pages, is_active,
         start_date, end_date,
         priority, is_dismissible
@@ -98,10 +105,11 @@ export async function POST(request: Request) {
         ${data.title}, ${data.message}, ${data.banner_type},
         ${data.background_color}, ${data.text_color},
         ${data.button_text}, ${data.button_link}, ${data.button_color},
-        ${data.background_image_url}, ${data.auto_disappear_seconds}, ${data.redisplay_after_minutes},
+        ${data.background_image_url}, ${autoDisappear}, ${data.redisplay_after_minutes},
+        ${data.placement},
         ${displayPages}, ${data.is_active},
         ${data.start_date || null}, ${data.end_date || null},
-        ${data.priority}, ${data.is_dismissible}
+        ${data.priority}, ${isDismissible}
       )
       RETURNING *
     `

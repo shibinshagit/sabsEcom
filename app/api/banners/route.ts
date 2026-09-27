@@ -12,6 +12,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const page = searchParams.get("page") || "all"
+    const placement = searchParams.get("placement") || "popup"
 
     // 1️⃣ Auto-provision table if it's missing
     await sql`
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
         background_image_url VARCHAR(200),
         auto_disappear_seconds INTEGER DEFAULT 0,
         redisplay_after_minutes INTEGER DEFAULT 5,
+        placement VARCHAR(20) DEFAULT 'popup',
         display_pages TEXT[] DEFAULT ARRAY['all'],
         is_active BOOLEAN DEFAULT true,
         start_date TIMESTAMP,
@@ -45,21 +47,27 @@ export async function GET(request: Request) {
 
     if (existingBanners[0].count === 0) {
       await sql`
-        INSERT INTO banners (title, message, banner_type, background_color, text_color, button_text, button_link, background_image_url, auto_disappear_seconds, display_pages, is_active, priority) VALUES
-        ('Grand Opening Special!', 'Join us for our grand opening celebration. Get 20% off your first order this week only!', 'promotion', '#f59e0b', '#ffffff', 'Shop Now', '/products', '', 10, ARRAY['all'], true, 1),
-        ('New Arrivals', 'Discover our latest products featuring premium quality and exclusive deals.', 'announcement', '#3b82f6', '#ffffff', 'Browse Products', '/products', '', 0, ARRAY['home', 'products'], true, 2);
+        INSERT INTO banners (title, message, banner_type, background_color, text_color, button_text, button_link, background_image_url, auto_disappear_seconds, placement, display_pages, is_active, priority) VALUES
+        ('Grand Opening Special!', 'Join us for our grand opening celebration. Get 20% off your first order this week only!', 'promotion', '#f59e0b', '#ffffff', 'Shop Now', '/products', '', 10, 'popup', ARRAY['all'], true, 1),
+        ('New Arrivals', 'Discover our latest products featuring premium quality and exclusive deals.', 'announcement', '#3b82f6', '#ffffff', 'Browse Products', '/products', '', 0, 'popup', ARRAY['home', 'products'], true, 2);
       `
     }
 
-    // 3️⃣ Fetch active banners for the specified page
+    // 3️⃣ Fetch active banners for the specified page + placement
     const now = new Date().toISOString()
+    const placementFilter = placement === "home_hero" ? "home_hero" : "popup"
 
     const banners = await sql`
       SELECT * FROM banners 
       WHERE is_active = true 
+        AND COALESCE(placement, 'popup') = ${placementFilter}
         AND (start_date IS NULL OR start_date <= ${now})
         AND (end_date IS NULL OR end_date >= ${now})
-        AND ('all' = ANY(display_pages) OR ${page} = ANY(display_pages))
+        AND (
+          ${placementFilter} = 'home_hero'
+          OR 'all' = ANY(display_pages)
+          OR ${page} = ANY(display_pages)
+        )
       ORDER BY priority DESC, created_at DESC
     `
 

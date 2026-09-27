@@ -6,9 +6,8 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams, useRouter } from "next/navigation"
 import { Search, ShoppingCart, Heart, Menu, X, User, LogOut, Settings, Package, Users, BarChart3, Calendar, MessageSquare, Star, ChevronDown, Globe, Zap, Crown, Gift, ShoppingBag, Sparkles, Watch, Bell } from "lucide-react"
-import EnhancedSearch from "@/components/ui/enhanced-search"
+import SearchPopup from "@/components/ui/search-popup"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useSelector } from "react-redux"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useLoginModal } from '@/lib/stores/useLoginModal'
@@ -38,6 +37,7 @@ interface Category {
 function Nav() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const { isOpen: isLoginModalOpen, openModal, closeModal } = useLoginModal()
   const [categories, setCategories] = useState<Category[]>([])
@@ -371,17 +371,25 @@ function Nav() {
         <Banner page={currentPage} />
       </div>
       <nav
-        className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${shop === "A"
-          ? "bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500"
-          : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
-          }`}
-        style={{ top: 0 }}
+        className={`sticky top-0 z-40 shadow-lg transition-all duration-300 ${isScrolled ? "shadow-xl" : ""} ${
+          shop === "A"
+            ? "bg-[#8a7258] bg-cover bg-center"
+            : "bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700"
+        }`}
+        style={
+          shop === "A"
+            ? {
+                top: 0,
+                backgroundImage: "url('/images/header/nav-bg.png')",
+                backgroundColor: "#8a7258",
+              }
+            : { top: 0 }
+        }
       >
         {/* Desktop Header */}
         <div className="hidden lg:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
-            <div className="rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md px-4 py-3 mb-3">
-              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
+            <div className="flex items-center justify-between gap-4 mb-2">
                 <Link href="/" className="flex items-center group shrink-0" aria-label={settings.restaurant_name}>
                   {settings.restaurant_logo ? (
                     <div
@@ -404,12 +412,16 @@ function Nav() {
                   )}
                 </Link>
 
-                <EnhancedSearch
-                  className="w-full"
-                  placeholder={shop === "A" ? "Search beauty products..." : "Search for style accessories..."}
-                />
-
                 <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setSearchOpen(true)}
+                    className="text-white hover:bg-white/20 rounded-xl h-10 w-10 p-0"
+                    aria-label="Search products"
+                  >
+                    <Search className="w-5 h-5" />
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl h-10 px-3 flex items-center gap-2">
@@ -610,7 +622,6 @@ function Nav() {
                     </DropdownMenu>
                   )}
                 </div>
-              </div>
             </div>
 
             {/* Desktop Navigation with Icon Toggle */}
@@ -850,6 +861,15 @@ function Nav() {
                 )}
               </Link>
               <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSearchOpen(true)}
+                  className="text-white hover:bg-white/20 rounded-full p-2"
+                  aria-label="Search products"
+                >
+                  <Search className="w-5 h-5" />
+                </Button>
                 {/* Currency Dropdown for Tablet */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -977,86 +997,6 @@ function Nav() {
               </div>
             </div>
 
-            <div className="relative mb-3 search-container">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
-              <Input
-                placeholder={shop === "A" ? "Search beauty products" : "Search style accessories"}
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10 pr-12 h-10 rounded-full bg-white border-0 text-sm shadow-lg"
-                onFocus={() => searchTerm.length >= 2 && setShowSearchDropdown(true)}
-              />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
-                </div>
-              )}
-              
-              {/* Search Dropdown for Tablet */}
-              {showSearchDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border z-50 max-h-80 overflow-y-auto">
-                  {searchResults.length > 0 ? (
-                    <>
-                      <div className="px-3 py-2 bg-gray-50 border-b text-xs font-medium text-gray-600">
-                        {searchResults.length} result{searchResults.length > 1 ? 's' : ''}
-                      </div>
-                      {searchResults.map((product: any) => (
-                        <div
-                          key={product.id}
-                          onClick={() => handleSearchResultClick(product.id)}
-                          className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                        >
-                          <Image
-                            src={product.image_urls?.[0] || "/placeholder.svg"}
-                            alt={product.name}
-                            width={35}
-                            height={35}
-                            className="rounded-lg object-cover"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900 text-sm line-clamp-1">{product.name}</p>
-                            {product.display_price ? (
-                              <p className="text-orange-600 font-semibold text-xs">
-                                {product.display_price.symbol} {product.display_price.price}
-                              </p>
-                            ) : (
-                              <p className="text-gray-500 text-xs">Price unavailable</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      <div
-                        onClick={handleViewAllResults}
-                        className="p-3 text-center text-orange-600 hover:bg-orange-50 cursor-pointer font-medium text-sm border-t"
-                      >
-                        View all results
-                      </div>
-                    </>
-                  ) : searchTerm.length >= 2 ? (
-                    <div className="p-3 text-center text-gray-500">
-                      <p className="text-sm">No products found</p>
-                      {searchSuggestions.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {searchSuggestions.map((suggestion, index) => (
-                            <button
-                              key={index}
-                              onClick={() => {
-                                setSearchTerm(suggestion)
-                                handleSearch(suggestion)
-                              }}
-                              className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
-                            >
-                              {suggestion}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </div>
-
             <div className="flex overflow-x-auto scrollbar-hide gap-2">
               {loading ? (
                 <div className="flex gap-2">
@@ -1095,7 +1035,7 @@ function Nav() {
         {/* Mobile Header */}
         <div className="block md:hidden">
           <div className="px-4 py-3">
-            <div className="grid grid-cols-3 items-center gap-2 mb-3">
+            <div className="grid grid-cols-3 items-center gap-2 mb-2">
               <div className="flex justify-start min-w-0">
                 <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className="text-white p-0 shrink-0">
                   {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -1125,6 +1065,15 @@ function Nav() {
                 </Link>
               </div>
               <div className="flex items-center justify-end gap-2 min-w-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSearchOpen(true)}
+                  className="text-white hover:bg-white/20 p-1"
+                  aria-label="Search products"
+                >
+                  <Search className="w-5 h-5" />
+                </Button>
                 {/* Currency for Mobile */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1164,17 +1113,6 @@ function Nav() {
 
                 {/* Cart and Profile icons are hidden on mobile - removed from here */}
               </div>
-            </div>
-
-            <div className="mb-3">
-              <EnhancedSearch
-                placeholder={shop === "A" ? "Search beauty products..." : "Search style products..."}
-                onSearchSubmit={(query) => {
-                  router.push(`/products?search=${encodeURIComponent(query)}`)
-                  setIsOpen(false)
-                }}
-                className="w-full"
-              />
             </div>
 
             <div className="flex overflow-x-auto scrollbar-hide gap-2">
@@ -1287,6 +1225,7 @@ function Nav() {
         </div>
       </nav>
 
+      <SearchPopup open={searchOpen} onClose={() => setSearchOpen(false)} />
       <LoginModal isOpen={isLoginModalOpen} onClose={closeModal} />
     </>
   )

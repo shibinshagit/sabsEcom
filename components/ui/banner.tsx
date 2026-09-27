@@ -120,7 +120,7 @@ export default function Banner({ page = "all" }: BannerProps) {
 
   const fetchBanners = async () => {
     try {
-      const response = await fetch(`/api/banners?page=${page}`)
+      const response = await fetch(`/api/banners?page=${page}&placement=popup`)
       if (response.ok) {
         const data = await response.json()
         setBanners(Array.isArray(data) ? data : [])
