@@ -761,7 +761,7 @@ function Nav() {
               </div>
 
               {/* Show entire shop switcher only if enabled in admin settings */}
-              {isShopSwitchEnabled && (
+              {!shopLoading && isShopSwitchEnabled && (
                 <div className="relative bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-orange-900/30 backdrop-blur-md rounded-full p-1.5 border border-white/20 transition-all duration-500 flex-shrink-0 ml-4 shadow-2xl hover:shadow-purple-500/25">
                   {/* Animated Background Glow */}
                   <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 blur-xl animate-pulse"></div>

@@ -474,7 +474,10 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     return `Shop ${shop} - ${category?.name || "Products"} (${selectedCurrency})`
   }
 
-  const trendingNow = filteredItems.filter((item) => item.is_featured).slice(0, 4)
+  // Trending: all featured for current shop/currency (not limited by category filter)
+  const trendingNow = currencyFilteredItems
+    .filter((item) => Boolean(item.is_featured))
+    .slice(0, 12)
   const clearanceDeals = filteredItems.filter((item) => {
     if (selectedCurrency === 'AED' && item.price_aed) {
       return item.price_aed < 50

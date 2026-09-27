@@ -19,7 +19,7 @@ export default function BottomTabs() {
   const cartItems = useSelector((state: RootState) => state.order.cart)
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const { isAuthenticated, user, logout } = useAuth()
-  const { shop, setShop, isShopSwitchEnabled } = useShop()
+  const { shop, setShop, isLoading: shopLoading, isShopSwitchEnabled } = useShop()
   const { user: clerkUser } = useUser()
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
 
@@ -28,8 +28,8 @@ export default function BottomTabs() {
   const navItems = [
     { href: "/products", icon: Home, label: "Home", isActive: pathname === "/" },
     { href: "/orders", icon: ShoppingBag, label: "Orders", isActive: pathname === "/orders" },
-    // Only include shop toggle if enabled in admin settings
-    ...(isShopSwitchEnabled ? [{ type: "toggle" }] : []),
+    // Only include shop toggle after settings load and when admin has enabled it
+    ...(!shopLoading && isShopSwitchEnabled ? [{ type: "toggle" }] : []),
     { href: "/order", icon: ShoppingCart, label: "Cart", isActive: pathname === "/order", badge: cartCount || null },
     { type: "profile" }, 
   ]

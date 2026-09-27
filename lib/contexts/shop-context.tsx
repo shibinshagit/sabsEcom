@@ -15,7 +15,8 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined)
 export const ShopProvider = ({ children }: { children: React.ReactNode }) => {
   const [shop, setShopState] = useState<Shop>("A")
   const [isLoading, setIsLoading] = useState(true)
-  const [isShopSwitchEnabled, setIsShopSwitchEnabled] = useState(true)
+  // Start false so the switcher never flashes before settings load
+  const [isShopSwitchEnabled, setIsShopSwitchEnabled] = useState(false)
 
   useEffect(() => {
     const initializeShop = async () => {
@@ -26,7 +27,7 @@ export const ShopProvider = ({ children }: { children: React.ReactNode }) => {
         // Fetch admin settings for default shop and shop switching control
         const response = await fetch('/api/admin/shop-features')
         let defaultShop: Shop = "A"
-        let switchEnabled = true
+        let switchEnabled = false
         
         if (response.ok) {
           const settings = await response.json()
@@ -51,9 +52,9 @@ export const ShopProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (error) {
         console.error('Failed to fetch shop settings:', error)
-        // Fallback to Shop A if there's an error
+        // Keep switcher hidden until settings are known
         setShopState("A")
-        setIsShopSwitchEnabled(true)
+        setIsShopSwitchEnabled(false)
       } finally {
         setIsLoading(false)
       }

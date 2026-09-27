@@ -93,7 +93,7 @@ export default function SearchPopup({ open, onClose }: SearchPopupProps) {
         ? data
         : data.items || data.products || []
       // Featured products (same pool as homepage "Trending now")
-      setTrending(list.filter((p) => Boolean(p.is_featured)).slice(0, 8))
+      setTrending(list.filter((p) => Boolean(p.is_featured)).slice(0, 12))
     } catch {
       setTrending([])
     } finally {
