@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, type CSSProperties } from "react"
+import { useState, useEffect, useMemo, type CSSProperties } from "react"
 import { X, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -17,6 +17,7 @@ interface BannerData {
   button_color: string
   background_image_url: string
   auto_disappear_seconds: number
+  redisplay_after_minutes?: number
   display_pages: string[]
   is_active: boolean
   start_date: string | null
@@ -29,26 +30,76 @@ interface BannerProps {
   page?: string
 }
 
+const DISMISS_STORAGE_KEY = "dismissedBannerTimes"
+
+/** Map of bannerId -> dismissedAt epoch ms */
+type DismissMap = Record<string, number>
+
+function readDismissMap(): DismissMap {
+  try {
+    const raw = localStorage.getItem(DISMISS_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as DismissMap
+      }
+    }
+
+    // Migrate legacy permanent dismiss list → treat as just dismissed now
+    const legacy = localStorage.getItem("dismissedBanners")
+    if (legacy) {
+      const ids = JSON.parse(legacy)
+      if (Array.isArray(ids)) {
+        const now = Date.now()
+        const migrated: DismissMap = {}
+        for (const id of ids) {
+          migrated[String(id)] = now
+        }
+        localStorage.setItem(DISMISS_STORAGE_KEY, JSON.stringify(migrated))
+        localStorage.removeItem("dismissedBanners")
+        return migrated
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return {}
+}
+
+function writeDismissMap(map: DismissMap) {
+  try {
+    localStorage.setItem(DISMISS_STORAGE_KEY, JSON.stringify(map))
+  } catch {
+    // ignore
+  }
+}
+
+function redisplayMinutes(banner: BannerData) {
+  const n = Number(banner.redisplay_after_minutes)
+  if (!Number.isFinite(n)) return 5
+  return Math.min(10, Math.max(1, Math.round(n)))
+}
+
+function isStillDismissed(banner: BannerData, dismissMap: DismissMap, now = Date.now()) {
+  const dismissedAt = dismissMap[String(banner.id)]
+  if (!dismissedAt) return false
+  const waitMs = redisplayMinutes(banner) * 60 * 1000
+  return now - dismissedAt < waitMs
+}
+
 export default function Banner({ page = "all" }: BannerProps) {
   const [banners, setBanners] = useState<BannerData[]>([])
-  const [dismissedBanners, setDismissedBanners] = useState<number[]>([])
+  const [dismissMap, setDismissMap] = useState<DismissMap>({})
   const [autoHiddenBanners, setAutoHiddenBanners] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
   const [visible, setVisible] = useState(false)
   const [countryReady, setCountryReady] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
     fetchBanners()
-    const dismissed = localStorage.getItem("dismissedBanners")
-    if (dismissed) {
-      try {
-        setDismissedBanners(JSON.parse(dismissed))
-      } catch {
-        setDismissedBanners([])
-      }
-    }
+    setDismissMap(readDismissMap())
 
-    // New visitors must finish country selection first
     const checkCountry = () => {
       setCountryReady(localStorage.getItem("country-selected") === "true")
     }
@@ -60,6 +111,12 @@ export default function Banner({ page = "all" }: BannerProps) {
       window.removeEventListener("storage", checkCountry)
     }
   }, [page])
+
+  // Tick so dismissed banners can reappear after their frequency without a refresh
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 15_000)
+    return () => window.clearInterval(id)
+  }, [])
 
   const fetchBanners = async () => {
     try {
@@ -75,11 +132,32 @@ export default function Banner({ page = "all" }: BannerProps) {
     }
   }
 
-  const activeBanner = banners.find(
-    (banner) => !dismissedBanners.includes(banner.id) && !autoHiddenBanners.includes(banner.id),
+  const activeBanner = useMemo(
+    () =>
+      banners.find(
+        (banner) =>
+          !isStillDismissed(banner, dismissMap, now) && !autoHiddenBanners.includes(banner.id),
+      ),
+    [banners, dismissMap, autoHiddenBanners, now],
   )
 
-  // Show popup only after country dialog is done (returning users already have it set)
+  // Schedule exact re-show when the soonest dismiss expires
+  useEffect(() => {
+    const waits = banners
+      .map((banner) => {
+        const dismissedAt = dismissMap[String(banner.id)]
+        if (!dismissedAt) return null
+        const unlockAt = dismissedAt + redisplayMinutes(banner) * 60 * 1000
+        return unlockAt - Date.now()
+      })
+      .filter((ms): ms is number => typeof ms === "number" && ms > 0)
+
+    if (!waits.length) return
+    const next = Math.min(...waits)
+    const timer = window.setTimeout(() => setNow(Date.now()), Math.min(next + 50, 60_000))
+    return () => window.clearTimeout(timer)
+  }, [banners, dismissMap, now])
+
   useEffect(() => {
     if (!activeBanner || !countryReady) {
       setVisible(false)
@@ -102,7 +180,6 @@ export default function Banner({ page = "all" }: BannerProps) {
     return () => clearTimeout(timer)
   }, [visible, activeBanner?.id, activeBanner?.auto_disappear_seconds])
 
-  // Lock body scroll while popup is open
   useEffect(() => {
     if (!visible || !activeBanner) return
     const previous = document.body.style.overflow
@@ -112,7 +189,6 @@ export default function Banner({ page = "all" }: BannerProps) {
     }
   }, [visible, activeBanner?.id])
 
-  // Popup must not reserve header space
   useEffect(() => {
     document.documentElement.style.setProperty("--banner-height", "0px")
   }, [])
@@ -122,9 +198,9 @@ export default function Banner({ page = "all" }: BannerProps) {
     setVisible(false)
     setTimeout(() => {
       if (persistDismiss && activeBanner.is_dismissible) {
-        const next = [...dismissedBanners, activeBanner.id]
-        setDismissedBanners(next)
-        localStorage.setItem("dismissedBanners", JSON.stringify(next))
+        const next = { ...dismissMap, [String(activeBanner.id)]: Date.now() }
+        setDismissMap(next)
+        writeDismissMap(next)
       } else {
         setAutoHiddenBanners((prev) =>
           prev.includes(activeBanner.id) ? prev : [...prev, activeBanner.id],

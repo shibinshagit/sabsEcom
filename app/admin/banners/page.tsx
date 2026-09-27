@@ -39,6 +39,7 @@ interface Banner {
   button_color: string
   background_image_url: string
   auto_disappear_seconds: number
+  redisplay_after_minutes: number
   display_pages: string[]
   is_active: boolean
   start_date: string | null
@@ -130,6 +131,7 @@ export default function BannerManagement() {
     button_color: "#f5d76e",
     background_image_url: "",
     auto_disappear_seconds: 0,
+    redisplay_after_minutes: 5,
     display_pages: ["all"],
     is_active: true,
     start_date: "",
@@ -272,6 +274,7 @@ export default function BannerManagement() {
       button_color: "#f5d76e",
       background_image_url: "",
       auto_disappear_seconds: 0,
+      redisplay_after_minutes: 5,
       display_pages: ["all"],
       is_active: true,
       start_date: "",
@@ -297,6 +300,7 @@ export default function BannerManagement() {
       button_color: banner.button_color,
       background_image_url: normalizeImageUrl(banner.background_image_url),
       auto_disappear_seconds: banner.auto_disappear_seconds || 0,
+      redisplay_after_minutes: Math.min(10, Math.max(1, banner.redisplay_after_minutes || 5)),
       display_pages: banner.display_pages,
       is_active: banner.is_active,
       start_date: banner.start_date ? banner.start_date.split("T")[0] : "",
@@ -632,24 +636,52 @@ export default function BannerManagement() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                  />
-                  <Label htmlFor="is_active">Active</Label>
+              <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_active"
+                      checked={formData.is_active}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                    />
+                    <Label htmlFor="is_active">Active</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_dismissible"
+                      checked={formData.is_dismissible}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_dismissible: checked })}
+                    />
+                    <Label htmlFor="is_dismissible">Dismissible</Label>
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_dismissible"
-                    checked={formData.is_dismissible}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_dismissible: checked })}
-                  />
-                  <Label htmlFor="is_dismissible">Dismissible</Label>
-                </div>
+                {formData.is_dismissible && (
+                  <div className="w-full sm:w-56">
+                    <Label htmlFor="redisplay_after_minutes">Show again after (minutes)</Label>
+                    <select
+                      id="redisplay_after_minutes"
+                      value={formData.redisplay_after_minutes}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          redisplay_after_minutes: Number(e.target.value),
+                        })
+                      }
+                      className="mt-1 w-full h-10 rounded-md border border-gray-600 bg-gray-700 px-3 text-sm text-white"
+                    >
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((min) => (
+                        <option key={min} value={min}>
+                          {min} {min === 1 ? "minute" : "minutes"}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      After close, popup can appear again after this time.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex space-x-2 pt-2">
@@ -751,7 +783,7 @@ export default function BannerManagement() {
                         </Badge>
                         {banner.is_dismissible && (
                           <Badge variant="outline" className="text-xs">
-                            Dismissible
+                            Again in {banner.redisplay_after_minutes || 5}m
                           </Badge>
                         )}
                       </div>

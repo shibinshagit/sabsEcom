@@ -20,6 +20,7 @@ const bannerSchema = z.object({
   button_color: z.string().default("#ffffff"),
   background_image_url: z.string().optional().default(""),
   auto_disappear_seconds: z.coerce.number().int().nonnegative().default(0),
+  redisplay_after_minutes: z.coerce.number().int().min(1).max(10).default(5),
   display_pages: z.array(z.string()).default(["all"]),
   is_active: z.boolean().default(true),
   start_date: optionalDate,
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
       INSERT INTO banners (
         title, message, banner_type, background_color, text_color,
         button_text, button_link, button_color,
-        background_image_url, auto_disappear_seconds,
+        background_image_url, auto_disappear_seconds, redisplay_after_minutes,
         display_pages, is_active,
         start_date, end_date,
         priority, is_dismissible
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
         ${data.title}, ${data.message}, ${data.banner_type},
         ${data.background_color}, ${data.text_color},
         ${data.button_text}, ${data.button_link}, ${data.button_color},
-        ${data.background_image_url}, ${data.auto_disappear_seconds},
+        ${data.background_image_url}, ${data.auto_disappear_seconds}, ${data.redisplay_after_minutes},
         ${displayPages}, ${data.is_active},
         ${data.start_date || null}, ${data.end_date || null},
         ${data.priority}, ${data.is_dismissible}

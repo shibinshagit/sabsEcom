@@ -26,6 +26,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         button_color = ${data.button_color || "#ffffff"},
         background_image_url = ${data.background_image_url || ""},
         auto_disappear_seconds = ${data.auto_disappear_seconds || 0},
+        redisplay_after_minutes = ${Math.min(10, Math.max(1, Number(data.redisplay_after_minutes) || 5))},
         display_pages = ${data.display_pages || ["all"]},
         is_active = ${data.is_active ?? true},
         start_date = ${data.start_date === "" || data.start_date == null ? null : data.start_date},

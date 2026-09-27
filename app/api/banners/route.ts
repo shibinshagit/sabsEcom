@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/database"
+import { ensureBannerColumns } from "@/lib/migrations/ensure-banner-columns"
 
 /**
  * Public banners endpoint
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
         button_color VARCHAR(20) DEFAULT '#ffffff',
         background_image_url VARCHAR(200),
         auto_disappear_seconds INTEGER DEFAULT 0,
+        redisplay_after_minutes INTEGER DEFAULT 5,
         display_pages TEXT[] DEFAULT ARRAY['all'],
         is_active BOOLEAN DEFAULT true,
         start_date TIMESTAMP,
@@ -36,6 +38,7 @@ export async function GET(request: Request) {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `
+    await ensureBannerColumns()
 
     // 2️⃣ Seed default banners if table is empty
     const existingBanners = await sql`SELECT COUNT(*) as count FROM banners;`
