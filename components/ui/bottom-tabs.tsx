@@ -26,7 +26,7 @@ export default function BottomTabs() {
   const shopType = shop === "A" ? "cosmetics" : "accessories"
 
   const navItems = [
-    { href: "/products", icon: Home, label: "Home", isActive: pathname === "/" },
+    { href: "/", icon: Home, label: "Home", isActive: pathname === "/" },
     { href: "/orders", icon: ShoppingBag, label: "Orders", isActive: pathname === "/orders" },
     // Only include shop toggle after settings load and when admin has enabled it
     ...(!shopLoading && isShopSwitchEnabled ? [{ type: "toggle" }] : []),
