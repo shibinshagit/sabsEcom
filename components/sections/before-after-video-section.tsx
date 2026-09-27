@@ -1,9 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Play, Sparkles } from "lucide-react"
+import { Play } from "lucide-react"
 import { useShop } from "@/lib/contexts/shop-context"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface BeforeAfterVideo {
   id: number
@@ -80,16 +79,19 @@ export default function BeforeAfterVideoSection() {
     }
   }
 
+  const isBeauty = shop === "A"
+
   if (loading) {
     return (
-      <section className="px-4 lg:px-6 py-10">
+      <section className="px-4 lg:px-6 py-14">
         <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 w-72 bg-gray-300/30 rounded" />
-            <div className="h-4 w-96 bg-gray-300/30 rounded" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+          <div className="animate-pulse space-y-6">
+            <div className="mx-auto h-3 w-28 rounded bg-neutral-200" />
+            <div className="mx-auto h-10 w-80 max-w-full rounded bg-neutral-200" />
+            <div className="mx-auto h-4 w-96 max-w-full rounded bg-neutral-200" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-72 bg-gray-300/30 rounded-xl" />
+                <div key={i} className="h-72 rounded-xl bg-neutral-200/70" />
               ))}
             </div>
           </div>
@@ -102,72 +104,115 @@ export default function BeforeAfterVideoSection() {
     return null
   }
 
-  const theme =
-    shop === "A"
-      ? {
-          sectionBg: "from-rose-50 via-orange-50 to-amber-50",
-          accent: "from-orange-500 to-rose-500",
-          text: "text-gray-600",
-          cardBg: "bg-white/90 border-orange-100",
-          chipBg: "bg-orange-100 text-orange-700",
-        }
-      : {
-          sectionBg: "from-slate-900 via-indigo-950 to-slate-900",
-          accent: "from-cyan-500 to-blue-500",
-          text: "text-slate-300",
-          cardBg: "bg-slate-800/95 border-slate-700",
-          chipBg: "bg-slate-700 text-cyan-300",
-        }
-
   return (
-    <section className={`px-4 lg:px-6 py-12 bg-gradient-to-br ${theme.sectionBg}`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center gap-2 mb-3">
-            <Sparkles className={`w-5 h-5 ${shop === "A" ? "text-orange-500" : "text-cyan-400"}`} />
-            <h2 className={`text-3xl lg:text-4xl font-bold bg-gradient-to-r ${theme.accent} bg-clip-text text-transparent`}>
-              Before / After / Results
-            </h2>
-          </div>
-          <p className={theme.text}>
-            See real transformation videos from our latest product outcomes.
-          </p>
-        </div>
+    <section
+      className={`relative overflow-hidden px-4 lg:px-6 py-14 lg:py-16 ${
+        isBeauty
+          ? "bg-[#f3ebe3]"
+          : "bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
+      }`}
+    >
+      {/* Atmosphere */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden
+        style={
+          isBeauty
+            ? {
+                backgroundImage:
+                  "radial-gradient(ellipse 70% 50% at 50% -10%, rgba(138,114,88,0.22), transparent 60%), radial-gradient(ellipse 40% 40% at 100% 100%, rgba(196,171,141,0.25), transparent 50%)",
+              }
+            : {
+                backgroundImage:
+                  "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(56,189,248,0.12), transparent 55%)",
+              }
+        }
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedItems.map((item) => {
+      <div className="relative max-w-7xl mx-auto">
+        {/* Header */}
+        <header className="mb-10 lg:mb-12 text-center">
+          <p
+            className={`text-[11px] sm:text-xs font-semibold tracking-[0.28em] uppercase mb-4 ${
+              isBeauty ? "text-[#8a7258]" : "text-cyan-400/90"
+            }`}
+          >
+            Real transformations
+          </p>
+
+          <h2
+            className={`font-playfair text-3xl sm:text-4xl lg:text-5xl tracking-tight ${
+              isBeauty ? "text-[#2c241c]" : "text-white"
+            }`}
+          >
+            Before &amp; After
+          </h2>
+
+          <div
+            className={`mx-auto mt-5 h-px w-16 ba-rule ${
+              isBeauty ? "bg-[#8a7258]/45" : "bg-cyan-400/40"
+            }`}
+          />
+        </header>
+
+        {/* Gallery */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
+          {sortedItems.map((item, index) => {
             const resultVideoUrl = item.result_video_url || item.video_url
             const isImageItem = item.media_type === "image"
 
             return (
-              <Card key={item.id} className={theme.cardBg}>
-                <CardHeader>
-                  <div className="flex items-center justify-between gap-3">
-                    <CardTitle className={shop === "A" ? "text-gray-900" : "text-slate-100"}>{item.title}</CardTitle>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${theme.chipBg}`}>
-                      {isImageItem ? "Before/After" : "Result Video"}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
+              <article
+                key={item.id}
+                className={`ba-card group overflow-hidden rounded-2xl ${
+                  isBeauty
+                    ? "bg-white/80 ring-1 ring-[#8a7258]/15 shadow-[0_12px_40px_-20px_rgba(44,36,28,0.35)]"
+                    : "bg-slate-900/80 ring-1 ring-white/10 shadow-[0_12px_40px_-20px_rgba(0,0,0,0.6)]"
+                }`}
+                style={{ animationDelay: `${index * 70}ms` }}
+              >
+                <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
+                  <h3
+                    className={`font-semibold text-base leading-snug ${
+                      isBeauty ? "text-[#2c241c]" : "text-slate-100"
+                    }`}
+                  >
+                    {item.title}
+                  </h3>
+                  <span
+                    className={`shrink-0 text-[10px] font-semibold tracking-wide uppercase px-2 py-1 rounded ${
+                      isBeauty
+                        ? "bg-[#8a7258]/12 text-[#6b5a48]"
+                        : "bg-white/10 text-slate-300"
+                    }`}
+                  >
+                    {isImageItem ? "Compare" : "Video"}
+                  </span>
+                </div>
+
+                <div className="px-4 pb-4 space-y-3">
                   {isImageItem ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div className="rounded-lg overflow-hidden border border-white/20">
-                        <div className="px-2 py-1 text-xs font-semibold bg-black/70 text-white">Before</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative overflow-hidden rounded-lg">
+                        <span className="absolute top-2 left-2 z-10 text-[10px] font-semibold uppercase tracking-wider bg-black/65 text-white px-2 py-0.5 rounded">
+                          Before
+                        </span>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.before_image_url}
                           alt={`${item.title} before`}
-                          className="w-full aspect-video object-cover"
+                          className="w-full aspect-[4/5] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                         />
                       </div>
-                      <div className="rounded-lg overflow-hidden border border-white/20">
-                        <div className="px-2 py-1 text-xs font-semibold bg-black/70 text-white">After</div>
+                      <div className="relative overflow-hidden rounded-lg">
+                        <span className="absolute top-2 left-2 z-10 text-[10px] font-semibold uppercase tracking-wider bg-black/65 text-white px-2 py-0.5 rounded">
+                          After
+                        </span>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.after_image_url}
                           alt={`${item.title} after`}
-                          className="w-full aspect-video object-cover"
+                          className="w-full aspect-[4/5] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                         />
                       </div>
                     </div>
@@ -209,25 +254,61 @@ export default function BeforeAfterVideoSection() {
                         <button
                           type="button"
                           onClick={() => playVideo(item.id)}
-                          className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition"
+                          className="absolute inset-0 flex items-center justify-center bg-black/35 hover:bg-black/45 transition"
                           aria-label="Play video"
                         >
-                          <span className="w-14 h-14 rounded-full bg-white/90 text-black flex items-center justify-center shadow-xl">
-                            <Play className="w-7 h-7 ml-0.5" />
+                          <span
+                            className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl ${
+                              isBeauty
+                                ? "bg-[#8a7258] text-white"
+                                : "bg-white text-slate-900"
+                            }`}
+                          >
+                            <Play className="w-6 h-6 ml-0.5" fill="currentColor" />
                           </span>
                         </button>
                       )}
                     </div>
                   )}
+
                   {item.description && (
-                    <p className={`text-sm ${theme.text}`}>{item.description}</p>
+                    <p
+                      className={`text-sm leading-relaxed ${
+                        isBeauty ? "text-[#5c4f42]" : "text-slate-400"
+                      }`}
+                    >
+                      {item.description}
+                    </p>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </article>
             )
           })}
         </div>
       </div>
+
+      <style jsx>{`
+        .ba-rule {
+          transform: scaleX(0);
+          animation: baRule 0.6s ease 0.2s forwards;
+        }
+        .ba-card {
+          opacity: 0;
+          transform: translateY(14px);
+          animation: baFadeUp 0.55s ease forwards;
+        }
+        @keyframes baFadeUp {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes baRule {
+          to {
+            transform: scaleX(1);
+          }
+        }
+      `}</style>
     </section>
   )
 }
