@@ -852,11 +852,11 @@ function Nav() {
         {/* Tablet Header */}
         <div className="hidden md:block lg:hidden">
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-3">
-              <Link href="/" className="flex items-center group shrink-0" aria-label={settings.restaurant_name}>
+            <div className="flex items-center gap-3 mb-3 min-w-0">
+              <Link href="/" className="flex items-center group min-w-0 flex-1 overflow-hidden" aria-label={settings.restaurant_name}>
                 {settings.restaurant_logo ? (
                   <div
-                    className={`relative w-40 h-14 transition-transform duration-300 group-hover:scale-110 ${
+                    className={`relative w-28 h-12 sm:w-32 sm:h-12 max-w-full shrink transition-opacity duration-300 ${
                       shop === "A" ? "bg-black/90 rounded-xl" : ""
                     }`}
                   >
@@ -864,22 +864,22 @@ function Nav() {
                       src={settings.restaurant_logo || "/placeholder.svg"}
                       alt=""
                       fill
-                      className={`object-contain object-center ${shop === "A" ? "p-1" : ""}`}
-                      sizes="160px"
+                      className={`object-contain object-left ${shop === "A" ? "p-1" : ""}`}
+                      sizes="128px"
                     />
                   </div>
                 ) : (
-                  <div className="w-36 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
-                    <ShoppingBag className="w-7 h-7 text-white" />
+                  <div className="w-28 h-11 bg-white/20 rounded-xl flex items-center justify-center shadow-lg">
+                    <ShoppingBag className="w-6 h-6 text-white" />
                   </div>
                 )}
               </Link>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 shrink-0 relative z-10">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setSearchOpen(true)}
-                  className="text-white hover:bg-white/20 rounded-full p-2"
+                  className="text-white hover:bg-white/20 rounded-full p-2 shrink-0"
                   aria-label="Search products"
                 >
                   <Search className="w-5 h-5" />
@@ -1027,53 +1027,56 @@ function Nav() {
 
         {/* Mobile Header */}
         <div className="block md:hidden">
-          <div className="px-4 py-3">
-            <div className="grid grid-cols-3 items-center gap-2 mb-2">
-              <div className="flex justify-start min-w-0">
-                <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className="text-white p-0 shrink-0">
+          <div className="px-3 py-3">
+            <div className="relative flex items-center justify-between mb-2 min-h-11">
+              <div className="flex items-center gap-0.5 shrink-0 relative z-10">
+                <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className="text-white p-1.5 shrink-0 -ml-1">
                   {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                 </Button>
-              </div>
-              <div className="flex justify-center min-w-0">
-                <Link href="/" className="flex items-center justify-center group" aria-label={settings.restaurant_name}>
-                  {settings.restaurant_logo ? (
-                    <div
-                      className={`relative w-32 h-12 transition-transform duration-300 group-hover:scale-110 ${
-                        shop === "A" ? "bg-black/90 rounded-xl" : ""
-                      }`}
-                    >
-                      <Image
-                        src={settings.restaurant_logo || "/placeholder.svg"}
-                        alt=""
-                        fill
-                        className={`object-contain object-center ${shop === "A" ? "p-1" : ""}`}
-                        sizes="128px"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-28 h-11 bg-white/20 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
-                      <ShoppingBag className="w-6 h-6 text-white" />
-                    </div>
-                  )}
-                </Link>
-              </div>
-              <div className="flex items-center justify-end gap-2 min-w-0">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setSearchOpen(true)}
-                  className="text-white hover:bg-white/20 p-1"
+                  className="text-white hover:bg-white/20 p-1.5 shrink-0"
                   aria-label="Search products"
                 >
                   <Search className="w-5 h-5" />
                 </Button>
-                {/* Currency for Mobile */}
+              </div>
+
+              <Link
+                href="/"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-[1] pointer-events-auto"
+                aria-label={settings.restaurant_name}
+              >
+                {settings.restaurant_logo ? (
+                  <div
+                    className={`relative w-[6.5rem] h-11 ${
+                      shop === "A" ? "bg-black/90 rounded-xl" : ""
+                    }`}
+                  >
+                    <Image
+                      src={settings.restaurant_logo || "/placeholder.svg"}
+                      alt=""
+                      fill
+                      className={`object-contain object-center ${shop === "A" ? "p-1" : ""}`}
+                      sizes="104px"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-24 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-lg">
+                    <ShoppingBag className="w-5 h-5 text-white" />
+                  </div>
+                )}
+              </Link>
+
+              <div className="flex items-center justify-end gap-0.5 shrink-0 relative z-10">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-white hover:bg-white/20 p-1">
-                      <div className="flex items-center gap-1">
+                    <Button variant="ghost" className="text-white hover:bg-white/20 p-1.5 shrink-0">
+                      <div className="flex items-center gap-0.5">
                         <Globe className="w-4 h-4" />
-                        <span className="text-xs font-bold">{selectedCurrency}</span>
+                        <span className="text-[11px] font-bold">{selectedCurrency}</span>
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
@@ -1083,16 +1086,14 @@ function Nav() {
                   />
                 </DropdownMenu>
 
-                <Link href="/wishlist" className="relative">
+                <Link href="/wishlist" className="relative p-1.5 shrink-0" aria-label="Wishlist">
                   <Heart className={`w-5 h-5 text-white ${wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
                       {wishlistCount}
                     </span>
                   )}
                 </Link>
-
-                {/* Cart and Profile icons are hidden on mobile - removed from here */}
               </div>
             </div>
 
