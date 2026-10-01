@@ -2,9 +2,12 @@
 
 import type React from "react"
 import { useRef, useState } from "react"
+import { upload } from "@vercel/blob/client"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Loader2, Upload, Video, X } from "lucide-react"
+
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024
 
 interface VideoUploadProps {
   value?: string
@@ -13,8 +16,19 @@ interface VideoUploadProps {
   className?: string
 }
 
+async function deleteBlob(url: string) {
+  try {
+    await fetch(`/api/upload?url=${encodeURIComponent(url)}`, {
+      method: "DELETE",
+    })
+  } catch {
+    // Ignore deletion errors to avoid blocking UX.
+  }
+}
+
 export default function VideoUpload({ value, onChange, label = "Video", className = "" }: VideoUploadProps) {
   const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -27,58 +41,57 @@ export default function VideoUpload({ value, onChange, label = "Video", classNam
       return
     }
 
-    // Keep below server route body-size ceiling to avoid truncated/corrupt uploads.
-    if (file.size > 9 * 1024 * 1024) {
-      setError("Video must be less than 9MB")
+    if (file.size > MAX_VIDEO_BYTES) {
+      setError("Video must be less than 50MB")
       return
     }
 
     setUploading(true)
+    setProgress(0)
     setError(null)
 
     try {
-      const filename = `video-${Date.now()}-${file.name}`
-      const response = await fetch(`/api/upload?filename=${encodeURIComponent(filename)}`, {
-        method: "POST",
-        headers: {
-          "x-file-size": String(file.size),
-          "x-file-type": file.type || "video/*",
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-")
+      const pathname = `videos/${Date.now()}-${safeName}`
+
+      // Client-side Blob upload bypasses Vercel serverless 4.5MB body limit
+      // that caused "Request Entity Too Large" / non-JSON parse errors.
+      const blob = await upload(pathname, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload/blob",
+        contentType: file.type || "video/mp4",
+        multipart: file.size > 4 * 1024 * 1024,
+        onUploadProgress: ({ percentage }) => {
+          setProgress(Math.round(percentage))
         },
-        body: file,
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Upload failed")
+      if (value && value !== blob.url) {
+        await deleteBlob(value)
       }
 
-      const { url } = await response.json()
-      if (value && value !== url) {
-        try {
-          await fetch(`/api/upload?url=${encodeURIComponent(value)}`, {
-            method: "DELETE",
-          })
-        } catch {
-          // Ignore deletion errors to avoid blocking UX.
-        }
-      }
-      onChange(url)
+      onChange(blob.url)
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Upload failed")
+      const message =
+        uploadError instanceof Error ? uploadError.message : "Upload failed"
+
+      if (/entity too large|413|payload/i.test(message)) {
+        setError("Video is too large for upload. Please use a file under 50MB.")
+      } else {
+        setError(message)
+      }
     } finally {
       setUploading(false)
+      setProgress(0)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
   }
 
   const handleRemove = async () => {
     if (value) {
-      try {
-        await fetch(`/api/upload?url=${encodeURIComponent(value)}`, {
-          method: "DELETE",
-        })
-      } catch {
-        // Ignore deletion errors to avoid blocking UX.
-      }
+      await deleteBlob(value)
     }
 
     onChange("")
@@ -123,19 +136,19 @@ export default function VideoUpload({ value, onChange, label = "Video", classNam
       ) : (
         <div className="mt-2 space-y-2">
           <div
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => !uploading && fileInputRef.current?.click()}
             className="w-full h-36 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-500 transition-colors bg-gray-800/50"
           >
             {uploading ? (
               <>
                 <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mb-2" />
-                <span className="text-sm text-gray-400">Uploading...</span>
+                <span className="text-sm text-gray-400">Uploading… {progress}%</span>
               </>
             ) : (
               <>
                 <Video className="w-8 h-8 text-gray-400 mb-2" />
                 <span className="text-sm text-gray-400">Click to upload video</span>
-                <span className="text-xs text-gray-500">MP4/WebM/MOV (max 9MB)</span>
+                <span className="text-xs text-gray-500">MP4/WebM/MOV (max 50MB)</span>
               </>
             )}
           </div>
@@ -157,7 +170,7 @@ export default function VideoUpload({ value, onChange, label = "Video", classNam
             className="border-gray-600 bg-transparent text-gray-300 hover:bg-gray-700"
           >
             <Upload className="w-4 h-4 mr-2" />
-            {uploading ? "Uploading..." : "Choose Video"}
+            {uploading ? `Uploading… ${progress}%` : "Choose Video"}
           </Button>
         </div>
       )}
