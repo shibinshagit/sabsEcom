@@ -55,30 +55,18 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
-    locale: "en_IN",
+    locale: "en_AE",
     url: siteUrl,
     siteName: SITE_NAME,
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: [
-      {
-        url: "/logo.png",
-        width: 512,
-        height: 512,
-        alt: `${SITE_SHORT_NAME} logo`,
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: ["/logo.png"],
     creator: "@sabsonline",
     site: "@sabsonline",
   },

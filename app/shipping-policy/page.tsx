@@ -1,6 +1,5 @@
 "use client"
 
-import { Suspense } from "react"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { Truck, Clock, MapPin, Package, AlertCircle, CheckCircle } from "lucide-react"
@@ -23,7 +22,7 @@ function ShippingPolicyContent() {
             Learn about our shipping methods, delivery times, and policies for both domestic and international orders.
           </p>
           <Badge variant="outline" className="mt-4 bg-blue-50 text-blue-700 border-blue-200">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: 1 Oct 2026
           </Badge>
         </div>
 
@@ -69,13 +68,13 @@ function ShippingPolicyContent() {
                   <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
                     <p className="font-medium text-blue-900">Standard Processing</p>
-                    <p className="text-blue-700 text-sm">All orders are processed within 1-2 business days in UAE, 3-6 business days in India (Monday to Friday, excluding holidays).</p>
+                    <p className="text-blue-700 text-sm">All orders are processed within 1-2 business days in the UAE and 3-6 business days in India (Sunday to Thursday, excluding public holidays).</p>
                   </div>
                 </div>
               </div>
               <ul className="space-y-2 text-gray-600">
                 <li>• Orders placed before 11:00 AM are typically processed the same day</li>
-                <li>• Orders placed on weekends or holidays will be processed the next business day</li>
+                <li>• Orders placed on Friday, Saturday, or a public holiday are processed on the next business day (Sunday to Thursday)</li>
                 <li>• You will receive an email confirmation once your order has been processed and shipped</li>
                 <li>• Custom or personalized items may require additional processing time</li>
               </ul>
@@ -205,9 +204,9 @@ function ShippingPolicyContent() {
                 Our customer service team is here to help with any shipping questions or concerns.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
-                <span>📧 support@sabsonline.com</span>
-                <span>📱 WhatsApp: +971-56666-7178</span>
-                <span>⏰ Sun-Thu: 9AM-6PM GST</span>
+                <span>📧 support@sabsonlinestore.com</span>
+                <span>📱 WhatsApp: +971 56 666 7178</span>
+                <span>⏰ Sun–Thu: 9AM–6PM GST</span>
               </div>
             </CardContent>
           </Card>
@@ -221,9 +220,5 @@ function ShippingPolicyContent() {
 }
 
 export default function ShippingPolicyPage() {
-  return (
-    <Suspense fallback={<div>Loading shipping policy...</div>}>
-      <ShippingPolicyContent />
-    </Suspense>
-  )
+  return <ShippingPolicyContent />
 }

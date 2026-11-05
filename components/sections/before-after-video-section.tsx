@@ -92,14 +92,13 @@ export default function BeforeAfterVideoSection() {
 
   if (loading) {
     return (
-      <section className="px-4 lg:px-6 py-14">
-        <div className="max-w-7xl mx-auto">
+      <section className={`px-4 sm:px-6 lg:px-8 py-12 sm:py-16 ${isBeauty ? "bg-[#f3ebe3]" : "bg-slate-950"}`}>
+        <div className="max-w-6xl mx-auto">
           <div className="animate-pulse space-y-6">
-            <div className="mx-auto h-3 w-28 rounded bg-neutral-200" />
-            <div className="mx-auto h-10 w-80 max-w-full rounded bg-neutral-200" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+            <div className="mx-auto h-8 w-56 rounded bg-neutral-200" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="aspect-[9/16] max-h-[520px] rounded-2xl bg-neutral-200/70" />
+                <div key={i} className="aspect-[4/3] rounded-2xl bg-neutral-200/80" />
               ))}
             </div>
           </div>
@@ -114,234 +113,178 @@ export default function BeforeAfterVideoSection() {
 
   return (
     <section
-      className={`relative overflow-hidden px-4 lg:px-6 py-14 lg:py-16 ${
-        isBeauty
-          ? "bg-[#f3ebe3]"
-          : "bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
+      className={`relative overflow-hidden px-4 sm:px-6 lg:px-8 py-12 sm:py-16 ${
+        isBeauty ? "bg-[#f3ebe3]" : "bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
       }`}
     >
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden
-        style={
-          isBeauty
-            ? {
-                backgroundImage:
-                  "radial-gradient(ellipse 70% 50% at 50% -10%, rgba(138,114,88,0.22), transparent 60%)",
-              }
-            : {
-                backgroundImage:
-                  "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(56,189,248,0.12), transparent 55%)",
-              }
-        }
-      />
-
-      <div className="relative max-w-7xl mx-auto">
-        <header className="mb-10 lg:mb-12 text-center">
+      <div className="relative mx-auto max-w-6xl">
+        <header className="mb-8 sm:mb-10 text-center">
           <p
-            className={`text-[11px] sm:text-xs font-semibold tracking-[0.28em] uppercase mb-4 ${
+            className={`text-[11px] font-semibold tracking-[0.28em] uppercase mb-3 ${
               isBeauty ? "text-[#8a7258]" : "text-cyan-400/90"
             }`}
           >
             Real transformations
           </p>
           <h2
-            className={`font-playfair text-3xl sm:text-4xl lg:text-5xl tracking-tight ${
+            className={`font-playfair text-3xl sm:text-4xl tracking-tight ${
               isBeauty ? "text-[#2c241c]" : "text-white"
             }`}
           >
             Before &amp; After
           </h2>
-          <div
-            className={`mx-auto mt-5 h-px w-16 ba-rule ${
-              isBeauty ? "bg-[#8a7258]/45" : "bg-cyan-400/40"
-            }`}
-          />
+          <div className={`mx-auto mt-4 h-px w-12 ${isBeauty ? "bg-[#8a7258]/50" : "bg-cyan-400/40"}`} />
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 justify-items-center">
-          {sortedItems.map((item, index) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 items-stretch">
+          {sortedItems.map((item) => {
             const resultVideoUrl = item.result_video_url || item.video_url
             const isImageItem = item.media_type === "image"
             const showTitle = isMeaningful(item.title)
             const showDescription = isMeaningful(item.description)
             const isPlaying = activeVideoId === item.id
-            const orientation = orientations[item.id] || "portrait"
-            const isPortrait = orientation === "portrait"
+            const isPortrait = (orientations[item.id] || "portrait") === "portrait"
 
             return (
               <article
                 key={item.id}
-                className={`ba-card group w-full overflow-hidden rounded-2xl ${
-                  isPortrait ? "max-w-[360px]" : "max-w-full"
-                } ${
+                className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl ${
                   isBeauty
-                    ? "bg-[#faf7f3] ring-1 ring-[#8a7258]/15 shadow-[0_12px_40px_-20px_rgba(44,36,28,0.35)]"
+                    ? "bg-white shadow-[0_10px_30px_-18px_rgba(44,36,28,0.45)] ring-1 ring-[#e7ddd2]"
                     : "bg-slate-900/80 ring-1 ring-white/10 shadow-[0_12px_40px_-20px_rgba(0,0,0,0.6)]"
                 }`}
-                style={{ animationDelay: `${index * 70}ms` }}
               >
-                {isImageItem ? (
-                  <div className="grid grid-cols-2">
-                    <div className="relative overflow-hidden">
-                      <span className="absolute top-2.5 left-2.5 z-10 text-[10px] font-semibold uppercase tracking-wider bg-black/70 text-white px-2 py-0.5 rounded-md">
-                        Before
-                      </span>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.before_image_url}
-                        alt={`${item.title || "Result"} before`}
-                        className="w-full aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      />
+                <div className={`relative aspect-[4/3] w-full shrink-0 overflow-hidden ${isBeauty ? "bg-[#1c1612]" : "bg-neutral-950"}`}>
+                  {isImageItem ? (
+                    <div className="absolute inset-0 grid grid-cols-2">
+                      <figure className="relative min-w-0 overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={item.before_image_url}
+                          alt={`${item.title || "Result"} before`}
+                          className="h-full w-full object-cover object-center"
+                        />
+                        <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+                          Before
+                        </span>
+                      </figure>
+                      <figure className={`relative min-w-0 overflow-hidden border-l-2 ${isBeauty ? "border-white" : "border-slate-950"}`}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={item.after_image_url}
+                          alt={`${item.title || "Result"} after`}
+                          className="h-full w-full object-cover object-center"
+                        />
+                        <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+                          After
+                        </span>
+                      </figure>
                     </div>
-                    <div className="relative overflow-hidden">
-                      <span className="absolute top-2.5 left-2.5 z-10 text-[10px] font-semibold uppercase tracking-wider bg-black/70 text-white px-2 py-0.5 rounded-md">
-                        After
-                      </span>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.after_image_url}
-                        alt={`${item.title || "Result"} after`}
-                        className="w-full aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  ) : (
+                    <>
+                      <video
+                        src={resultVideoUrl}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        aria-hidden
+                        tabIndex={-1}
+                        className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover blur-2xl brightness-75"
+                        onLoadedData={(e) => {
+                          const preview = e.currentTarget
+                          if (preview.currentTime < 0.05) preview.currentTime = 0.05
+                        }}
                       />
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className={`relative bg-black ${
-                      isPortrait ? "aspect-[9/16]" : "aspect-video"
-                    }`}
-                  >
-                    <video
-                      ref={(el) => {
-                        videoRefs.current[item.id] = el
-                      }}
-                      src={resultVideoUrl}
-                      className="absolute inset-0 h-full w-full object-contain bg-black"
-                      controls={isPlaying}
-                      preload="metadata"
-                      playsInline
-                      poster={item.thumbnail_url || undefined}
-                      onLoadedMetadata={(e) => {
-                        const video = e.currentTarget
-                        if (!video.videoWidth || !video.videoHeight) return
-                        const next =
-                          video.videoHeight >= video.videoWidth ? "portrait" : "landscape"
-                        setOrientations((prev) =>
-                          prev[item.id] === next ? prev : { ...prev, [item.id]: next },
-                        )
-                      }}
-                      onPlay={() => {
-                        setActiveVideoId(item.id)
-                        Object.entries(videoRefs.current).forEach(([key, videoEl]) => {
-                          const otherId = Number(key)
-                          if (videoEl && otherId !== item.id && !videoEl.paused) {
-                            videoEl.pause()
-                          }
-                        })
-                      }}
-                      onPause={() => {
-                        if (activeVideoId === item.id) {
-                          setActiveVideoId(null)
-                        }
-                      }}
-                      onEnded={() => {
-                        if (activeVideoId === item.id) {
-                          setActiveVideoId(null)
-                        }
-                      }}
-                    >
-                      Your browser does not support this video.
-                    </video>
-
-                    {!isPlaying && (
-                      <button
-                        type="button"
-                        onClick={() => playVideo(item.id)}
-                        className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/50 via-black/15 to-black/10 transition hover:from-black/55"
-                        aria-label="Play video"
+                      <div className="absolute inset-0 z-[1] flex items-center justify-center">
+                      <video
+                        ref={(el) => {
+                          videoRefs.current[item.id] = el
+                        }}
+                        src={resultVideoUrl}
+                        className={isPortrait ? "h-full w-auto max-w-full" : "h-auto max-h-full w-full"}
+                        controls={isPlaying}
+                        preload="metadata"
+                        playsInline
+                        poster={item.thumbnail_url || undefined}
+                        onLoadedMetadata={(e) => {
+                          const video = e.currentTarget
+                          if (!video.videoWidth || !video.videoHeight) return
+                          const next = video.videoHeight >= video.videoWidth ? "portrait" : "landscape"
+                          setOrientations((prev) => (prev[item.id] === next ? prev : { ...prev, [item.id]: next }))
+                        }}
+                        onPlay={() => {
+                          setActiveVideoId(item.id)
+                          Object.entries(videoRefs.current).forEach(([key, videoEl]) => {
+                            const otherId = Number(key)
+                            if (videoEl && otherId !== item.id && !videoEl.paused) {
+                              videoEl.pause()
+                            }
+                          })
+                        }}
+                        onPause={() => {
+                          if (activeVideoId === item.id) setActiveVideoId(null)
+                        }}
+                        onEnded={() => {
+                          if (activeVideoId === item.id) setActiveVideoId(null)
+                        }}
                       >
-                        <span
-                          className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl ring-1 ring-white/25 ${
-                            isBeauty ? "bg-[#8a7258] text-white" : "bg-white text-slate-900"
-                          }`}
-                        >
-                          <Play className="w-7 h-7 ml-0.5" fill="currentColor" />
-                        </span>
-                      </button>
-                    )}
+                        Your browser does not support this video.
+                      </video>
+                      </div>
 
-                    <div className="pointer-events-none absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
-                      {showTitle ? (
-                        <span className="max-w-[75%] rounded-md bg-black/55 px-2.5 py-1 text-xs sm:text-sm font-semibold text-white backdrop-blur-sm line-clamp-2">
-                          {item.title}
-                        </span>
-                      ) : (
-                        <span />
+                      {!isPlaying && (
+                        <button
+                          type="button"
+                          onClick={() => playVideo(item.id)}
+                          className="absolute inset-0 z-10 flex items-center justify-center bg-black/15 transition hover:bg-black/25"
+                          aria-label="Play video"
+                        >
+                          <span
+                            className={`flex h-14 w-14 items-center justify-center rounded-full shadow-xl ring-1 ring-white/30 sm:h-16 sm:w-16 ${
+                              isBeauty ? "bg-[#8a7258] text-white" : "bg-white text-slate-900"
+                            }`}
+                          >
+                            <Play className="ml-0.5 h-6 w-6 sm:h-7 sm:w-7" fill="currentColor" />
+                          </span>
+                        </button>
                       )}
+
                       <span
-                        className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-                          isBeauty
-                            ? "bg-[#8a7258]/90 text-white"
-                            : "bg-cyan-500/90 text-white"
+                        className={`pointer-events-none absolute top-3 right-3 z-10 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
+                          isBeauty ? "bg-[#8a7258] text-white" : "bg-cyan-500 text-white"
                         }`}
                       >
                         Video
                       </span>
-                    </div>
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
 
-                {(isImageItem && (showTitle || showDescription)) || (!isImageItem && showDescription) ? (
-                  <div className="px-4 py-3.5 space-y-1.5">
-                    {isImageItem && showTitle && (
-                      <h3
-                        className={`font-semibold text-base leading-snug ${
-                          isBeauty ? "text-[#2c241c]" : "text-slate-100"
-                        }`}
-                      >
-                        {item.title}
-                      </h3>
-                    )}
-                    {showDescription && (
-                      <p
-                        className={`text-sm leading-relaxed ${
-                          isBeauty ? "text-[#5c4f42]" : "text-slate-400"
-                        }`}
-                      >
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-                ) : null}
+                <div
+                  className={`flex flex-1 flex-col gap-1.5 px-4 py-3.5 sm:px-5 sm:py-4 ${
+                    isBeauty ? "border-t border-[#f0e7de]" : "border-t border-white/10"
+                  }`}
+                >
+                  <h3
+                    className={`line-clamp-2 text-sm font-semibold leading-snug tracking-wide sm:text-[15px] ${
+                      isBeauty ? "text-[#2c241c]" : "text-slate-100"
+                    }`}
+                  >
+                    {showTitle ? item.title : "Result"}
+                  </h3>
+                  <p
+                    className={`line-clamp-2 min-h-[2.5rem] text-xs leading-relaxed sm:text-sm ${
+                      isBeauty ? "text-[#6b5c4e]" : "text-slate-400"
+                    }`}
+                  >
+                    {showDescription ? item.description : "\u00a0"}
+                  </p>
+                </div>
               </article>
             )
           })}
         </div>
       </div>
-
-      <style jsx>{`
-        .ba-rule {
-          transform: scaleX(0);
-          animation: baRule 0.6s ease 0.2s forwards;
-        }
-        .ba-card {
-          opacity: 0;
-          transform: translateY(14px);
-          animation: baFadeUp 0.55s ease forwards;
-        }
-        @keyframes baFadeUp {
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes baRule {
-          to {
-            transform: scaleX(1);
-          }
-        }
-      `}</style>
     </section>
   )
 }

@@ -6,7 +6,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
-import { Mail, Phone, MapPin, Send, Facebook, Instagram, Twitter, Clock } from "lucide-react"
+import { Mail, Phone, MapPin, Send, Facebook, Instagram, MessageCircle, Clock } from "lucide-react"
+import {
+  STORE_EMAIL,
+  STORE_FACEBOOK_URL,
+  STORE_INDIA_ADDRESS_LINES,
+  STORE_INSTAGRAM_URL,
+  STORE_PHONE_DISPLAY,
+  STORE_UAE_ADDRESS,
+  STORE_WHATSAPP_URL,
+} from "@/lib/store-info"
 import Footer from "@/components/ui/footer"
 import Link from "next/link"
 import Image from "next/image"
@@ -48,40 +57,17 @@ export default function ContactPage() {
               </div>
               {/* Dynamic Social Media Icons */}
               <div className="flex space-x-6 mt-4">
-                {settings.social_facebook && (
-                  <a 
-                    href={settings.social_facebook} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"
-                  >
-                    <Facebook />
-                  </a>
-                )}
-                {settings.social_instagram && (
-                  <a 
-                    href={settings.social_instagram} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"
-                  >
-                    <Instagram />
-                  </a>
-                )}
-                {settings.social_twitter && (
-                  <a 
-                    href={settings.social_twitter} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-amber-500 transition-colors text-3xl"
-                  >
-                    <Twitter />
-                  </a>
-                )}
+                <a href={STORE_FACEBOOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-gray-400 hover:text-amber-500 transition-colors text-3xl">
+                  <Facebook />
+                </a>
+                <a href={STORE_INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-400 hover:text-amber-500 transition-colors text-3xl">
+                  <Instagram />
+                </a>
+                <a href={STORE_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="text-gray-400 hover:text-amber-500 transition-colors text-3xl">
+                  <MessageCircle />
+                </a>
               </div>
-              {(settings.social_facebook || settings.social_instagram || settings.social_twitter) && (
-                <div className="mt-2 text-sm text-gray-400">Follow us on social media for updates & offers!</div>
-              )}
+              <div className="mt-2 text-sm text-gray-400">Follow us on social media for updates and offers.</div>
             </div>
             {/* Right: Info & Links */}
             <div className="flex flex-col justify-center p-10 gap-8">
@@ -92,17 +78,17 @@ export default function ContactPage() {
                   <div className="flex items-start space-x-3">
                     <MapPin className="w-5 h-5 text-amber-400 mt-1 flex-shrink-0" />
                     <div>
-                      <p className="text-gray-700">23/384/A62 Prince Tower, Near KNH Hospital</p>
-                      <p className="text-gray-700">Railway Station Road Uppala, Kasaragod, India</p>
+                      <p className="text-gray-700">UAE: {STORE_UAE_ADDRESS}</p>
+                      <p className="text-gray-700">India: {STORE_INDIA_ADDRESS_LINES.join(" ")}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                    <p className="text-gray-700">+91 9037888193</p>
+                    <p className="text-gray-700">{STORE_PHONE_DISPLAY}</p>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Mail className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                    <p className="text-gray-700">sabsonlinestore@gmail.com</p>
+                    <p className="text-gray-700">{STORE_EMAIL}</p>
                   </div>
                 </div>
                 {/* Opening Hours */}
@@ -111,17 +97,13 @@ export default function ContactPage() {
                   <div className="flex items-center space-x-3">
                     <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
                     <div className="text-gray-700">
-                      <p className="font-medium">Monday - Thursday</p>
-                      <p className="text-sm">5:00 PM - 10:00 PM</p>
+                      <p className="font-medium">Sunday – Thursday</p>
+                      <p className="text-sm">9:00 AM – 6:00 PM GST</p>
                     </div>
                   </div>
                   <div className="ml-8 text-gray-700">
-                    <p className="font-medium">Friday - Saturday</p>
-                    <p className="text-sm">5:00 PM - 11:00 PM</p>
-                  </div>
-                  <div className="ml-8 text-gray-700">
-                    <p className="font-medium">Sunday</p>
-                    <p className="text-sm">4:00 PM - 9:00 PM</p>
+                    <p className="font-medium">Friday – Saturday</p>
+                    <p className="text-sm">Closed</p>
                   </div>
                 </div>
               </div>

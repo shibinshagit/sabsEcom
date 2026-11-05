@@ -22,7 +22,7 @@ export const DEFAULT_KEYWORDS = [
   "buy skincare online UAE",
   "buy cosmetics India",
   "hair serum",
-  "whitening cream",
+  "face cream",
   "sun spray SPF",
   "perfume online",
   "beauty store Dubai",

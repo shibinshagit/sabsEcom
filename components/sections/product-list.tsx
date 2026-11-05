@@ -26,9 +26,10 @@ import UserCoupons from "@/components/sections/user-coupons"
 interface ProductListProps {
   showSpinner?: boolean
   onCloseSpinner?: () => void
+  initialProducts?: any[]
 }
 
-export default function ProductList({ showSpinner = false, onCloseSpinner }: ProductListProps) {
+export default function ProductList({ showSpinner = false, onCloseSpinner, initialProducts = [] }: ProductListProps) {
   const { user, isAuthenticated } = useAuth()
   const [authInitialized, setAuthInitialized] = useState(false)
   const { openModal } = useLoginModal()
@@ -207,7 +208,8 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
     triggerBlurAnimation('cart')
   }
 
-  const shopFilteredItems = items.filter((item: any) => {
+  const catalog = items.length > 0 ? items : initialProducts
+  const shopFilteredItems = catalog.filter((item: any) => {
     return item.shop_category === shop || item.shop_category === 'Both'
   })
 
@@ -729,7 +731,7 @@ export default function ProductList({ showSpinner = false, onCloseSpinner }: Pro
                 </div>
               </div>
             )}
-            {loading ? (
+            {catalog.length === 0 && loading ? (
               <div
                 className={`grid gap-3 lg:gap-6 ${viewMode === "list" ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
                   }`}

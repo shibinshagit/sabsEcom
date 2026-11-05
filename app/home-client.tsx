@@ -11,7 +11,7 @@ import HomeHeroBanner from "@/components/sections/home-hero-banner"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { Suspense } from "react"
 
-export default function HomeClient() {
+export default function HomeClient({ initialProducts = [] }: { initialProducts?: any[] }) {
   const { isAuthenticated } = useAuth()
   return (
     <main className="min-h-screen">
@@ -19,7 +19,7 @@ export default function HomeClient() {
       <HomeHeroBanner />
       {!isAuthenticated && <NewUserSpinnerSection />}
       <Suspense fallback={<ProductListSkeleton />}>
-        <ProductList />
+        <ProductList initialProducts={initialProducts} />
       </Suspense>
       <BeforeAfterVideoSection />
       <Services />

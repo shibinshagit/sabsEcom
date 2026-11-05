@@ -1,6 +1,5 @@
 "use client"
 
-import { Suspense } from "react"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { Shield, Eye, Lock, Users, Database, Globe, AlertTriangle, CheckCircle } from "lucide-react"
@@ -24,7 +23,7 @@ function PrivacyPolicyContent() {
             Your privacy is important to us. Learn how we collect, use, and protect your personal information.
           </p>
           <Badge variant="outline" className="mt-4 bg-green-50 text-green-700 border-green-200">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: 1 Oct 2026
           </Badge>
         </div>
 
@@ -295,8 +294,8 @@ function PrivacyPolicyContent() {
                 <h4 className="font-medium text-gray-900 mb-2">How to Exercise Your Rights</h4>
                 <p className="text-gray-600 text-sm mb-2">Contact us using any of the methods below:</p>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Email: privacy@sabsonline.com</li>
-                  <li>• Phone: +971-XXX-XXXX</li>
+                  <li>• Email: support@sabsonlinestore.com</li>
+                  <li>• Phone: +971 56 666 7178</li>
                   <li>• Account Settings page</li>
                   <li>• Customer service chat</li>
                 </ul>
@@ -399,9 +398,9 @@ function PrivacyPolicyContent() {
                 <div>
                   <h4 className="font-semibold mb-2">Privacy Officer Contact</h4>
                   <ul className="text-gray-300 space-y-1">
-                    <li>📧 privacy@sabsonline.com</li>
-                    <li>📱 WhatsApp: +971-XXX-XXXX</li>
-                    <li>⏰ Mon-Fri: 9AM-6PM GST</li>
+                    <li>📧 support@sabsonlinestore.com</li>
+                    <li>📱 WhatsApp: +971 56 666 7178</li>
+                    <li>⏰ Sun–Thu: 9AM–6PM GST</li>
                   </ul>
                 </div>
                 <div>
@@ -425,9 +424,5 @@ function PrivacyPolicyContent() {
 }
 
 export default function PrivacyPolicyPage() {
-  return (
-    <Suspense fallback={<div>Loading privacy policy...</div>}>
-      <PrivacyPolicyContent />
-    </Suspense>
-  )
+  return <PrivacyPolicyContent />
 }

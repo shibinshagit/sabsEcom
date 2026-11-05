@@ -2,10 +2,20 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { MapPin, Phone, Mail, Facebook, Instagram, Twitter } from "lucide-react"
+import { MapPin, Phone, Mail, Facebook, Instagram, MessageCircle } from "lucide-react"
 import { useSettings } from "@/lib/contexts/settings-context"
 import { useShop } from "@/lib/contexts/shop-context"
 import Image from "next/image"
+import {
+  STORE_EMAIL,
+  STORE_FACEBOOK_URL,
+  STORE_INDIA_ADDRESS_LINES,
+  STORE_INSTAGRAM_URL,
+  STORE_PHONE_DISPLAY,
+  STORE_PHONE_TEL,
+  STORE_UAE_ADDRESS,
+  STORE_WHATSAPP_URL,
+} from "@/lib/store-info"
 
 const FOOTER_BG_DESKTOP = [
   "/images/footer/footer-1.png",
@@ -39,7 +49,7 @@ export default function Footer() {
   return (
     <footer id="contact" className="relative overflow-hidden text-neutral-200">
       {/* Full-bleed rotating background — portrait on small screens, landscape on md+ */}
-      <div className="absolute inset-0" aria-hidden="true">
+      <div className="absolute inset-0">
         {/* Mobile / small screens */}
         <div className="absolute inset-0 md:hidden">
           {FOOTER_BG_MOBILE.map((src, i) => (
@@ -51,7 +61,11 @@ export default function Footer() {
             >
               <Image
                 src={src}
-                alt=""
+                alt={
+                  i === 0
+                    ? "Sabs skincare products arranged on a soft background"
+                    : "Sabs beauty products styled for the store footer"
+                }
                 fill
                 sizes="100vw"
                 className="object-cover object-center"
@@ -72,7 +86,11 @@ export default function Footer() {
             >
               <Image
                 src={src}
-                alt=""
+                alt={
+                  i === 0
+                    ? "Sabs beauty collection shown across the footer"
+                    : "Sabs skincare and cosmetics shown across the footer"
+                }
                 fill
                 sizes="100vw"
                 className="object-cover object-center"
@@ -111,18 +129,18 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm leading-relaxed text-white/80 max-w-md">
-              Sabs Online Store story began in 2015 in Dubai. We have created a niche for our
-              customers with our high-quality products and our attention to detail in service.
+              Sabs Online began in Dubai in 2015. Orders for the UAE are handled from Dubai, and
+              India orders are fulfilled from our Kasaragod office.
             </p>
             <div className="flex items-center gap-4 pt-1">
-              <a href="#" aria-label="Facebook" className="text-white/70 hover:text-white transition-colors">
+              <a href={STORE_FACEBOOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-white/70 hover:text-white transition-colors">
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" aria-label="Instagram" className="text-white/70 hover:text-white transition-colors">
+              <a href={STORE_INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-white/70 hover:text-white transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" aria-label="Twitter" className="text-white/70 hover:text-white transition-colors">
-                <Twitter className="w-5 h-5" />
+              <a href={STORE_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="text-white/70 hover:text-white transition-colors">
+                <MessageCircle className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -163,21 +181,24 @@ export default function Footer() {
               <div className="flex gap-3">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-white/55" />
                 <p className="leading-relaxed">
-                  23/384/A62 Prince Tower, Near KNH Hospital,
+                  <span className="block text-white/55 text-xs mb-0.5">UAE</span>
+                  {STORE_UAE_ADDRESS}
+                  <span className="block text-white/55 text-xs mt-2 mb-0.5">India</span>
+                  {STORE_INDIA_ADDRESS_LINES[0]}
                   <br />
-                  Railway Station Road Uppala, Kasaragod, India
+                  {STORE_INDIA_ADDRESS_LINES[1]}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 shrink-0 text-white/55" />
-                <a href={`tel:+91${settings.phone}`} className="hover:text-white transition-colors">
-                  +91 {settings.phone}
+                <a href={`tel:${STORE_PHONE_TEL}`} className="hover:text-white transition-colors">
+                  {STORE_PHONE_DISPLAY}
                 </a>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 shrink-0 text-white/55" />
-                <a href="mailto:sabsonlinestore@gmail.com" className="hover:text-white transition-colors break-all">
-                  sabsonlinestore@gmail.com
+                <a href={`mailto:${STORE_EMAIL}`} className="hover:text-white transition-colors break-all">
+                  {STORE_EMAIL}
                 </a>
               </div>
             </div>
@@ -189,16 +210,12 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm text-white/85">
               <li>
-                <p className="text-white/55 text-xs mb-0.5">Mon – Thu</p>
-                <p>10:00 AM – 6:00 PM</p>
+                <p className="text-white/55 text-xs mb-0.5">Sunday – Thursday</p>
+                <p>9:00 AM – 6:00 PM GST</p>
               </li>
               <li>
-                <p className="text-white/55 text-xs mb-0.5">Fri – Sat</p>
-                <p>10:00 AM – 1:00 PM</p>
-              </li>
-              <li>
-                <p className="text-white/55 text-xs mb-0.5">Sunday</p>
-                <p>10:00 AM – 12:00 PM</p>
+                <p className="text-white/55 text-xs mb-0.5">Friday – Saturday</p>
+                <p>Closed</p>
               </li>
             </ul>
           </div>

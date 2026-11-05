@@ -1,6 +1,5 @@
 "use client"
 
-import { Suspense } from "react"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { FileText, Shield, Users, CreditCard, AlertTriangle, CheckCircle, Scale, Ban } from "lucide-react"
@@ -24,7 +23,7 @@ function TermsOfServiceContent() {
             Please read these terms carefully before using our services. By using our website, you agree to these terms.
           </p>
           <Badge variant="outline" className="mt-4 bg-blue-50 text-blue-700 border-blue-200">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: 1 Oct 2026
           </Badge>
         </div>
 
@@ -449,9 +448,9 @@ function TermsOfServiceContent() {
                 <div>
                   <h4 className="font-semibold mb-2">Legal Contact</h4>
                   <ul className="text-gray-300 space-y-1">
-                    <li>📧 legal@sabsonline.com</li>
-                    <li>📱 Customer Service</li>
-                    <li>⏰ Business Hours</li>
+                    <li>📧 support@sabsonlinestore.com</li>
+                    <li>📱 WhatsApp: +971 56 666 7178</li>
+                    <li>⏰ Sun–Thu: 9AM–6PM GST</li>
                   </ul>
                 </div>
                 <div>
@@ -479,9 +478,5 @@ function TermsOfServiceContent() {
 }
 
 export default function TermsOfServicePage() {
-  return (
-    <Suspense fallback={<div>Loading terms of service...</div>}>
-      <TermsOfServiceContent />
-    </Suspense>
-  )
+  return <TermsOfServiceContent />
 }

@@ -1,6 +1,5 @@
 "use client"
 
-import { Suspense } from "react"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { XCircle, Clock, CheckCircle, AlertCircle, CreditCard, Ban } from "lucide-react"
@@ -24,7 +23,7 @@ function CancellationPolicyContent() {
             Need to cancel your order? Learn about our cancellation process and refund timelines.
           </p>
           <Badge variant="outline" className="mt-4 bg-red-50 text-red-700 border-red-200">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: 1 Oct 2026
           </Badge>
         </div>
 
@@ -32,7 +31,7 @@ function CancellationPolicyContent() {
         <Alert className="mb-8 border-orange-200 bg-orange-50">
           <AlertCircle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
-            <strong>Quick Cancellation:</strong> Cancel within 2 hours for instant refund • Partial cancellations available • 24/7 customer support
+            <strong>Quick Cancellation:</strong> Cancel within 2 hours for a faster refund • Partial cancellations available • Support Sun–Thu, 9AM–6PM GST
           </AlertDescription>
         </Alert>
 
@@ -302,7 +301,7 @@ function CancellationPolicyContent() {
                   </div>
                   <div className="flex flex-col items-center">
                     <CheckCircle className="w-6 h-6 mb-2" />
-                    <span>24/7 Support</span>
+                    <span>Sun–Thu Support</span>
                   </div>
                 </div>
               </div>
@@ -314,12 +313,12 @@ function CancellationPolicyContent() {
             <CardContent className="p-6 text-center">
               <h3 className="text-xl font-bold mb-2">Need Help Cancelling?</h3>
               <p className="text-gray-300 mb-4">
-                Our customer service team is available 24/7 to help you with order cancellations.
+                Our customer service team can help with cancellations during business hours.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
-                <span>📧 cancel@sabsonline.com</span>
-                <span>📱 WhatsApp: +971-56666-7178</span>
-                <span>⏰ Available 24/7</span>
+                <span>📧 support@sabsonlinestore.com</span>
+                <span>📱 WhatsApp: +971 56 666 7178</span>
+                <span>⏰ Sun–Thu: 9AM–6PM GST</span>
               </div>
             </CardContent>
           </Card>
@@ -333,9 +332,5 @@ function CancellationPolicyContent() {
 }
 
 export default function CancellationPolicyPage() {
-  return (
-    <Suspense fallback={<div>Loading cancellation policy...</div>}>
-      <CancellationPolicyContent />
-    </Suspense>
-  )
+  return <CancellationPolicyContent />
 }

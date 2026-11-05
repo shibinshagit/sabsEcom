@@ -26,28 +26,35 @@ export default function AboutPageClient() {
     "@type": "Organization",
     "name": settings.restaurant_name || "Sabs Online",
     "description": "Premium beauty products and tech accessories retailer committed to quality and customer satisfaction",
-    "url": "https://sabsonline.com",
-    "logo": settings.restaurant_logo || "https://sabsonline.com/logo.png",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "23/384/A62 Prince Tower, Near KNH Hospital, Railway Station Road",
-      "addressLocality": "Uppala",
-      "addressRegion": "Kasaragod",
-      "postalCode": "671322",
-      "addressCountry": "IN"
-    },
+    "url": "https://sabsonlinestore.com",
+    "logo": settings.restaurant_logo || "https://sabsonlinestore.com/logo.png",
+    "address": [
+      {
+        "@type": "PostalAddress",
+        "addressLocality": "Dubai",
+        "addressCountry": "AE"
+      },
+      {
+        "@type": "PostalAddress",
+        "streetAddress": "23/384/A62 Prince Tower, Near KNH Hospital, Railway Station Road",
+        "addressLocality": "Uppala",
+        "addressRegion": "Kasaragod",
+        "postalCode": "671322",
+        "addressCountry": "IN"
+      }
+    ],
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": "+91-9037888193",
+      "telephone": "+971566667178",
       "contactType": "customer service",
-      "email": "sabsonlinestore@gmail.com"
+      "email": "support@sabsonlinestore.com"
     },
     "sameAs": [
-      settings.social_facebook,
-      settings.social_instagram,
-      settings.social_twitter
-    ].filter(Boolean),
-    "foundingDate": "2020",
+      "https://www.facebook.com/share/1KozWzBNuu/?mibextid=wwXIfr",
+      "https://www.instagram.com/sabs_onlinestore",
+      "https://wa.me/message/3TBM5F64OE4DE1"
+    ],
+    "foundingDate": "2015",
     "numberOfEmployees": "10-50",
     "slogan": "Your trusted partner for beauty and technology",
     "knowsAbout": [
@@ -115,7 +122,7 @@ export default function AboutPageClient() {
                   
                   <article className="space-y-4">
                     <p className="text-gray-700 text-lg leading-relaxed">
-                      Founded with a passion for quality and customer satisfaction, <strong className="font-semibold text-amber-600">{settings.restaurant_name}</strong> has been your trusted partner in beauty and technology since our inception. We specialize in authentic beauty products, premium skincare solutions, high-quality cosmetics, and cutting-edge tech accessories.
+                      <strong className="font-semibold text-amber-600">{settings.restaurant_name}</strong> began in Dubai in 2015. UAE orders are handled from Dubai, and India orders are fulfilled from our office in Kasaragod. We specialize in authentic beauty products, premium skincare, and cosmetics.
                     </p>
                     
                     <p className="text-gray-700 leading-relaxed">
@@ -156,7 +163,7 @@ export default function AboutPageClient() {
                       <Users className="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" aria-hidden="true" />
                       <div>
                         <h4 className="font-semibold text-amber-800">Customer-First Approach</h4>
-                        <p className="text-amber-700 text-sm">Your satisfaction is our priority with dedicated customer support, easy returns, and personalized beauty consultations.</p>
+                        <p className="text-amber-700 text-sm">Support is available Sunday to Thursday, 9:00 AM to 6:00 PM GST, with returns on eligible sealed products.</p>
                       </div>
                     </div>
 

@@ -13,7 +13,7 @@ const Services = () => {
           {
             icon: Truck,
             title: "Free shipping",
-            subtitle: "Quick beauty delivery across your city",
+            subtitle: "Free over AED 200 / ₹3000. Express delivery is AED 10",
             iconColor: "text-rose-500",
             chip: "Fast Delivery",
           },
@@ -66,7 +66,7 @@ const Services = () => {
             title: "Fast support",
             subtitle: "Quick order and product help when needed",
             iconColor: "text-cyan-500",
-            chip: "24/7",
+            chip: "Sun–Thu",
           },
         ]
 

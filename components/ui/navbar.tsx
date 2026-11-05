@@ -4,7 +4,7 @@ import type React from "react"
 import { Suspense } from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname, useSearchParams, useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Search, ShoppingCart, Heart, Menu, X, User, LogOut, Settings, Package, Users, BarChart3, Calendar, MessageSquare, Star, ChevronDown, Globe, Zap, Crown, Gift, ShoppingBag, Sparkles, Watch, Bell, Check } from "lucide-react"
 import SearchPopup from "@/components/ui/search-popup"
 import { Button } from "@/components/ui/button"
@@ -115,8 +115,13 @@ function Nav() {
   const { shop, setShop, isLoading: shopLoading, isShopSwitchEnabled } = useShop()
   const { user: clerkUser } = useUser()
   const { selectedCurrency, setSelectedCurrency, getCurrencySymbol } = useCurrency()
-  const searchParams = useSearchParams()
+  const [categoryParam, setCategoryParam] = useState<string | null>(null)
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setCategoryParam(params.get("category"))
+  }, [pathname])
   const wishlistCount = wishlistItems.length
 
   const currentPage = pathname === "/" ? "home" : pathname.split("/")[1] || "home"
@@ -134,7 +139,7 @@ function Nav() {
       setSearchResults([])
       setSearchSuggestions([])
       if (pathname === "/products") {
-        const params = new URLSearchParams(searchParams.toString())
+        const params = new URLSearchParams(window.location.search)
         params.delete('search')
         router.push(`/products?${params.toString()}`)
       }
@@ -166,7 +171,7 @@ function Nav() {
         
         // Update URL for products page
         if (pathname === "/products" || pathname === "/") {
-          const params = new URLSearchParams(searchParams.toString())
+          const params = new URLSearchParams(window.location.search)
           params.set('search', term)
           if (pathname === "/") {
             router.push(`/products?${params.toString()}`)
@@ -402,7 +407,6 @@ function Nav() {
   const isActiveCategoryLink = (item: any) => {
     if (item.name === "All Products") {
       if (pathname === "/products") {
-        const categoryParam = searchParams.get('category')
         return !categoryParam
       }
       return false
@@ -410,7 +414,6 @@ function Nav() {
 
     if (item.isCategory) {
       if (pathname === "/products") {
-        const categoryParam = searchParams.get('category')
         const itemCategoryParam = item.href.split('category=')[1] || ''
         return categoryParam === itemCategoryParam
       }
@@ -656,7 +659,7 @@ function Nav() {
                         href="/products"
                         onClick={(e) => handleNavClick(baseNavigation[0], e)}
                         className={`hidden lg:flex items-center px-3 py-2 text-sm font-medium tracking-wide transition-colors whitespace-nowrap flex-shrink-0 border-b-2 ${
-                          pathname === '/products' && !searchParams.get('category')
+                          pathname === '/products' && !categoryParam
                             ? "text-white border-white"
                             : "text-white/90 border-transparent hover:text-white hover:border-white/50"
                         }`}
@@ -1149,7 +1152,7 @@ function Nav() {
                           setIsOpen(false)
                         }}
                         className={`block px-4 py-3 text-sm font-semibold transition-colors rounded-md ${
-                          pathname === '/products' && !searchParams.get('category')
+                          pathname === '/products' && !categoryParam
                             ? "text-neutral-900 bg-neutral-100"
                             : "text-neutral-700 hover:bg-neutral-50"
                         }`}

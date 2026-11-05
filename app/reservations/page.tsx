@@ -426,9 +426,9 @@ export default function ReservationsPage() {
                   <div>
                     <p className="font-medium">Address</p>
                     <p className="text-gray-600">
-                      123 Gourmet Street
+                      Dubai, United Arab Emirates
                       <br />
-                      Culinary District, NY 10001
+                      23/384/A62 Prince Tower, Railway Station Road Uppala, Kasaragod, India
                     </p>
                   </div>
                 </div>
@@ -436,14 +436,14 @@ export default function ReservationsPage() {
                   <Phone className="w-5 h-5 text-amber-500 mt-1" />
                   <div>
                     <p className="font-medium">Phone</p>
-                    <p className="text-gray-600">+1 (555) 123-4567</p>
+                    <p className="text-gray-600">+971 56 666 7178</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
                   <Mail className="w-5 h-5 text-amber-500 mt-1" />
                   <div>
                     <p className="font-medium">Email</p>
-                    <p className="text-gray-600">info@lumiere-restaurant.com</p>
+                    <p className="text-gray-600">support@sabsonlinestore.com</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
@@ -451,9 +451,8 @@ export default function ReservationsPage() {
                   <div>
                     <p className="font-medium">Hours</p>
                     <div className="text-gray-600 text-sm">
-                      <p>Monday - Thursday: 5:00 PM - 10:00 PM</p>
-                      <p>Friday - Saturday: 5:00 PM - 11:00 PM</p>
-                      <p>Sunday: 4:00 PM - 9:00 PM</p>
+                      <p>Sunday – Thursday: 9:00 AM – 6:00 PM GST</p>
+                      <p>Friday – Saturday: Closed</p>
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,5 @@
 "use client"
 
-import { Suspense } from "react"
 import Navbar from "@/components/ui/navbar"
 import Footer from "@/components/ui/footer"
 import { RotateCcw, Clock, CheckCircle, XCircle, AlertTriangle, CreditCard } from "lucide-react"
@@ -21,10 +20,10 @@ function ReturnRefundPolicyContent() {
             <h1 className="text-3xl font-bold text-gray-900">Return & Refund Policy</h1>
           </div>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            We want you to be completely satisfied with your purchase. Learn about our return and refund process.
+            Returns are accepted only for eligible beauty products. Opened cosmetics cannot be returned, except when we sent a damaged or wrong item.
           </p>
           <Badge variant="outline" className="mt-4 bg-green-50 text-green-700 border-green-200">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: 1 Oct 2026
           </Badge>
         </div>
 
@@ -65,11 +64,10 @@ function ReturnRefundPolicyContent() {
                     Eligible for Return
                   </h4>
                   <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Items in original packaging</li>
-                    <li>• Unworn and unused items</li>
-                    <li>• Unboxing video required</li>
-                    <li>• Defective or damaged products</li>
-                    <li>• Wrong items received</li>
+                    <li>• Unopened, sealed products in original packaging</li>
+                    <li>• Wrong item received</li>
+                    <li>• Damaged or defective on arrival</li>
+                    <li>• Request started within 7 days of delivery</li>
                   </ul>
                 </div>
 
@@ -79,11 +77,11 @@ function ReturnRefundPolicyContent() {
                     Not Eligible for Return
                   </h4>
                   <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Worn or used items</li>
-                    <li>• Items without original tags</li>
-                    <li>• Damaged by customer</li>
-                    <li>• Personalized/custom items</li>
-                    <li>• Items after 7 days</li>
+                    <li>• Opened, used, or unsealed cosmetics</li>
+                    <li>• Items missing the original sealed packaging</li>
+                    <li>• Products damaged after delivery</li>
+                    <li>• Personalized items</li>
+                    <li>• Requests after 7 days</li>
                   </ul>
                 </div>
               </div>
@@ -146,9 +144,9 @@ function ReturnRefundPolicyContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Size & Color Exchanges</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">Sealed shade or variant exchanges</h4>
                 <p className="text-blue-800 text-sm">
-                  We offer size and color exchanges for the same product within 7 days, subject to availability.
+                  A sealed, unopened product can be exchanged for another shade or variant of the same product within 7 days, if it is in stock. Opened cosmetics cannot be exchanged.
                 </p>
               </div>
 
@@ -157,7 +155,7 @@ function ReturnRefundPolicyContent() {
                   <h4 className="font-medium text-gray-900 mb-2">Exchange Process</h4>
                   <ul className="text-sm text-gray-600 space-y-1">
                     <li>• Contact customer service</li>
-                    <li>• Check size/color availability</li>
+                    <li>• Check the shade or variant is in stock</li>
                     <li>• Return original item</li>
                     <li>• Receive replacement</li>
                   </ul>
@@ -188,8 +186,7 @@ function ReturnRefundPolicyContent() {
               <div className="border-l-4 border-red-400 bg-red-50 p-4">
                 <h4 className="font-medium text-red-900 mb-2">Damaged or Defective Items</h4>
                 <p className="text-red-800 text-sm">
-                  If you receive a damaged or defective item, please contact us within 24 hours. 
-                  We'll provide a prepaid return label and expedite your refund or replacement.
+                  If you receive a damaged or defective item, contact us within 24 hours and include a short unboxing video. A video is required only for damage claims, not for every return. We will arrange a replacement or refund for eligible damage.
                 </p>
               </div>
 
@@ -215,10 +212,9 @@ function ReturnRefundPolicyContent() {
             <CardContent className="p-6">
               <div className="text-center">
                 <CheckCircle className="w-12 h-12 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-2">100% Quality Guarantee</h3>
+                <h3 className="text-xl font-bold mb-2">What we refund</h3>
                 <p className="text-green-100 mb-4">
-                  We stand behind the quality of our products. If you're not completely satisfied, 
-                  we'll make it right with a full refund or replacement.
+                  Refunds and replacements cover sealed returns, damaged deliveries, and wrong items. Opened beauty products are final sale for hygiene reasons, so a change of mind after opening is not refundable.
                 </p>
                 <div className="flex flex-wrap justify-center gap-6 text-sm">
                   <span className="flex items-center gap-1">
@@ -246,9 +242,9 @@ function ReturnRefundPolicyContent() {
                 Our friendly customer service team is here to assist you with any return or refund questions.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
-                <span>📧 returns@sabsonline.com</span>
-                <span>📱 WhatsApp: +971-56666-7178</span>
-                <span>⏰ Sun-Thu: 9AM-6PM GST</span>
+                <span>📧 support@sabsonlinestore.com</span>
+                <span>📱 WhatsApp: +971 56 666 7178</span>
+                <span>⏰ Sun–Thu: 9AM–6PM GST</span>
               </div>
             </CardContent>
           </Card>
@@ -262,9 +258,5 @@ function ReturnRefundPolicyContent() {
 }
 
 export default function ReturnRefundPolicyPage() {
-  return (
-    <Suspense fallback={<div>Loading return & refund policy...</div>}>
-      <ReturnRefundPolicyContent />
-    </Suspense>
-  )
+  return <ReturnRefundPolicyContent />
 }
